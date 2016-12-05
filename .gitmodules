@@ -1,0 +1,3 @@
+[submodule "vendor/libratss"]
+	path = vendor/libratss
+	url = https://github.com/fmi-alg/libratss.git
