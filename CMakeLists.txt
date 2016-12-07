@@ -21,34 +21,39 @@ include_directories(
 	${LIBRATSS_INCLUDE_DIR}
 )
 
-message("LIBRATS_INCLUDE_DIR=${LIBRATSS_INCLUDE_DIR}")
+message("LIBRATSS_COMPILE_DEFINITIONS=${LIBRATSS_COMPILE_DEFINITIONS}")
+
+set(LIBDTS2_INCLUDE_DIR
+	"${CMAKE_CURRENT_SOURCE_DIR}/include"
+	${LIBRATSS_INCLUDE_DIR}
+)
+
+set(LIBDTS2_LIBRARIES
+	dts2
+)
+
+set(LIBDTS2_LINK_LIBRARIES
+	dts2
+	${LIBRATSS_LINK_LIBRARIES}
+)
 
 get_directory_property(hasParent PARENT_DIRECTORY)
-#export correct link libs and include dirs
 if(hasParent)
-	SET(LIBDTS2_INCLUDE_DIR
-		"${CMAKE_CURRENT_SOURCE_DIR}/include"
-		${LIBRATSS_INCLUDE_DIR}
-		PARENT_SCOPE)
-	
-	SET(LIBDTS2_LIBRARIES
-		"${CMAKE_CURRENT_BINARY_DIR}/libdts2.a"
-		PARENT_SCOPE)
-	
-	SET(LIBDTS2_LINK_LIBRARIES
-		"${CMAKE_CURRENT_BINARY_DIR}/libdts2.a"
-		${LIBRATSS_LIBRARIES}
-		"CGAL"
-		"CGAL_Core"
-		"gmpxx"
-		"mpfr"
-		"gmp"
-		"boost_thread"
-		"boost_system"
-		"pthread"
+	set(LIBDTS2_INCLUDE_DIR
+		${LIBDTS2_LINK_LIBRARIES}
 		PARENT_SCOPE
 	)
-endif()#hasParent
+	
+	set(LIBDTS2_LIBRARIES
+		${LIBDTS2_LIBRARIES}
+		PARENT_SCOPE
+	)
+	
+	set(LIBDTS2_LINK_LIBRARIES
+		${LIBDTS2_LINK_LIBRARIES}
+		PARENT_SCOPE
+	)
+endif(hasParent)
 
 set(LIB_SOURCES_CPP
 	src/Constrained_delaunay_triangulation_s2.cpp
@@ -57,6 +62,7 @@ set(LIB_SOURCES_CPP
 add_library(${PROJECT_NAME} STATIC
 	${LIB_SOURCES_CPP}
 )
+target_compile_definitions(${PROJECT_NAME} PUBLIC ${LIBRATSS_COMPILE_DEFINITIONS})
 add_dependencies(${PROJECT_NAME} ratss)
 
 add_subdirectory(common ${PROJECT_NAME}common EXCLUDE_FROM_ALL)

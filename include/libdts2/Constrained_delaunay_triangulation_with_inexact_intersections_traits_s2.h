@@ -85,7 +85,7 @@ public:
 		using MyBaseClass = MyBaseTrait::Project_on_sphere;
 	private:
 		template<typename T>
-		using Conversion = LIB_RATSS_NAMESPACE::internal::Conversion<T>;
+		using Conversion = LIB_RATSS_NAMESPACE::Conversion<T>;
 	public:
 		Project_on_sphere(const MyBaseClass & base) : MyBaseClass(base) {}
 	public:

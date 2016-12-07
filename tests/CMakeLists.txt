@@ -26,20 +26,13 @@ MACRO(ADD_TEST_TARGET_SINGLE _name)
 ENDMACRO(ADD_TEST_TARGET_SINGLE)
 
 set(TEST_LIB_LINK_LIBS
-	${dts2tests_BINARY_DIR}/libdts2tests.a
-	${dts2_BINARY_DIR}/libdts2.a
-	${ratsscommon_BINARY_DIR}/libratsscommon.a
-	${LIBRATSS_LIBRARIES}
+	dts2tests
+	ratsscommon
+	${LIBDTS2_LINK_LIBRARIES}
 	${CPPUNIT_LIBRARY}
-	"CGAL"
-	"CGAL_Core"
-	"gmpxx"
-	"mpfr"
-	"gmp"
-	"boost_thread"
-	"boost_system"
-	"pthread"
 )
+
+message("TEST_LIB_LINK_LIBS=${TEST_LIB_LINK_LIBS}")
 
 ADD_TEST_TARGET_SINGLE(dt)
 ADD_TEST_TARGET_SINGLE(cdt)

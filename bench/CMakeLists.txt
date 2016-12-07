@@ -9,16 +9,10 @@ include_directories(
 )
 
 set(LINK_LIBS
-	${dts2_BINARY_DIR}/libdts2.a
-	${common_BINARY_DIR}/libcommon.a
-	"CGAL"
-	"CGAL_Core"
-	"gmpxx"
-	"mpfr"
-	"gmp"
-	"boost_thread"
-	"boost_system"
-	"pthread"
+	dts2common
+	ratsscommon
+	${LIBDTS2_LINK_LIBRARIES}
+	${CPPUNIT_LIBRARY}
 )
 
 # add_dependencies(${PROJECT_NAME} dts2 common)

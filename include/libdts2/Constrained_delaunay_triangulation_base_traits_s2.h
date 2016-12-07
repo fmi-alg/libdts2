@@ -2,7 +2,7 @@
 #define LIB_DTS2_CONSTRAINED_DELAUNAY_TRIANGULATION_BASE_TRAITS_S2_H
 
 #include <libdts2/constants.h>
-#include <libratss/Projector.h>
+#include <libratss/ProjectS2.h>
 #include <libratss/SphericalCoord.h>
 #include <libratss/GeoCoord.h>
 
@@ -75,7 +75,7 @@ public:
 	
 	using Construct_segment_2 = Construct_segment_3;
 public:
-	using Projector = LIB_RATSS_NAMESPACE::Projector;
+	using Projector = LIB_RATSS_NAMESPACE::ProjectS2;
 public: //own implementations
 
 	class Triangle_2: private Triangle_3 {
@@ -159,7 +159,7 @@ public:
 	class Project_on_sphere {
 	private:
 		template<typename T>
-		using Conversion = LIB_RATSS_NAMESPACE::internal::Conversion<T>;
+		using Conversion = LIB_RATSS_NAMESPACE::Conversion<T>;
 	public:
 		Project_on_sphere(int _precision, const Projector & p) : m_precision(_precision), m_proj(p) {}
 	public:
@@ -222,7 +222,7 @@ public:
 	const FT & epsilon() const;
 public:
 	static inline double doubleValue(const FT & v) {
-		return LIB_RATSS_NAMESPACE::internal::Conversion<FT>::toMpreal(v, 53).toDouble();
+		return LIB_RATSS_NAMESPACE::Conversion<FT>::toMpreal(v, 53).toDouble();
 	}
 public: //object functions
 	///This does not correctly initialize this trait!

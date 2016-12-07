@@ -9,10 +9,12 @@
 #include <libratss/enum.h>
 
 #include <CGAL/internal/info_check.h>
+#include <CGAL/enum.h>
 
 #include <functional>
 #include <type_traits>
 #include <iterator>
+#include <assert.h>
 
 //BUG: check if z-coordinate is out of range after projection!
 
@@ -166,7 +168,7 @@ TMPL_HDR
 TMPL_CLS::Triangulation_base_s2(int _precision) :
 m_cdts(
 	Geom_traits(
-		LIB_RATSS_NAMESPACE::internal::Conversion<FT>::moveFrom(mpq_class(std::numeric_limits<uint64_t>::max()-1, std::numeric_limits<uint64_t>::max())),
+		LIB_RATSS_NAMESPACE::Conversion<FT>::moveFrom(mpq_class(std::numeric_limits<uint64_t>::max()-1, std::numeric_limits<uint64_t>::max())),
 		_precision
 	)
 ),
@@ -574,7 +576,7 @@ void
 TMPL_CLS::addAuxiliaryPoints() {
 	
 	//start value for generateAuxPoint
-	FT epsilon(LIB_RATSS_NAMESPACE::internal::Conversion<FT>::moveFrom(mpq_class(1, std::numeric_limits<uint16_t>::max())));
+	FT epsilon(LIB_RATSS_NAMESPACE::Conversion<FT>::moveFrom(mpq_class(1, std::numeric_limits<uint16_t>::max())));
 	auto p_1 = generateAuxPoint(epsilon, 0);
 	auto p_2 = generateAuxPoint(-epsilon, epsilon);
 	auto p_3 = generateAuxPoint(-epsilon, -epsilon);
