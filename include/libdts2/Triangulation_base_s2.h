@@ -648,8 +648,9 @@ TMPL_CLS::addAuxiliaryPoints() {
 TMPL_HDR
 typename TMPL_CLS::Point_3 
 TMPL_CLS::generateAuxPoint(FT xp, FT yp) const {
+	FT dummy(0);
 	FT xs, ys, zs, zs_prev;
-	m_p.projector().stInverseProject(xp, yp, LIB_RATSS_NAMESPACE::SP_UPPER, xs, ys, zs);
+	m_p.projector().plane2Sphere(xp, yp, dummy, LIB_RATSS_NAMESPACE::SP_UPPER, xs, ys, zs);
 	zs_prev = zs;
 // 	std::cout << "zs=" << zs << std::endl;
 // 	std::cout << "m_epsZ=" << m_epsZ << std::endl;
@@ -659,7 +660,7 @@ TMPL_CLS::generateAuxPoint(FT xp, FT yp) const {
 		xp /= 2;
 		yp /= 2;
 		zs_prev = zs;
-		m_p.projector().stInverseProject(xp, yp, LIB_RATSS_NAMESPACE::SP_UPPER, xs, ys, zs);
+		m_p.projector().plane2Sphere(xp, yp, dummy, LIB_RATSS_NAMESPACE::SP_UPPER, xs, ys, zs);
 // 		std::cout << zs << std::endl;
 		assert(zs_prev < zs);
 		
