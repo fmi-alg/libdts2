@@ -14,14 +14,12 @@ find_package(CGAL REQUIRED Core)
 add_subdirectory(vendor/libratss libratss)
 
 include_directories(
-	${CMAKE_SOURCE_DIR}
-	${CMAKE_CURRENT_SOURCE_DIR}
-	${CMAKE_SOURCE_DIR}/include
+# 	${CMAKE_SOURCE_DIR}
+# 	${CMAKE_CURRENT_SOURCE_DIR}
+# 	${CMAKE_SOURCE_DIR}/include
 	${CMAKE_CURRENT_SOURCE_DIR}/include
 	${LIBRATSS_INCLUDE_DIR}
 )
-
-message("LIBRATSS_COMPILE_DEFINITIONS=${LIBRATSS_COMPILE_DEFINITIONS}")
 
 set(LIBDTS2_INCLUDE_DIR
 	"${CMAKE_CURRENT_SOURCE_DIR}/include"
@@ -35,6 +33,10 @@ set(LIBDTS2_LIBRARIES
 set(LIBDTS2_LINK_LIBRARIES
 	dts2
 	${LIBRATSS_LINK_LIBRARIES}
+)
+
+set(LIBDTS2_COMPILE_DEFINITIONS
+	${LIBRATSS_COMPILE_DEFINITIONS}
 )
 
 get_directory_property(hasParent PARENT_DIRECTORY)
@@ -53,6 +55,11 @@ if(hasParent)
 		${LIBDTS2_LINK_LIBRARIES}
 		PARENT_SCOPE
 	)
+	
+	set(LIBDTS2_COMPILE_DEFINITIONS
+		${LIBDTS2_COMPILE_DEFINITIONS}
+		PARENT_SCOPE
+	)
 endif(hasParent)
 
 set(LIB_SOURCES_CPP
@@ -62,10 +69,12 @@ set(LIB_SOURCES_CPP
 add_library(${PROJECT_NAME} STATIC
 	${LIB_SOURCES_CPP}
 )
+
 target_compile_definitions(${PROJECT_NAME} PUBLIC ${LIBRATSS_COMPILE_DEFINITIONS})
 add_dependencies(${PROJECT_NAME} ratss)
 
 add_subdirectory(common ${PROJECT_NAME}common EXCLUDE_FROM_ALL)
 add_subdirectory(bench ${PROJECT_NAME}bench EXCLUDE_FROM_ALL)
 add_subdirectory(tests ${PROJECT_NAME}tests EXCLUDE_FROM_ALL)
+add_subdirectory(tools ${PROJECT_NAME}tools EXCLUDE_FROM_ALL)
 
