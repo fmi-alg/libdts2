@@ -122,7 +122,7 @@ protected: //own implementations not support by the base traits
 		}
 	protected:
 		Point_3 pointReflect(const Point_3 & p) const {
-			return Point_3(p.x(), p.y(), p.z());
+			return Point_3(-p.x(), -p.y(), -p.z());
 		}
 		//TODO:need implementation
 		void getSmallestTriangle(const Segment & a, const Segment & b, Point_3 & tp1, Point_3 & tp2, Point_3 & tp3) const {
