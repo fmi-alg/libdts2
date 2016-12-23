@@ -92,6 +92,9 @@ public:
 		using MyBaseClass::operator();
 		Point_3 operator()(const Point_3 & v) const {
 			FT sqLen(v.x()*v.x() + v.y()*v.y() + v.z()*v.z());
+			if (sqLen == 1) {
+				return v;
+			}
 			mpq_class sqLenQ( Conversion<FT>::toMpq(sqLen) );
 			std::size_t sqLenPrec = projector().calc().maxBitCount(sqLenQ);
 			mpfr::mpreal sqLenF(Conversion<mpq_class>::toMpreal(sqLenQ, sqLenPrec));
