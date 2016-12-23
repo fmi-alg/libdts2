@@ -67,7 +67,7 @@ protected:
 	using MyBaseTrait::print;
 protected: //own implementations not support by the base traits
 	//stuff needed for intersection, you have to provide a matching base class with a function
-	//pointOnSphere(const Vector_3 & v) -> Point_4 returning the point on the sphere where v would point to
+	//pointOnSphere(const Vector_3 & v) -> Point_3 returning the point on the sphere where v would point to
 	//if it had length 1
 	template<typename T_BASE>
 	class Intersect_2: private T_BASE {
@@ -124,6 +124,7 @@ protected: //own implementations not support by the base traits
 		Point_3 pointReflect(const Point_3 & p) const {
 			return Point_3(p.x(), p.y(), p.z());
 		}
+		//TODO:need implementation
 		void getSmallestTriangle(const Segment & a, const Segment & b, Point_3 & tp1, Point_3 & tp2, Point_3 & tp3) const {
 			tp1 = a.source();
 			tp2 = a.target();
