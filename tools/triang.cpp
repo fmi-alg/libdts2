@@ -25,6 +25,7 @@ using K = CGAL::Exact_predicates_exact_constructions_kernel;
 using Point3 = K::Point_3;
 
 typedef enum {TT_DELAUNAY, TT_CONSTRAINED, TT_CONSTRAINED_INEXACT, TT_CONSTRAINED_EXACT} TriangulationType;
+typedef enum {GOT_INVALID, GOT_WITHOUT_SPECIAL, GOT_SIMPLEST_GRAPH_RENDERING, GOT_SIMPLEST_GRAPH_RENDERING_ANDRE} GraphOutputType;
 
 struct VertexInfo {
 	VertexInfo() : id(-1) {}
@@ -36,24 +37,68 @@ struct VertexInfo {
 ///vertices need to have VertexInfo as info
 template<typename TRS>
 struct TriangulationWriter {
+	using Vertex_handle = typename TRS::Vertex_handle;
 	using Finite_vertices_iterator = typename TRS::Finite_vertices_iterator; 
 	using Finite_edges_iterator = typename TRS::Finite_edges_iterator;
+	using Finite_faces_iterator = typename TRS::Finite_faces_iterator; 
+
 	using Point = typename TRS::Point;
 	using FT = typename TRS::FT;
 	
 	ratss::OutputPoint::Format outFormat;
+	GraphOutputType got;
 	
-	TriangulationWriter(ratss::OutputPoint::Format outFormat) : outFormat(outFormat) {}
+	TriangulationWriter(ratss::OutputPoint::Format outFormat, GraphOutputType got) : outFormat(outFormat), got(got) {}
+	
 	void write(std::ostream & out, TRS & trs) {
+		switch (got) {
+		case GOT_WITHOUT_SPECIAL:
+			writeWithoutSpecial(out, trs);
+			break;
+		case GOT_SIMPLEST_GRAPH_RENDERING:
+			writeSimplestGraphRendering(out, trs);
+			break;
+		case GOT_SIMPLEST_GRAPH_RENDERING_ANDRE:
+			writeSimplestGraphRenderingAndre(out, trs);
+			break;
+		default:
+			throw std::runtime_error("Unknown graph output type: " + std::to_string(got));
+		};
+	}
+	
+	void writeWithoutSpecial(std::ostream & out, TRS & trs) {
 		using std::distance;
-		std::size_t vertexCount = distance(trs.finite_vertices_begin(), trs.finite_vertices_end());
+		std::size_t vertexCount(0), edgeCount(0), maxVertexId(0);
+		for(Finite_vertices_iterator it(trs.finite_vertices_begin()), end(trs.finite_vertices_end()); it != end; ++it) {
+			if (!trs.is_special(it) && !trs.is_special(it)) {
+				const VertexInfo & vi = it->info();
+				assert(vi.valid());
+				++vertexCount;
+				maxVertexId = std::max<std::size_t>(maxVertexId, vi.id);
+			}
+		}
+		for(Finite_edges_iterator it(trs.finite_edges_begin()), end(trs.finite_edges_end()) ; it != end; ++it) {
+			auto & face = *(it->first);
+			int index = it->second;
+			auto vs = face.vertex(face.cw(index));
+			auto vt = face.vertex(face.ccw(index));
+			if (trs.is_special(vs) || trs.is_special(vt)) {
+				continue;
+			}
+			++edgeCount;
+		}
+		
 		out << vertexCount << '\n';
-		out << distance(trs.finite_edges_begin(), trs.finite_edges_end()) << '\n';
+		out << edgeCount << '\n';
 		
 		ratss::OutputPoint op(3);
-		std::vector<int> vertexId2OutId(vertexCount);
+		std::vector<int> vertexId2OutId(maxVertexId+1);
 		std::size_t counter = 0;
 		for(Finite_vertices_iterator it(trs.finite_vertices_begin()), end(trs.finite_vertices_end()); it != end; ++it) {
+			if (trs.is_special(it)) {
+				continue;
+			}
+		
 			const VertexInfo & vi = it->info();
 			const Point & p = it->point();
 			op.coords[0] = ratss::Conversion<FT>::toMpq( p.x() );
@@ -70,20 +115,157 @@ struct TriangulationWriter {
 			int index = it->second;
 			auto vs = face.vertex(face.cw(index));
 			auto vt = face.vertex(face.ccw(index));
+			if (trs.is_special(vs) || trs.is_special(vt)) {
+				continue;
+			}
+			
 			const VertexInfo & vis = vs->info();
 			const VertexInfo & vit = vt->info();
 			out << vis.id << ' ' << vit.id << '\n';
 		}
 	}
+
+	void writeSimplestGraphRendering(std::ostream & out, TRS & sdt) {
+		out.precision(20);
+		
+		CGAL::Unique_hash_map<Vertex_handle, uint32_t> vertex2Id;
+		uint32_t vertexId = 0;
+		uint32_t faceCount = 0;
+		
+		Finite_vertices_iterator vIt(sdt.finite_vertices_begin()), vEnd(sdt.finite_vertices_end());
+		for(; vIt != vEnd; ++vIt) {
+			assert(!vertex2Id.is_defined(vIt));
+			vertex2Id[vIt] = vertexId;
+			++vertexId;
+		}
+		
+		Finite_faces_iterator fIt(sdt.finite_faces_begin()), fEnd(sdt.finite_faces_end());
+		for(; fIt != fEnd; ++fIt) {
+			++faceCount;
+		}
+		
+		std::cout << "Graph has " << vertexId << " vertices, " << faceCount << '/' << faceCount*3 << " faces/edges" << std::endl;
+		
+		out << vertexId << '\n';
+		out << faceCount*3 << '\n';
+		
+		vIt = sdt.finite_vertices_begin();
+		for(; vIt != vEnd; ++vIt) {
+			assert(vertex2Id.is_defined(vIt));
+			auto coords = sdt.toGeo(vIt->point());
+			out << coords.lat << ' ' << coords.lon << '\n';
+		}
+		
+		//and now the edges
+		fIt = sdt.finite_faces_begin();
+		for(; fIt != fEnd; ++fIt) {
+			for(int j(0); j < 3; ++j) {
+				auto vhs = fIt->vertex(j);
+				auto vhe = fIt->vertex(sdt.ccw(j));
+				assert(vertex2Id.is_defined(vhs));
+				assert(vertex2Id.is_defined(vhe));
+				
+				out << vertex2Id[vhs] << ' ' << vertex2Id[vhe] << ' ' << 1 << ' ' << 1 << '\n';
+			}
+		}
+		out << std::flush;
+		
+	}
+
+	// #Knoten
+	// #Kanten
+	// Knotenliste: lat lon pro Zeile
+	// Kantenliste: Start Ziel Breite Farbe pro Zeile
+	// 
+	// Farbe ist 1-5
+	// start/ziel als index
+	// lat/lon als float
+	void writeSimplestGraphRenderingAndre(std::ostream & out, TRS & sdt) {
+		out.precision(20);
+
+		std::string node_rgb_value = "255 0 0";
+		std::string triang_edge_rgb_value = "0 255 0";
+		std::string constraint_edge_rgb_value = "255 0 0";
+		std::string triangle_rgb_value = "100 100 100";
+		
+		CGAL::Unique_hash_map<Vertex_handle, uint32_t> vertex2Id;
+		uint32_t vertexId = 0;
+		uint32_t edgeCount = 0;
+		uint32_t faceCount = 0;
+		
+		Finite_vertices_iterator vIt(sdt.finite_vertices_begin()), vEnd(sdt.finite_vertices_end());
+		for(; vIt != vEnd; ++vIt) {
+			assert(!vertex2Id.is_defined(vIt));
+			vertex2Id[vIt] = vertexId;
+			++vertexId;
+		}
+		
+		Finite_edges_iterator eIt(sdt.finite_edges_begin()), eEnd(sdt.finite_edges_end());
+		for(; eIt != eEnd; ++eIt) {
+			++edgeCount;
+		}
+		
+		Finite_faces_iterator fIt(sdt.finite_faces_begin()), fEnd(sdt.finite_faces_end());
+		for(; fIt != fEnd; ++fIt) {
+			++faceCount;
+		}
+		
+		std::cout << "Graph has " << vertexId << " vertices, " << faceCount << '/' << faceCount*3 << " faces/edges" << std::endl;
+		
+		out << vertexId << '\n';
+		out << edgeCount << '\n';
+		out << faceCount << '\n';
+		
+		vIt = sdt.finite_vertices_begin();
+		for(; vIt != vEnd; ++vIt) {
+			assert(vertex2Id.is_defined(vIt));
+			auto coords = sdt.toGeo(vIt->point());
+			out << coords.lat << ' ' << coords.lon << ' ' << node_rgb_value << '\n';
+		}
+		
+		//and now the edges
+		eIt = sdt.finite_edges_begin();
+		for(; eIt != eEnd; ++eIt) {
+			auto & face = *(eIt->first);
+			int index = eIt->second;
+			auto vs = face.vertex(face.cw(index));
+			auto vt = face.vertex(face.ccw(index));
+			assert(vertex2Id.is_defined(vs) && vertex2Id.is_defined(vt));
+			out << vertex2Id[vs] << ' ' << vertex2Id[vt] << ' ';
+			out << triang_edge_rgb_value << '\n';
+		}
+		
+		//and now the faces
+		fIt = sdt.finite_faces_begin();
+		for(; fIt != fEnd; ++fIt) {
+			auto v0 = fIt->vertex(0);
+			auto v1 = fIt->vertex(1);
+			auto v2 = fIt->vertex(2);
+			
+			assert(vertex2Id.is_defined(v0));
+			assert(vertex2Id.is_defined(v1));
+			assert(vertex2Id.is_defined(v2));
+			
+			out << vertex2Id[v0] << ' '
+				<< vertex2Id[v1] << ' '
+				<< vertex2Id[v2] << ' '
+				<< triangle_rgb_value << '\n';
+		}
+		out << std::flush;
+	}
+	
 };
 
 class TriangulationCreator {
 public:
-	TriangulationCreator() {}
+	GraphOutputType got;
+	ratss::OutputPoint::Format pointFormat;
+public:
+	TriangulationCreator() : got(GOT_INVALID), pointFormat(ratss::OutputPoint::FM_INVALID) {}
 	virtual ~TriangulationCreator() {}
 public:
 	virtual void create(const std::vector<std::pair<Point3, VertexInfo>> & points, const std::vector<std::pair<int, int>> & edges) = 0;
-	virtual void write(std::ostream & out, ratss::OutputPoint::Format format) = 0;
+	virtual void write(std::ostream & out) = 0;
 };
 
 class TriangulationCreatorDelaunay: public TriangulationCreator {
@@ -99,8 +281,8 @@ public:
 		m_tr.insert(points.begin(), points.end());
 	}
 	
-	virtual void write(std::ostream & out, ratss::OutputPoint::Format format) override {
-		TriangulationWriter<Tr> writer(format);
+	virtual void write(std::ostream & out) override {
+		TriangulationWriter<Tr> writer(pointFormat, got);
 		writer.write(out, m_tr);
 	}
 };
@@ -131,8 +313,8 @@ public:
 		}
 	}
 	
-	virtual void write(std::ostream & out, ratss::OutputPoint::Format format) override  {
-		TriangulationWriter<Tr> writer(format);
+	virtual void write(std::ostream & out) override  {
+		TriangulationWriter<Tr> writer(pointFormat, got);
 		writer.write(out, m_tr);
 	}
 };
@@ -162,8 +344,8 @@ public:
 		m_tr.insert(myPoints.begin(), myPoints.end());
 	}
 	
-	virtual void write(std::ostream & out, ratss::OutputPoint::Format format) override {
-		TriangulationWriter<Tr> writer(format);
+	virtual void write(std::ostream & out) override {
+		TriangulationWriter<Tr> writer(pointFormat, got);
 		writer.write(out, m_tr);
 	}
 };
@@ -171,6 +353,7 @@ public:
 class Config: public ratss::BasicCmdLineOptions {
 public:
 	TriangulationType triangType;
+	GraphOutputType got;
 public:
 	using ratss::BasicCmdLineOptions::parse;
 public:
@@ -179,30 +362,34 @@ public:
 	void print(std::ostream & out) const;
 };
 
-struct Data {
-	std::vector<std::pair<Point3, VertexInfo>> points;
-	std::vector<std::pair<int, int>> edges;
-	TriangulationCreator * tc;
-	
-	void init(TriangulationType tt, int significands);
-	void read(std::istream& is, const Config& cfg);
-	void create();
-	void write(std::ostream & out, ratss::OutputPoint::Format outFormat);
-};
-
 class InputOutput {
 public:
 	std::istream & input();
 	std::ostream & output();
+	std::ostream & info();
 	void setInput(const std::string & inFileName);
 	void setOutput(const std::string & outFileName);
 private:
 	std::istream * inFile = 0;
 	std::ostream * outFile = 0;
+	std::ostream * infoOut = 0;
 	
 	std::ifstream inFileHandle;
 	std::ofstream outFileHandle;
 	
+};
+
+struct Data {
+	Data();
+	~Data();
+	std::vector<std::pair<Point3, VertexInfo>> points;
+	std::vector<std::pair<int, int>> edges;
+	TriangulationCreator * tc;
+	
+	void init(const Config& cfg);
+	void read(InputOutput& io, const Config& cfg);
+	void create();
+	void write(InputOutput& io, const Config& cfg);
 };
 
 ///now the main
@@ -217,18 +404,30 @@ int main(int argc, char ** argv) {
 		cfg.help(std::cerr);
 		return parseResult;
 	}
-	
-	cfg.print(std::cerr);
-	
+
 	io.setInput(cfg.inFileName);
 	io.setOutput(cfg.outFileName);
 	
+	if (cfg.verbose) {
+		cfg.print(io.info());
+		io.info() << std::endl;
+	}
 	
-	data.init(cfg.triangType, cfg.significands);
-	data.read(io.input(), cfg);
+	
+	io.info() << "Initializing triangulation..." << std::endl;
+	data.init(cfg);
+	
+	io.info() << "Reading graph..." << std::endl;
+	data.read(io, cfg);
+	
+	io.info() << "Creating triangulation..." << std::endl;
 	data.create();
-	data.write(io.output(), cfg.outFormat);
 	
+	io.info() << "Writing triangulation..." << std::endl;
+	data.write(io, cfg);
+	
+	io.info() << "All operations succeeded. Exiting" << std::endl;
+	return 0;
 }
 
 //now the implementations of the functions of the classes
@@ -254,6 +453,22 @@ bool Config::parse(const std::string & token,int & i, int argc, char ** argv) {
 		}
 		++i;
 	}
+	else if (token == "-g" && i+1 < argc) {
+		std::string type( argv[i+1] );
+		if (type == "wx") {
+			got = GOT_WITHOUT_SPECIAL;
+		}
+		else if (type == "simplest") {
+			got = GOT_SIMPLEST_GRAPH_RENDERING;
+		}
+		else if (type == "simplest_andre") {
+			got = GOT_SIMPLEST_GRAPH_RENDERING_ANDRE;
+		}
+		else {
+			throw ratss::BasicCmdLineOptions::ParseError("Unknown graph output type: " + type);
+		}
+		++i;
+	}
 	else {
 		return false;
 	}
@@ -262,11 +477,11 @@ bool Config::parse(const std::string & token,int & i, int argc, char ** argv) {
 
 void Config::help(std::ostream & out) const {
 	out << "triang OPTIONS:\n"
-		"-t type\ttype = [d,delaunay, c,constrained,cx,constrained-intersection,cxe,constrained-intesection-exact]\n";
+		"\t-t type\ttype = [d,delaunay, c,constrained,cx,constrained-intersection,cxe,constrained-intesection-exact]\n"
+		"\t-g type\ttype = [wx, witout_special, simplest, simplest_andre]\n";
 	ratss::BasicCmdLineOptions::options_help(out);
 	out << std::endl;
 }
-
 
 void Config::print(std::ostream & out) const {
 	out << "Triangulation type: ";
@@ -288,7 +503,27 @@ void Config::print(std::ostream & out) const {
 		break;
 	}
 	out << '\n';
+	out << "Graph output type: ";
+	switch (got) {
+	case GOT_WITHOUT_SPECIAL:
+		out << "without special";
+		break;
+	case GOT_SIMPLEST_GRAPH_RENDERING:
+		out << "simplest graph rendering";
+		break;
+	case GOT_SIMPLEST_GRAPH_RENDERING_ANDRE:
+		out << "simplest graph rendering andre";
+		break;
+	default:
+		out << "invalid";
+		break;
+	};
+	out << '\n';
 	ratss::BasicCmdLineOptions::options_selection(out);
+}
+
+std::ostream& InputOutput::info() {
+	return *infoOut;
 }
 
 std::istream & InputOutput::input() {
@@ -311,7 +546,6 @@ void InputOutput::setInput(const std::string & inFileName) {
 	else {
 		inFile = &std::cin;
 	}
-
 }
 
 void InputOutput::setOutput(const std::string & outFileName) {
@@ -322,37 +556,52 @@ void InputOutput::setOutput(const std::string & outFileName) {
 			throw std::runtime_error("Could not open output file: " + outFileName);
 		}
 		outFile = &outFileHandle;
+		infoOut = &std::cout;
 	}
 	else {
 		outFile = &std::cout;
+		infoOut = &std::cerr;
 	}
 }
 
-void Data::init(TriangulationType tt, int significands) {
-	TriangulationCreator * tc = 0;
-	switch (tt) {
+
+Data::Data() : tc(0) {}
+
+Data::~Data() {
+	delete tc;
+	tc = 0;
+}
+
+void Data::init(const Config & cfg) {
+	if (tc) {
+		delete tc;
+		tc = 0;
+	}
+	switch (cfg.triangType) {
 	case TT_DELAUNAY:
-		tc = new TriangulationCreatorDelaunay(significands);
+		tc = new TriangulationCreatorDelaunay(cfg.significands);
 		break;
 	case TT_CONSTRAINED:
-		tc = new TriangulationCreatorNoIntersectionsConstrainedDelaunay(significands);
+		tc = new TriangulationCreatorNoIntersectionsConstrainedDelaunay(cfg.significands);
 		break;
 	case TT_CONSTRAINED_INEXACT:
-		tc = new TriangulationCreatorInExactIntersectionsConstrainedDelaunay(significands);
+		tc = new TriangulationCreatorInExactIntersectionsConstrainedDelaunay(cfg.significands);
 		break;
 	case TT_CONSTRAINED_EXACT:
-		tc = new TriangulationCreatorExactIntersectionsConstrainedDelaunay(significands);
+		tc = new TriangulationCreatorExactIntersectionsConstrainedDelaunay(cfg.significands);
 		break;
 	default:
 		throw std::runtime_error("Unkown triangulation type");
 	};
 }
 
-void Data::read(std::istream& is, const Config & cfg) {
+void Data::read(InputOutput & io, const Config & cfg) {
+	std::istream & is = io.input();
+
 	std::size_t num_points, num_edges;
 	is >> num_points >> num_edges;
 	
-	std::cerr << "Need to fetch " << num_points << " points and " << num_edges << " edges" << std::endl;
+	io.info() << "Need to fetch " << num_points << " points and " << num_edges << " edges" << std::endl;
 	
 	points.reserve(num_points);
 	edges.reserve(num_edges);
@@ -362,7 +611,7 @@ void Data::read(std::istream& is, const Config & cfg) {
 	ratss::ProjectSN proj;
 	
 	if (cfg.progress) {
-		std::cerr << std::endl;
+		io.info() << std::endl;
 	}
 	std::size_t counter = 0;
 	while( is.good() && points.size() < num_points) {
@@ -388,8 +637,11 @@ void Data::read(std::istream& is, const Config & cfg) {
 
 		++counter;
 		if (cfg.progress && counter % 1000 == 0) {
-			std::cerr << '\xd' << counter/1000 << "k" << std::flush;
+			io.info() << '\xd' << counter/1000 << "k" << std::flush;
 		}
+	}
+	if (cfg.progress) {
+		io.info() << std::endl;
 	}
 	//now read in the edges
 	while( is.good() && edges.size() < num_edges) {
@@ -416,6 +668,8 @@ void Data::create() {
 	edges.clear();
 }
 
-void Data::write(std::ostream & out, ratss::OutputPoint::Format outFormat) {
-	tc->write(out, outFormat);
+void Data::write(InputOutput & io, const Config & cfg) {
+	tc->got = cfg.got;
+	tc->pointFormat = cfg.outFormat;
+	tc->write(io.output());
 }
