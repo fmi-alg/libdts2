@@ -181,6 +181,36 @@ TMPL_CLS::is_constrained(const Edge& e) const {
 }
 
 TMPL_HDR
+void
+TMPL_CLS::insert(const Vertex_handle & a, const Vertex_handle & b) {
+	MyBaseClass::trs().insert(a, b);
+}
+
+TMPL_HDR
+void
+TMPL_CLS::insert(const Point & a, const Point & b) {
+	Point_3 sa = MyBaseClass::proj()(a);
+	Point_3 sb = MyBaseClass::proj()(b);
+	MyBaseClass::trs().insert(sa, sb);
+}
+
+TMPL_HDR
+void
+TMPL_CLS::insert(const GeoCoord & a, const GeoCoord & b) {
+	Point_3 sa = MyBaseClass::proj()(a);
+	Point_3 sb = MyBaseClass::proj()(b);
+	MyBaseClass::trs().insert(sa, sb);
+}
+
+TMPL_HDR
+void
+TMPL_CLS::insert(const SphericalCoord & a, const SphericalCoord & b) {
+	Point_3 sa = MyBaseClass::proj()(a);
+	Point_3 sb = MyBaseClass::proj()(b);
+	MyBaseClass::trs().insert(sa, sb);
+}
+
+TMPL_HDR
 template<typename T_POINT_ITERATOR, typename T_INDICES_ITERATOR>
 void
 TMPL_CLS::insert_constraints(T_POINT_ITERATOR points_first, T_POINT_ITERATOR points_last, T_INDICES_ITERATOR indices_first, T_INDICES_ITERATOR indices_last) {
