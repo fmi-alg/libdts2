@@ -72,6 +72,9 @@ public: //insertion
 
 	template<typename T_ITERATOR>
 	void insert(T_ITERATOR begin, T_ITERATOR end);
+	
+	template<typename T_ITERATOR>
+	void insert_with_info(T_ITERATOR begin, T_ITERATOR end);
 public: //removal
 	void remove(const Vertex_handle & vh);
 public:
@@ -121,6 +124,16 @@ protected:
 	
 	template<typename T_ITERATOR, typename T_ITERATOR_VALUE_TYPE>
 	void insert_impl(T_ITERATOR begin, T_ITERATOR end, T_ITERATOR_VALUE_TYPE* /*dummy*/);
+	
+	template<typename T_ITERATOR, typename T_ITERATOR_VALUE_TYPE>
+	void insert_impl(T_ITERATOR begin, T_ITERATOR end,
+		typename std::enable_if<
+			std::is_same<
+				T_ITERATOR_VALUE_TYPE,
+				std::pair<Point_3, typename CGAL::internal::Info_check<Vertex>::type>
+			>::value,
+			T_ITERATOR_VALUE_TYPE
+		>::type * /*dummy*/);
 	
 	template<typename T_ITERATOR, typename T_ITERATOR_VALUE_TYPE>
 	void insert_impl(T_ITERATOR begin, T_ITERATOR end,
@@ -226,6 +239,19 @@ void
 TMPL_CLS::insert(T_ITERATOR begin, T_ITERATOR end) {
 	using iterator_value_type = typename std::iterator_traits<T_ITERATOR>::value_type;
 	insert_impl<T_ITERATOR, iterator_value_type>(begin, end, static_cast<iterator_value_type*>(0));
+}
+
+TMPL_HDR
+template<typename T_ITERATOR>
+void 
+TMPL_CLS::insert_with_info(T_ITERATOR begin, T_ITERATOR end) {
+	std::vector< std::pair<Point_3, typename CGAL::internal::Info_check<Vertex>::type> > tmp;
+	using std::distance;
+	tmp.reserve(distance(begin, end));
+	for(;begin != end; ++begin) {
+		tmp.emplace_back(m_p(begin->first), begin->second);
+	}
+	m_cdts.insert(tmp.begin(), tmp.end());
 }
 //END insertion operations
 
@@ -474,18 +500,27 @@ TMPL_CLS::insert_impl(T_ITERATOR begin, T_ITERATOR end,
 	typename std::enable_if<
 		std::is_same<
 			T_ITERATOR_VALUE_TYPE,
+			std::pair<typename TMPL_CLS::Point_3, typename CGAL::internal::Info_check<Vertex>::type>
+		>::value,
+		T_ITERATOR_VALUE_TYPE
+	>::type * /*dummy*/)
+{
+	insert_with_info(begin, end);
+}
+
+TMPL_HDR
+template<typename T_ITERATOR, typename T_ITERATOR_VALUE_TYPE>
+void 
+TMPL_CLS::insert_impl(T_ITERATOR begin, T_ITERATOR end,
+	typename std::enable_if<
+		std::is_same<
+			T_ITERATOR_VALUE_TYPE,
 			std::pair<SphericalCoord, typename CGAL::internal::Info_check<Vertex>::type>
 		>::value,
 		T_ITERATOR_VALUE_TYPE
 	>::type * /*dummy*/)
 {
-	std::vector< std::pair<Point_3, typename CGAL::internal::Info_check<Vertex>::type> > tmp;
-	using std::distance;
-	tmp.reserve(distance(begin, end));
-	for(;begin != end; ++begin) {
-		tmp.emplace_back(m_p(begin->first), begin->second);
-	}
-	m_cdts.insert(tmp.begin(), tmp.end());
+	insert_with_info(begin, end);
 }
 
 TMPL_HDR
@@ -500,13 +535,7 @@ TMPL_CLS::insert_impl(T_ITERATOR begin, T_ITERATOR end,
 		T_ITERATOR_VALUE_TYPE
 	>::type * /*dummy*/)
 {
-	std::vector< std::pair<Point_3, typename CGAL::internal::Info_check<Vertex>::type> > tmp;
-	using std::distance;
-	tmp.reserve(distance(begin, end));
-	for(;begin != end; ++begin) {
-		tmp.emplace_back(m_p(begin->first), begin->second);
-	}
-	m_cdts.insert(tmp.begin(), tmp.end());
+	insert_with_info(begin, end);
 }
 //END private insertion functions
 
