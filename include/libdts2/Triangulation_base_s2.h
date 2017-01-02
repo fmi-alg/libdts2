@@ -99,6 +99,8 @@ public: //size info
 public: //information stuff
 	bool is_infinite(const Vertex_handle & vh) const;
 	bool is_auxiliary(const Vertex_handle & vh) const;
+	/// the same as is_infinite || is_auxiliary
+	bool is_special(const Vertex_handle & vh) const;
 	std::size_t degree(const Vertex_handle & vh) const;
 	bool is_valid();
 public: //helpers
@@ -360,6 +362,12 @@ bool
 TMPL_CLS::is_auxiliary(const Vertex_handle & vh) const {
 	const auto & zc = vh->point().z();
 	return zc == -1 || zc >= epsZ();
+}
+
+TMPL_HDR
+bool
+TMPL_CLS::is_special(const Vertex_handle & vh) const {
+	return is_infinite(vh) || is_auxiliary(vh);
 }
 
 TMPL_HDR
