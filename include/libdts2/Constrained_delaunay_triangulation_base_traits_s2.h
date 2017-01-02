@@ -40,6 +40,7 @@ protected: //we only want to expose typedefs that are really needed by the trian
 	using Construct_segment_3 = typename MyBaseTrait::Construct_segment_3;
 	using Intersect_3 = typename MyBaseTrait::Intersect_3;
 	using Plane_3 = typename MyBaseTrait::Plane_3;
+	using Line_3 = typename MyBaseTrait::Line_3;
 	using Ray_3 = typename MyBaseTrait::Ray_3;
 	using Vector_3 = typename MyBaseTrait::Vector_3;
 	

@@ -4,6 +4,7 @@
 
 #include <libdts2/constants.h>
 #include <libdts2/Constrained_delaunay_triangulation_base_traits_s2.h>
+#include <CGAL/intersections.h>
 
 namespace LIB_DTS2_NAMESPACE {
 
@@ -32,6 +33,7 @@ protected:
 	using Construct_segment_3 = typename MyBaseTrait::Construct_segment_3;
 	using Intersect_3 = typename MyBaseTrait::Intersect_3;
 	using Plane_3 = typename MyBaseTrait::Plane_3;
+	using Line_3 = typename MyBaseTrait::Line_3;
 	using Ray_3 = typename MyBaseTrait::Ray_3;
 	using Vector_3 = typename MyBaseTrait::Vector_3;
 public:
@@ -78,43 +80,48 @@ protected: //own implementations not support by the base traits
 		Intersect_2(const Intersect_3 & it3, const Orientation_3 & ot3) : m_it3(it3), m_ot3 (ot3) {}
 		Intersect_2(const Intersect_3 & it3, const Orientation_3 & ot3, const MyBaseClass & base) : MyBaseClass(base), m_it3(it3), m_ot3 (ot3) {}
 		CGAL::Object operator()(const Segment & a, const Segment & b) const {
+			std::cerr << "a=" << a << std::endl;
+			std::cerr << "b=" << b << std::endl;
+		
 			Plane_3 aPlane(a, Point_3(0, 0, 0) );
 			Plane_3 bPlane(b, Point_3(0, 0, 0) );
+			std::cerr << "aPlane=" << aPlane << std::endl;
+			std::cerr << "bPlane=" << aPlane << std::endl;
 			
-			auto rayObj = m_it3(aPlane, bPlane);
-			Ray_3 ray = CGAL::object_cast<Ray_3>(rayObj);
+			auto xRes = m_it3(aPlane, bPlane);
+			if (!boost::get<Line_3>(&*xRes)) {
+				throw std::runtime_error("Trying to intersect segments on the same great circle is currenty unsupported");
+			}
 			
-			MyParent::print(ray.source());
+			const Line_3 * line3 = boost::get<Line_3>(&*xRes);
+			std::cerr << "*line3=" << *line3 << std::endl;
 			
-			Vector_3 vec = ray.to_vector();
+			
+			Vector_3 vec = line3->to_vector();
+			std::cerr << "vec=" << vec << std::endl;
+			
 			
 			Point_3 p1( MyBaseClass::pointOnSphere(vec) );
 			Point_3 p2(pointReflect(p1));
 			
-			//since we're on the sphere there are two possible points on the sphere
-			//TODO: We use the one which is inside the circumcircle of the smallest of the 4 possible triangle
-			//We have to make sure that the sphere-point is on the opposite site
-			Point_3 result;
-			Point_3 tg1, tg2, tg3;
-			getSmallestTriangle(a, b, tg1, tg2, tg3);
-			Orientation ot_1 = m_ot3 (tg1, tg2, tg3, p1);
-			Orientation ot_2 = m_ot3 (tg1, tg2, tg3, p2);
-			Orientation ot_origin = m_ot3 (tg1, tg2, tg3, Point_3(0, 0, 0));
-			if (ot_origin == CGAL::POSITIVE) {
-				//origin is on the wrong side -> all ot-test flip their sign
-				ot_1 = - ot_1;
-				ot_2 = - ot_2;
-			}
-			//by definition on has to be on the one side an the other one on the other side
-			//except for degenerate cases
-			assert(ot_1 != ot_2);
+			std::cerr << "p1=" << p1 << std::endl;
+			std::cerr << "p2=" << p2 << std::endl;
 			
-			if (ot_1 == CGAL::POSITIVE) {
+			FT ds1 = minSqDist(a, b, p1);
+			FT ds2 = minSqDist(a, b, p2);
+
+			std::cerr << "ds1=" << ds1 << std::endl;
+			std::cerr << "ds2=" << ds2 << std::endl;
+
+			Point_3 result;
+			if (ds1 < ds2) {
 				result = std::move(p1);
 			}
 			else {
 				result = std::move(p2);
 			}
+			
+			std::cerr << "result=" << result << std::endl;
 			
 			CGAL::Object obj;
 			obj.assign(result);
@@ -124,6 +131,21 @@ protected: //own implementations not support by the base traits
 		Point_3 pointReflect(const Point_3 & p) const {
 			return Point_3(-p.x(), -p.y(), -p.z());
 		}
+		FT sq(const FT & ft) const {
+			return ft*ft;
+		}
+		FT sqDist(const Point_3 & a, const Point_3 & b) const {
+			return sq(a.x()-b.x()) + sq(a.y()-b.y()) + sq(a.z()-b.z());
+		}
+		FT minSqDist(const Segment & a, const Segment & b, const Point_3 & p) const {
+			auto ds1 = sqDist(a.source(), p);
+			auto ds2 = sqDist(a.target(), p);
+			auto ds3 = sqDist(b.source(), p);
+			auto ds4 = sqDist(b.target(), p);
+			using std::min;
+			return min(min(ds1, ds2), min(ds3, ds4));
+		}
+		
 		//TODO:need implementation
 		void getSmallestTriangle(const Segment & a, const Segment & b, Point_3 & tp1, Point_3 & tp2, Point_3 & tp3) const {
 			tp1 = a.source();
