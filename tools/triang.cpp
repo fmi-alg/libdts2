@@ -212,11 +212,17 @@ struct TriangulationWriter {
 	void writeSimplestGraphRenderingAndre(std::ostream & out, TRS & sdt) {
 		out.precision(20);
 
+// 		std::string node_rgb_value = "0 0 0 0";
+// 		std::string triang_edge_rgb_value = "255 255 255 100";
+// 		std::string constraint_edge_rgb_value = "255 255 255 255";
+// 		std::string intersection_edge_rgb_value = "255 0 0 255";
+// 		std::string triangle_rgb_value = "255 255 255 0";
+
 		std::string node_rgb_value = "0 0 0 0";
-		std::string triang_edge_rgb_value = "255 255 255 100";
-		std::string constraint_edge_rgb_value = "255 255 255 255";
+		std::string triang_edge_rgb_value = "0 0 0 100";
+		std::string constraint_edge_rgb_value = "0 0 0 255";
 		std::string intersection_edge_rgb_value = "255 0 0 255";
-		std::string triangle_rgb_value = "255 255 255 50";
+		std::string triangle_rgb_value = "255 255 255 0";
 		
 		CGAL::Unique_hash_map<Vertex_handle, uint32_t> vertex2Id;
 		uint32_t vertexId = 0;
