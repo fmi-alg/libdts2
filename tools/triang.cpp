@@ -19,6 +19,7 @@
 #include <libratss/ProjectSN.h>
 #include <libratss/util/BasicCmdLineOptions.h>
 #include <libratss/util/InputOutputPoints.h>
+#include <libratss/util/InputOutput.h>
 #include <libratss/Conversion.h>
 
 using K = CGAL::Exact_predicates_exact_constructions_kernel;
@@ -34,23 +35,6 @@ struct VertexInfo {
 	int id;
 };
 
-class InputOutput {
-public:
-	std::istream & input();
-	std::ostream & output();
-	std::ostream & info();
-	void setInput(const std::string & inFileName);
-	void setOutput(const std::string & outFileName);
-private:
-	std::istream * inFile = 0;
-	std::ostream * outFile = 0;
-	std::ostream * infoOut = 0;
-	
-	std::ifstream inFileHandle;
-	std::ofstream outFileHandle;
-	
-};
-
 bool is_constrained(const dts2::Delaunay_triangulation_with_info_s2<VertexInfo, void> & trs, const dts2::Delaunay_triangulation_with_info_s2<VertexInfo, void>::Edge & e) {
 	return false;
 }
@@ -59,6 +43,8 @@ template<typename T_TRS>
 bool is_constrained(const T_TRS & trs, const typename T_TRS::Edge & e) {
 	return trs.is_constrained(e);
 }
+
+using InputOutput = ratss::InputOutput;
 
 ///vertices need to have VertexInfo as info
 template<typename TRS>
@@ -578,49 +564,6 @@ void Config::print(std::ostream & out) const {
 	out << '\n';
 	ratss::BasicCmdLineOptions::options_selection(out);
 }
-
-std::ostream& InputOutput::info() {
-	return *infoOut;
-}
-
-std::istream & InputOutput::input() {
-	return *inFile;
-}
-
-std::ostream & InputOutput::output() {
-	return *outFile;
-}
-
-void InputOutput::setInput(const std::string & inFileName) {
-	assert(!inFile);
-	if (inFileName.size()) {
-		inFileHandle.open(inFileName);
-		if (!inFileHandle.is_open()) {
-			throw std::runtime_error("Could not open input file: " + inFileName);
-		}
-		inFile = &inFileHandle;
-	}
-	else {
-		inFile = &std::cin;
-	}
-}
-
-void InputOutput::setOutput(const std::string & outFileName) {
-	assert(!outFile);
-	if (outFileName.size()) {
-		outFileHandle.open(outFileName);
-		if (!outFileHandle.is_open()) {
-			throw std::runtime_error("Could not open output file: " + outFileName);
-		}
-		outFile = &outFileHandle;
-		infoOut = &std::cout;
-	}
-	else {
-		outFile = &std::cout;
-		infoOut = &std::cerr;
-	}
-}
-
 
 Data::Data() : tc(0) {}
 
