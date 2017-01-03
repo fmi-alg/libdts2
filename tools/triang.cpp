@@ -34,13 +34,41 @@ struct VertexInfo {
 	int id;
 };
 
+class InputOutput {
+public:
+	std::istream & input();
+	std::ostream & output();
+	std::ostream & info();
+	void setInput(const std::string & inFileName);
+	void setOutput(const std::string & outFileName);
+private:
+	std::istream * inFile = 0;
+	std::ostream * outFile = 0;
+	std::ostream * infoOut = 0;
+	
+	std::ifstream inFileHandle;
+	std::ofstream outFileHandle;
+	
+};
+
+bool is_constrained(const dts2::Delaunay_triangulation_with_info_s2<VertexInfo, void> & trs, const dts2::Delaunay_triangulation_with_info_s2<VertexInfo, void>::Edge & e) {
+	return false;
+}
+
+template<typename T_TRS>
+bool is_constrained(const T_TRS & trs, const typename T_TRS::Edge & e) {
+	return trs.is_constrained(e);
+}
+
 ///vertices need to have VertexInfo as info
 template<typename TRS>
 struct TriangulationWriter {
 	using Vertex_handle = typename TRS::Vertex_handle;
 	using Finite_vertices_iterator = typename TRS::Finite_vertices_iterator; 
 	using Finite_edges_iterator = typename TRS::Finite_edges_iterator;
-	using Finite_faces_iterator = typename TRS::Finite_faces_iterator; 
+	using Finite_faces_iterator = typename TRS::Finite_faces_iterator;
+	
+	using Edge = typename TRS::Edge;
 
 	using Point = typename TRS::Point;
 	using FT = typename TRS::FT;
@@ -184,10 +212,11 @@ struct TriangulationWriter {
 	void writeSimplestGraphRenderingAndre(std::ostream & out, TRS & sdt) {
 		out.precision(20);
 
-		std::string node_rgb_value = "255 0 0";
-		std::string triang_edge_rgb_value = "0 255 0";
-		std::string constraint_edge_rgb_value = "255 0 0";
-		std::string triangle_rgb_value = "100 100 100";
+		std::string node_rgb_value = "0 0 0 0";
+		std::string triang_edge_rgb_value = "255 255 255 100";
+		std::string constraint_edge_rgb_value = "255 255 255 255";
+		std::string intersection_edge_rgb_value = "255 0 0 255";
+		std::string triangle_rgb_value = "255 255 255 50";
 		
 		CGAL::Unique_hash_map<Vertex_handle, uint32_t> vertex2Id;
 		uint32_t vertexId = 0;
@@ -227,13 +256,25 @@ struct TriangulationWriter {
 		//and now the edges
 		eIt = sdt.finite_edges_begin();
 		for(; eIt != eEnd; ++eIt) {
+			const Edge & e = *eIt;
 			auto & face = *(eIt->first);
 			int index = eIt->second;
 			auto vs = face.vertex(face.cw(index));
 			auto vt = face.vertex(face.ccw(index));
 			assert(vertex2Id.is_defined(vs) && vertex2Id.is_defined(vt));
 			out << vertex2Id[vs] << ' ' << vertex2Id[vt] << ' ';
-			out << triang_edge_rgb_value << '\n';
+			if (::is_constrained(sdt, e)) {
+				if (!vs->info().valid() || !vt->info().valid()) {
+					out << intersection_edge_rgb_value;
+				}
+				else {
+					out << constraint_edge_rgb_value;
+				}
+			}
+			else {
+				out << triang_edge_rgb_value;
+			}
+			out << '\n';
 		}
 		
 		//and now the faces
@@ -265,8 +306,8 @@ public:
 	TriangulationCreator() : got(GOT_INVALID), pointFormat(ratss::OutputPoint::FM_INVALID) {}
 	virtual ~TriangulationCreator() {}
 public:
-	virtual void create(const std::vector<std::pair<Point3, VertexInfo>> & points, const std::vector<std::pair<int, int>> & edges) = 0;
-	virtual void write(std::ostream & out) = 0;
+	virtual void create(const std::vector<std::pair<Point3, VertexInfo>> & points, const std::vector<std::pair<int, int>> & edges, InputOutput & io) = 0;
+	virtual void write(InputOutput & io) = 0;
 };
 
 class TriangulationCreatorDelaunay: public TriangulationCreator {
@@ -278,13 +319,13 @@ private:
 public:
 	TriangulationCreatorDelaunay(int significands) : m_tr(significands) {}
 	
-	virtual void create(const std::vector<std::pair<Point3, VertexInfo>> & points, const std::vector<std::pair<int, int>> & edges) override {
+	virtual void create(const std::vector<std::pair<Point3, VertexInfo>> & points, const std::vector<std::pair<int, int>> & edges, InputOutput & io) override {
 		m_tr.insert(points.begin(), points.end());
 	}
 	
-	virtual void write(std::ostream & out) override {
+	virtual void write(InputOutput & io) override {
 		TriangulationWriter<Tr> writer(pointFormat, got);
-		writer.write(out, m_tr);
+		writer.write(io.output(), m_tr);
 	}
 };
 
@@ -299,7 +340,7 @@ private:
 public:
 	TriangulationCreatorConstrainedDelaunay(int significands) : m_tr(significands) {}
 	
-	virtual void create(const std::vector<std::pair<Point3, VertexInfo>> & points, const std::vector<std::pair<int, int>> & edges) override  {
+	virtual void create(const std::vector<std::pair<Point3, VertexInfo>> & points, const std::vector<std::pair<int, int>> & edges, InputOutput & io) override  {
 		m_tr.insert(points.begin(), points.end());
 		std::vector<Vertex_handle> pId2Vertex(points.size());
 		for(Finite_vertices_iterator it(m_tr.finite_vertices_begin()), end(m_tr.finite_vertices_end()); it != end; ++it) {
@@ -309,14 +350,21 @@ public:
 				vh =(Vertex_handle) it;
 			}
 		}
+		Vertex_handle nullHandle;
 		for(const std::pair<int, int> & e : edges) {
-			m_tr.insert(pId2Vertex.at(e.first), pId2Vertex.at(e.second));
+			if (e.first != e.second) {
+				const auto & p1 = pId2Vertex.at(e.first);
+				const auto & p2 = pId2Vertex.at(e.second);
+				if (p1 != p2 && p1 != nullHandle && p2 != nullHandle) {
+					m_tr.insert(p1, p2);
+				}
+			}
 		}
 	}
 	
-	virtual void write(std::ostream & out) override  {
+	virtual void write(InputOutput & io) override  {
 		TriangulationWriter<Tr> writer(pointFormat, got);
-		writer.write(out, m_tr);
+		writer.write(io.output(), m_tr);
 	}
 };
 
@@ -326,13 +374,15 @@ using TriangulationCreatorInExactIntersectionsConstrainedDelaunay = Triangulatio
 class TriangulationCreatorExactIntersectionsConstrainedDelaunay: public TriangulationCreator {
 public:
 	using Tr =  dts2::Constrained_Delaunay_triangulation_with_exact_intersections_with_info_s2<VertexInfo, void>;
+	using Vertex_handle = typename Tr::Vertex_handle;
+	using Finite_vertices_iterator = typename Tr::Finite_vertices_iterator;
 	using Point_3 = Tr::Point_3;
 private:
 	Tr m_tr;
 public:
 	TriangulationCreatorExactIntersectionsConstrainedDelaunay(int significands) : m_tr(significands) {}
 	
-	virtual void create(const std::vector<std::pair<Point3, VertexInfo>> & points, const std::vector<std::pair<int, int>> & edges) override {
+	virtual void create(const std::vector<std::pair<Point3, VertexInfo>> & points, const std::vector<std::pair<int, int>> & edges, InputOutput & io) override {
 		std::vector< std::pair<Point_3, VertexInfo> > myPoints;
 		myPoints.reserve(points.size());
 		for(const std::pair<Point3, VertexInfo> & pi : points) {
@@ -343,11 +393,28 @@ public:
 			myPoints.emplace_back(std::move(myPoint), pi.second);
 		}
 		m_tr.insert(myPoints.begin(), myPoints.end());
+		std::vector<Vertex_handle> pId2Vertex(points.size());
+		for(Finite_vertices_iterator it(m_tr.finite_vertices_begin()), end(m_tr.finite_vertices_end()); it != end; ++it) {
+			const VertexInfo & vi = it->info();
+			if (vi.valid()) {
+				Vertex_handle & vh = pId2Vertex.at(vi.id);
+				vh =(Vertex_handle) it;
+			}
+		}
+		for(const std::pair<int, int> & e : edges) {
+			if (e.first != e.second) {
+				const auto & p1 = pId2Vertex.at(e.first);
+				const auto & p2 = pId2Vertex.at(e.second);
+				if (p1 != p2) {
+					m_tr.insert(p1, p2);
+				}
+			}
+		}
 	}
 	
-	virtual void write(std::ostream & out) override {
+	virtual void write(InputOutput & io) override {
 		TriangulationWriter<Tr> writer(pointFormat, got);
-		writer.write(out, m_tr);
+		writer.write(io.output(), m_tr);
 	}
 };
 
@@ -363,23 +430,6 @@ public:
 	void print(std::ostream & out) const;
 };
 
-class InputOutput {
-public:
-	std::istream & input();
-	std::ostream & output();
-	std::ostream & info();
-	void setInput(const std::string & inFileName);
-	void setOutput(const std::string & outFileName);
-private:
-	std::istream * inFile = 0;
-	std::ostream * outFile = 0;
-	std::ostream * infoOut = 0;
-	
-	std::ifstream inFileHandle;
-	std::ofstream outFileHandle;
-	
-};
-
 struct Data {
 	Data();
 	~Data();
@@ -389,7 +439,7 @@ struct Data {
 	
 	void init(const Config& cfg);
 	void read(InputOutput& io, const Config& cfg);
-	void create();
+	void create(InputOutput& io);
 	void write(InputOutput& io, const Config& cfg);
 };
 
@@ -422,7 +472,7 @@ int main(int argc, char ** argv) {
 	data.read(io, cfg);
 	
 	io.info() << "Creating triangulation..." << std::endl;
-	data.create();
+	data.create(io);
 	
 	io.info() << "Writing triangulation..." << std::endl;
 	data.write(io, cfg);
@@ -663,8 +713,8 @@ void Data::read(InputOutput & io, const Config & cfg) {
 	}
 }
 
-void Data::create() {
-	tc->create(points, edges);
+void Data::create(InputOutput & io) {
+	tc->create(points, edges, io);
 	points.clear();
 	edges.clear();
 }
@@ -672,5 +722,5 @@ void Data::create() {
 void Data::write(InputOutput & io, const Config & cfg) {
 	tc->got = cfg.got;
 	tc->pointFormat = cfg.outFormat;
-	tc->write(io.output());
+	tc->write(io);
 }
