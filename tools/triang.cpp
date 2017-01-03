@@ -106,6 +106,7 @@ struct TriangulationWriter {
 			op.coords[2] = ratss::Conversion<FT>::toMpq( p.z() );
 			
 			op.print(out, outFormat);
+			out << '\n';
 			vertexId2OutId.at(vi.id) = counter;
 			++counter;
 		}
