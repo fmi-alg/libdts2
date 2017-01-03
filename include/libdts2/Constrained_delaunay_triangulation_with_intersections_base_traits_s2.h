@@ -80,6 +80,7 @@ protected: //own implementations not support by the base traits
 		Intersect_2(const Intersect_3 & it3, const Orientation_3 & ot3) : m_it3(it3), m_ot3 (ot3) {}
 		Intersect_2(const Intersect_3 & it3, const Orientation_3 & ot3, const MyBaseClass & base) : MyBaseClass(base), m_it3(it3), m_ot3 (ot3) {}
 		CGAL::Object operator()(const Segment & a, const Segment & b) const {
+			std::cerr << "Intersect_2 called -- BEGIN" << std::endl;
 			std::cerr << "a=" << a << std::endl;
 			std::cerr << "b=" << b << std::endl;
 		
@@ -120,11 +121,16 @@ protected: //own implementations not support by the base traits
 			else {
 				result = std::move(p2);
 			}
+			assert(result != a.source());
+			assert(result != b.source());
+			assert(result != a.target());
+			assert(result != b.target());
 			
 			std::cerr << "result=" << result << std::endl;
-			
+			std::cerr << "Intersect_2 called -- END" << std::endl;
 			CGAL::Object obj;
 			obj.assign(result);
+			
 			return obj;
 		}
 	protected:
