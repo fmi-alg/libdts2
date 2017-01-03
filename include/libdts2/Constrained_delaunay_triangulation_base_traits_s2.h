@@ -82,7 +82,9 @@ public: //own implementations
 	class Triangle_2: private Triangle_3 {
 	public:
 		Triangle_2() {}
-		Triangle_2(const Point_3 &p, const Point_3 &q, const Point_3 &r) : Triangle_3(p, q, r) {}
+		Triangle_2(const Point_3 &p, const Point_3 &q, const Point_3 &r) : Triangle_3(p, q, r) {
+			assert(false);
+		}
 		bool has_on(const Point_3 &p) const {
 			assert(false);
 			return Triangle_3::has_on(p);

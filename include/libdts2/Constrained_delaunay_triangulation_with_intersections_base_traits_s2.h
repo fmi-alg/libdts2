@@ -121,17 +121,15 @@ protected: //own implementations not support by the base traits
 			else {
 				result = std::move(p2);
 			}
-			assert(result != a.source());
-			assert(result != b.source());
-			assert(result != a.target());
-			assert(result != b.target());
+// 			assert(result != a.source() || line3->has_on(result));
+// 			assert(result != b.source() || line3->has_on(result));
+// 			assert(result != a.target() || line3->has_on(result));
+// 			assert(result != b.target() || line3->has_on(result));
 			
 			std::cerr << "result=" << result << std::endl;
 			std::cerr << "Intersect_2 called -- END" << std::endl;
-			CGAL::Object obj;
-			obj.assign(result);
 			
-			return obj;
+			return CGAL::make_object(result);
 		}
 	protected:
 		Point_3 pointReflect(const Point_3 & p) const {
