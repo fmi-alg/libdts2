@@ -42,7 +42,7 @@ set(LIBDTS2_COMPILE_DEFINITIONS
 get_directory_property(hasParent PARENT_DIRECTORY)
 if(hasParent)
 	set(LIBDTS2_INCLUDE_DIR
-		${LIBDTS2_LINK_LIBRARIES}
+		${LIBDTS2_INCLUDE_DIR}
 		PARENT_SCOPE
 	)
 	
@@ -70,7 +70,7 @@ add_library(${PROJECT_NAME} STATIC
 	${LIB_SOURCES_CPP}
 )
 
-target_compile_definitions(${PROJECT_NAME} PUBLIC ${LIBRATSS_COMPILE_DEFINITIONS})
+target_compile_definitions(${PROJECT_NAME} PUBLIC ${LIBDTS2_COMPILE_DEFINITIONS})
 add_dependencies(${PROJECT_NAME} ratss)
 
 add_subdirectory(common ${PROJECT_NAME}common EXCLUDE_FROM_ALL)
