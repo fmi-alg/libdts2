@@ -1,5 +1,5 @@
-#ifndef LIB_DTS2_CONSTRAINED_DELAUNAY_TRIANGULATION_WITH_INEXACT_INTERSECTIONS_SPHERICAL_TRAITS_S2_H
-#define LIB_DTS2_CONSTRAINED_DELAUNAY_TRIANGULATION_WITH_INEXACT_INTERSECTIONS_SPHERICAL_TRAITS_S2_H
+#ifndef LIB_DTS2_CONSTRAINED_DELAUNAY_TRIANGULATION_WITH_EXACT_INTERSECTIONS_SPHERICAL_TRAITS_S2_H
+#define LIB_DTS2_CONSTRAINED_DELAUNAY_TRIANGULATION_WITH_EXACT_INTERSECTIONS_SPHERICAL_TRAITS_S2_H
 #pragma once
 
 #include <libdts2/constants.h>
@@ -8,7 +8,7 @@
 
 namespace LIB_DTS2_NAMESPACE {
 
-class Constrained_delaunay_triangulation_with_inexact_intersections_spherical_traits_s2 {
+class Constrained_delaunay_triangulation_with_exact_intersections_spherical_traits_s2 {
 public:
 	using MyBaseTrait = CGAL::Exact_spherical_kernel_3;
 protected:
