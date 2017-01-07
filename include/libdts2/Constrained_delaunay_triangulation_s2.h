@@ -7,6 +7,7 @@
 #include <libdts2/Constrained_Triangulation_base_s2.h>
 
 //we have to include these first (due to some overloaded internal functions)
+#include <libdts2/Constrained_delaunay_triangulation_with_exact_intersections_spherical_traits_s2.h>
 #include <libdts2/Constrained_delaunay_triangulation_with_exact_intersections_traits_s2.h>
 #include <libdts2/Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2.h>
 #include <libdts2/Constrained_delaunay_triangulation_traits_s2.h>
@@ -112,6 +113,12 @@ using Constrained_Delaunay_triangulation_with_exact_intersections_s2 =
 	Constrained_delaunay_triangulation_s2<
 		Constrained_delaunay_triangulation_with_exact_intersections_traits_s2,
 		T_TDS, CGAL::Exact_intersections_tag>;
+		
+template<typename T_TDS = typename internal::ConstrainedTriangulationDataStructureSelector<Constrained_delaunay_triangulation_with_exact_intersections_spherical_traits_s2> >
+using Constrained_Delaunay_triangulation_with_exact_intersections_spherical_s2 =
+	Constrained_delaunay_triangulation_s2<
+		Constrained_delaunay_triangulation_with_exact_intersections_spherical_traits_s2,
+		T_TDS, CGAL::Exact_intersections_tag>;
 
 template<typename T_VERTEX_INFO, typename T_FACE_INFO>
 using Constrained_Delaunay_triangulation_no_intersections_with_info_s2 =
@@ -143,6 +150,18 @@ using Constrained_Delaunay_triangulation_with_exact_intersections_with_info_s2 =
 		Constrained_delaunay_triangulation_with_exact_intersections_traits_s2,
 		typename internal::ConstrainedTriangulationDataStructureSelector<
 			Constrained_delaunay_triangulation_with_exact_intersections_traits_s2,
+			T_VERTEX_INFO,
+			T_FACE_INFO
+		>::type,
+		CGAL::Exact_intersections_tag
+	>;
+	
+template<typename T_VERTEX_INFO, typename T_FACE_INFO>
+using Constrained_Delaunay_triangulation_with_exact_intersections_spherical_with_info_s2 =
+	Constrained_delaunay_triangulation_s2<
+		Constrained_delaunay_triangulation_with_exact_intersections_spherical_traits_s2,
+		typename internal::ConstrainedTriangulationDataStructureSelector<
+			Constrained_delaunay_triangulation_with_exact_intersections_spherical_traits_s2,
 			T_VERTEX_INFO,
 			T_FACE_INFO
 		>::type,
