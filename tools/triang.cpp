@@ -393,11 +393,23 @@ public:
 				vh =(Vertex_handle) it;
 			}
 		}
+		Vertex_handle nullHandle;
 		for(const std::pair<int, int> & e : edges) {
 			if (e.first != e.second) {
 				const auto & p1 = pId2Vertex.at(e.first);
 				const auto & p2 = pId2Vertex.at(e.second);
-				if (p1 != p2) {
+				if (p1 != p2 && p1 != nullHandle && p2 != nullHandle) {
+					m_tr.insert(p1, p2);
+				}
+			}
+		}
+	}
+	
+	virtual void write(InputOutput & io) override {
+		TriangulationWriter<Tr> writer(pointFormat, got);
+		writer.write(io.output(), m_tr);
+	}
+};
 					m_tr.insert(p1, p2);
 				}
 			}
