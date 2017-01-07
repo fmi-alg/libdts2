@@ -80,14 +80,14 @@ protected: //own implementations not support by the base traits
 		Intersect_2(const Intersect_3 & it3, const Orientation_3 & ot3) : m_it3(it3), m_ot3 (ot3) {}
 		Intersect_2(const Intersect_3 & it3, const Orientation_3 & ot3, const MyBaseClass & base) : MyBaseClass(base), m_it3(it3), m_ot3 (ot3) {}
 		CGAL::Object operator()(const Segment & a, const Segment & b) const {
-			std::cerr << "Intersect_2 called -- BEGIN" << std::endl;
-			std::cerr << "a=" << a << std::endl;
-			std::cerr << "b=" << b << std::endl;
+// 			std::cerr << "Intersect_2 called -- BEGIN" << std::endl;
+// 			std::cerr << "a=" << a << std::endl;
+// 			std::cerr << "b=" << b << std::endl;
 		
 			Plane_3 aPlane(a, Point_3(0, 0, 0) );
 			Plane_3 bPlane(b, Point_3(0, 0, 0) );
-			std::cerr << "aPlane=" << aPlane << std::endl;
-			std::cerr << "bPlane=" << aPlane << std::endl;
+// 			std::cerr << "aPlane=" << aPlane << std::endl;
+// 			std::cerr << "bPlane=" << aPlane << std::endl;
 			
 			auto xRes = m_it3(aPlane, bPlane);
 			if (!boost::get<Line_3>(&*xRes)) {
@@ -95,24 +95,24 @@ protected: //own implementations not support by the base traits
 			}
 			
 			const Line_3 * line3 = boost::get<Line_3>(&*xRes);
-			std::cerr << "*line3=" << *line3 << std::endl;
+// 			std::cerr << "*line3=" << *line3 << std::endl;
 			
 			
 			Vector_3 vec = line3->to_vector();
-			std::cerr << "vec=" << vec << std::endl;
+// 			std::cerr << "vec=" << vec << std::endl;
 			
 			
 			Point_3 p1( MyBaseClass::pointOnSphere(vec) );
 			Point_3 p2(pointReflect(p1));
 			
-			std::cerr << "p1=" << p1 << std::endl;
-			std::cerr << "p2=" << p2 << std::endl;
+// 			std::cerr << "p1=" << p1 << std::endl;
+// 			std::cerr << "p2=" << p2 << std::endl;
 			
 			FT ds1 = minSqDist(a, b, p1);
 			FT ds2 = minSqDist(a, b, p2);
 
-			std::cerr << "ds1=" << ds1 << std::endl;
-			std::cerr << "ds2=" << ds2 << std::endl;
+// 			std::cerr << "ds1=" << ds1 << std::endl;
+// 			std::cerr << "ds2=" << ds2 << std::endl;
 
 			Point_3 result;
 			if (ds1 < ds2) {
@@ -126,9 +126,10 @@ protected: //own implementations not support by the base traits
 // 			assert(result != a.target() || line3->has_on(result));
 // 			assert(result != b.target() || line3->has_on(result));
 			
-			std::cerr << "result=" << result << std::endl;
-			std::cerr << "Intersect_2 called -- END" << std::endl;
-			
+// 			std::cerr << "result=" << result << std::endl;
+// 			std::cerr << "Intersect_2 called -- END" << std::endl;
+			bool resultIsEndpoint = result == a.source() || result == b.source() || result == a.target() | result == b.target();
+			std::cerr << "Intersect_2(" << a << "," << b << ") -> " << result << (resultIsEndpoint ? " =" : " !=" )<< " endpoint" << std::endl;
 			return CGAL::make_object(result);
 		}
 	protected:
