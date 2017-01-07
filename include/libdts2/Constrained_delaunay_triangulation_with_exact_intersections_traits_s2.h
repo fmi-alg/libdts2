@@ -3,9 +3,10 @@
 #pragma once
 
 #include <libdts2/constants.h>
-#include <libdts2/Constrained_delaunay_triangulation_with_intersections_base_traits_s2.h>
 
 #include <CGAL/Exact_predicates_exact_constructions_kernel_with_sqrt.h>
+
+#include <libdts2/Constrained_delaunay_triangulation_with_intersections_base_traits_s2.h>
 
 namespace LIB_DTS2_NAMESPACE {
 
