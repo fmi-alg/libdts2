@@ -294,11 +294,13 @@ class TriangulationCreator {
 public:
 	GraphOutputType got;
 	ratss::OutputPoint::Format pointFormat;
+	using Points = std::vector<std::pair<Point3, VertexInfo>>;
+	using Edges = std::vector<std::pair<int, int>>;
 public:
 	TriangulationCreator() : got(GOT_INVALID), pointFormat(ratss::OutputPoint::FM_INVALID) {}
 	virtual ~TriangulationCreator() {}
 public:
-	virtual void create(const std::vector<std::pair<Point3, VertexInfo>> & points, const std::vector<std::pair<int, int>> & edges, InputOutput & io) = 0;
+	virtual void create(Points & points, Edges & edges, InputOutput & io, bool clear) = 0;
 	virtual void write(InputOutput & io) = 0;
 };
 
@@ -311,8 +313,12 @@ private:
 public:
 	TriangulationCreatorDelaunay(int significands) : m_tr(significands) {}
 	
-	virtual void create(const std::vector<std::pair<Point3, VertexInfo>> & points, const std::vector<std::pair<int, int>> & edges, InputOutput & io) override {
+	virtual void create(Points & points, Edges & edges, InputOutput & io, bool clear) override {
 		m_tr.insert(points.begin(), points.end());
+		if (clear) {
+			points = Points();
+			edges = Edges();
+		}
 	}
 	
 	virtual void write(InputOutput & io) override {
@@ -332,9 +338,14 @@ private:
 public:
 	TriangulationCreatorConstrainedDelaunay(int significands) : m_tr(significands) {}
 	
-	virtual void create(const std::vector<std::pair<Point3, VertexInfo>> & points, const std::vector<std::pair<int, int>> & edges, InputOutput & io) override  {
+	virtual void create(Points & points, Edges & edges, InputOutput & io, bool clear) override  {
+		std::size_t ps = points.size();
 		m_tr.insert(points.begin(), points.end());
-		std::vector<Vertex_handle> pId2Vertex(points.size());
+		if (clear) {
+			points = Points();
+		}
+		
+		std::vector<Vertex_handle> pId2Vertex(ps);
 		for(Finite_vertices_iterator it(m_tr.finite_vertices_begin()), end(m_tr.finite_vertices_end()); it != end; ++it) {
 			const VertexInfo & vi = it->info();
 			if (vi.valid()) {
@@ -351,6 +362,9 @@ public:
 					m_tr.insert(p1, p2);
 				}
 			}
+		}
+		if (clear) {
+			edges = Edges();
 		}
 	}
 	
@@ -374,9 +388,10 @@ private:
 public:
 	TriangulationCreatorExactIntersectionsConstrainedDelaunay(int significands) : m_tr(significands) {}
 	
-	virtual void create(const std::vector<std::pair<Point3, VertexInfo>> & points, const std::vector<std::pair<int, int>> & edges, InputOutput & io) override {
+	virtual void create(Points & points, Edges & edges, InputOutput & io, bool clear) override {
+		std::size_t ps = points.size();
 		std::vector< std::pair<Point_3, VertexInfo> > myPoints;
-		myPoints.reserve(points.size());
+		myPoints.reserve(ps);
 		for(const std::pair<Point3, VertexInfo> & pi : points) {
 			CORE::Expr x = ratss::Conversion<CORE::Expr>::moveFrom( ratss::Conversion<K::FT>::toMpq(pi.first.x()) );
 			CORE::Expr y = ratss::Conversion<CORE::Expr>::moveFrom( ratss::Conversion<K::FT>::toMpq(pi.first.y()) );
@@ -384,8 +399,13 @@ public:
 			Point_3 myPoint(x, y, z);
 			myPoints.emplace_back(std::move(myPoint), pi.second);
 		}
+		if (clear) {
+			points = Points();
+		}
 		m_tr.insert(myPoints.begin(), myPoints.end());
-		std::vector<Vertex_handle> pId2Vertex(points.size());
+		myPoints = std::vector< std::pair<Point_3, VertexInfo> >();
+		
+		std::vector<Vertex_handle> pId2Vertex(ps);
 		for(Finite_vertices_iterator it(m_tr.finite_vertices_begin()), end(m_tr.finite_vertices_end()); it != end; ++it) {
 			const VertexInfo & vi = it->info();
 			if (vi.valid()) {
@@ -402,6 +422,9 @@ public:
 					m_tr.insert(p1, p2);
 				}
 			}
+		}
+		if (clear) {
+			edges = Edges();
 		}
 	}
 	
@@ -414,7 +437,7 @@ public:
 
 class TriangulationCreatorExactIntersectionsSphericalConstrainedDelaunay: public TriangulationCreator {
 public:
-	using Tr = dts2::Constrained_Delaunay_triangulation_with_exact_intersections_with_info_s2<VertexInfo, void>;
+	using Tr = dts2::Constrained_Delaunay_triangulation_with_inexact_intersections_with_info_s2<VertexInfo, void>;
 // 	using Tr =  dts2::Constrained_Delaunay_triangulation_with_exact_intersections_spherical_with_info_s2<VertexInfo, void>;
 	using Vertex_handle = typename Tr::Vertex_handle;
 	using Finite_vertices_iterator = typename Tr::Finite_vertices_iterator;
@@ -425,18 +448,14 @@ private:
 public:
 	TriangulationCreatorExactIntersectionsSphericalConstrainedDelaunay(int significands) : m_tr(significands) {}
 	
-	virtual void create(const std::vector<std::pair<Point3, VertexInfo>> & points, const std::vector<std::pair<int, int>> & edges, InputOutput & io) override {
-		std::vector< std::pair<Point_3, VertexInfo> > myPoints;
-		myPoints.reserve(points.size());
-		for(const std::pair<Point3, VertexInfo> & pi : points) {
-			FT x = ratss::Conversion<FT>::moveFrom( ratss::Conversion<K::FT>::toMpq(pi.first.x()) );
-			FT y = ratss::Conversion<FT>::moveFrom( ratss::Conversion<K::FT>::toMpq(pi.first.y()) );
-			FT z = ratss::Conversion<FT>::moveFrom( ratss::Conversion<K::FT>::toMpq(pi.first.z()) );
-			Point_3 myPoint(x, y, z);
-			myPoints.emplace_back(std::move(myPoint), pi.second);
+	virtual void create(Points & points, Edges & edges, InputOutput & io, bool clear) override {
+		std::size_t ps = points.size();
+		m_tr.insert(points.begin(), points.end());
+		if (clear) {
+			points = Points();
 		}
-		m_tr.insert(myPoints.begin(), myPoints.end());
-		std::vector<Vertex_handle> pId2Vertex(points.size());
+		
+		std::vector<Vertex_handle> pId2Vertex(ps);
 		for(Finite_vertices_iterator it(m_tr.finite_vertices_begin()), end(m_tr.finite_vertices_end()); it != end; ++it) {
 			const VertexInfo & vi = it->info();
 			if (vi.valid()) {
@@ -453,6 +472,9 @@ public:
 					m_tr.insert(p1, p2);
 				}
 			}
+		}
+		if (clear) {
+			edges = Edges();
 		}
 	}
 	
@@ -724,7 +746,7 @@ void Data::read(InputOutput & io, const Config & cfg) {
 }
 
 void Data::create(InputOutput & io) {
-	tc->create(points, edges, io);
+	tc->create(points, edges, io, true);
 	points.clear();
 	edges.clear();
 }
