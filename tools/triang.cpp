@@ -25,7 +25,7 @@
 using K = CGAL::Exact_predicates_exact_constructions_kernel;
 using Point3 = K::Point_3;
 
-typedef enum {TT_DELAUNAY, TT_CONSTRAINED, TT_CONSTRAINED_INEXACT, TT_CONSTRAINED_EXACT} TriangulationType;
+typedef enum {TT_DELAUNAY, TT_CONSTRAINED, TT_CONSTRAINED_INEXACT, TT_CONSTRAINED_EXACT, TT_CONSTRAINED_EXACT_SPHERICAL} TriangulationType;
 typedef enum {GOT_INVALID, GOT_WITHOUT_SPECIAL, GOT_SIMPLEST_GRAPH_RENDERING, GOT_SIMPLEST_GRAPH_RENDERING_ANDRE} GraphOutputType;
 
 struct VertexInfo {
@@ -410,6 +410,46 @@ public:
 		writer.write(io.output(), m_tr);
 	}
 };
+
+
+class TriangulationCreatorExactIntersectionsSphericalConstrainedDelaunay: public TriangulationCreator {
+public:
+	using Tr = dts2::Constrained_Delaunay_triangulation_with_exact_intersections_with_info_s2<VertexInfo, void>;
+// 	using Tr =  dts2::Constrained_Delaunay_triangulation_with_exact_intersections_spherical_with_info_s2<VertexInfo, void>;
+	using Vertex_handle = typename Tr::Vertex_handle;
+	using Finite_vertices_iterator = typename Tr::Finite_vertices_iterator;
+	using Point_3 = typename Tr::Point_3;
+	using FT = typename Tr::FT;
+private:
+	Tr m_tr;
+public:
+	TriangulationCreatorExactIntersectionsSphericalConstrainedDelaunay(int significands) : m_tr(significands) {}
+	
+	virtual void create(const std::vector<std::pair<Point3, VertexInfo>> & points, const std::vector<std::pair<int, int>> & edges, InputOutput & io) override {
+		std::vector< std::pair<Point_3, VertexInfo> > myPoints;
+		myPoints.reserve(points.size());
+		for(const std::pair<Point3, VertexInfo> & pi : points) {
+			FT x = ratss::Conversion<FT>::moveFrom( ratss::Conversion<K::FT>::toMpq(pi.first.x()) );
+			FT y = ratss::Conversion<FT>::moveFrom( ratss::Conversion<K::FT>::toMpq(pi.first.y()) );
+			FT z = ratss::Conversion<FT>::moveFrom( ratss::Conversion<K::FT>::toMpq(pi.first.z()) );
+			Point_3 myPoint(x, y, z);
+			myPoints.emplace_back(std::move(myPoint), pi.second);
+		}
+		m_tr.insert(myPoints.begin(), myPoints.end());
+		std::vector<Vertex_handle> pId2Vertex(points.size());
+		for(Finite_vertices_iterator it(m_tr.finite_vertices_begin()), end(m_tr.finite_vertices_end()); it != end; ++it) {
+			const VertexInfo & vi = it->info();
+			if (vi.valid()) {
+				Vertex_handle & vh = pId2Vertex.at(vi.id);
+				vh =(Vertex_handle) it;
+			}
+		}
+		Vertex_handle nullHandle;
+		for(const std::pair<int, int> & e : edges) {
+			if (e.first != e.second) {
+				const auto & p1 = pId2Vertex.at(e.first);
+				const auto & p2 = pId2Vertex.at(e.second);
+				if (p1 != p2 && p1 != nullHandle && p2 != nullHandle) {
 					m_tr.insert(p1, p2);
 				}
 			}
@@ -503,6 +543,9 @@ bool Config::parse(const std::string & token,int & i, int argc, char ** argv) {
 		else if (type == "cxe" || type == "constrained-intersection-exact") {
 			triangType = TT_CONSTRAINED_EXACT;
 		}
+		else if (type == "cxs" || type == "constrained-intersection-exact-spherical") {
+			triangType = TT_CONSTRAINED_EXACT_SPHERICAL;
+		}
 		else {
 			throw ratss::BasicCmdLineOptions::ParseError("Unknown triangulation type: " + type);
 		}
@@ -532,7 +575,7 @@ bool Config::parse(const std::string & token,int & i, int argc, char ** argv) {
 
 void Config::help(std::ostream & out) const {
 	out << "triang OPTIONS:\n"
-		"\t-t type\ttype = [d,delaunay, c,constrained,cx,constrained-intersection,cxe,constrained-intesection-exact]\n"
+		"\t-t type\ttype = [d,delaunay, c,constrained,cx,constrained-intersection,cxe,constrained-intesection-exact, cxs, constrained-intersection-exact-spherical]\n"
 		"\t-g type\ttype = [wx, witout_special, simplest, simplest_andre]\n";
 	ratss::BasicCmdLineOptions::options_help(out);
 	out << std::endl;
@@ -552,6 +595,9 @@ void Config::print(std::ostream & out) const {
 		break;
 	case TT_CONSTRAINED_EXACT:
 		out << "constrained exact intersections";
+		break;
+	case TT_CONSTRAINED_EXACT_SPHERICAL:
+		out << "constrained exact intersection using spherical kernel";
 		break;
 	default:
 		out << "invalid";
@@ -601,6 +647,9 @@ void Data::init(const Config & cfg) {
 		break;
 	case TT_CONSTRAINED_EXACT:
 		tc = new TriangulationCreatorExactIntersectionsConstrainedDelaunay(cfg.significands);
+		break;
+	case TT_CONSTRAINED_EXACT_SPHERICAL:
+		tc = new TriangulationCreatorExactIntersectionsSphericalConstrainedDelaunay(cfg.significands);
 		break;
 	default:
 		throw std::runtime_error("Unkown triangulation type");
