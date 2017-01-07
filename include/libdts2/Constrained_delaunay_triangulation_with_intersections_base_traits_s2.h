@@ -76,6 +76,7 @@ protected: //own implementations not support by the base traits
 	private:
 		using MyBaseClass = T_BASE;
 		using MyParent = Constrained_delaunay_triangulation_with_intersections_base_traits_s2<T_KERNEL>;
+		using Conversion = LIB_RATSS_NAMESPACE::Conversion<FT>;
 	public:
 		Intersect_2(const Intersect_3 & it3, const Orientation_3 & ot3) : m_it3(it3), m_ot3 (ot3) {}
 		Intersect_2(const Intersect_3 & it3, const Orientation_3 & ot3, const MyBaseClass & base) : MyBaseClass(base), m_it3(it3), m_ot3 (ot3) {}
@@ -129,7 +130,12 @@ protected: //own implementations not support by the base traits
 // 			std::cerr << "result=" << result << std::endl;
 // 			std::cerr << "Intersect_2 called -- END" << std::endl;
 			bool resultIsEndpoint = result == a.source() || result == b.source() || result == a.target() | result == b.target();
-			std::cerr << "Intersect_2(" << a << "," << b << ") -> " << result << (resultIsEndpoint ? " =" : " !=" )<< " endpoint" << std::endl;
+			if (resultIsEndpoint) {
+				std::cerr << "Intersect_2(" << a << "," << b << ") -> "
+					<< Conversion::toMpq(result.x()) << ' '
+					<< Conversion::toMpq(result.y()) << ' '
+					<< Conversion::toMpq(result.z()) << std::endl;
+			}
 			return CGAL::make_object(result);
 		}
 	protected:
