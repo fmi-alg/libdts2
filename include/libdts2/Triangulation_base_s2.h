@@ -614,9 +614,9 @@ TMPL_CLS::addAuxiliaryPoints() {
 	
 	//start value for generateAuxPoint
 	FT epsilon(LIB_RATSS_NAMESPACE::Conversion<FT>::moveFrom(mpq_class(1, std::numeric_limits<uint16_t>::max())));
-	auto p_1 = generateAuxPoint(epsilon, 0);
-	auto p_2 = generateAuxPoint(-epsilon, epsilon);
-	auto p_3 = generateAuxPoint(-epsilon, -epsilon);
+	auto p_1 = generateAuxPoint(0, epsilon);
+	auto p_2 = generateAuxPoint(-epsilon, -epsilon/2);
+	auto p_3 = generateAuxPoint(epsilon, -epsilon/2);
 	
 	if (p_1.z() < epsZ() || p_1.z() >= 1) {
 		throw std::runtime_error("Construction auf auxiliary points failed. z-value=" + std::to_string(Geom_traits::doubleValue(p_1.z())));
