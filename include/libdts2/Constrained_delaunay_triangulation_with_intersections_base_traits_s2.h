@@ -130,12 +130,17 @@ protected: //own implementations not support by the base traits
 // 			std::cerr << "result=" << result << std::endl;
 // 			std::cerr << "Intersect_2 called -- END" << std::endl;
 			bool resultIsEndpoint = result == a.source() || result == b.source() || result == a.target() | result == b.target();
-			if (resultIsEndpoint) {
-				std::cerr << "Intersect_2(" << a << "," << b << ") -> "
-					<< Conversion::toMpq(result.x()) << ' '
-					<< Conversion::toMpq(result.y()) << ' '
-					<< Conversion::toMpq(result.z()) << std::endl;
-			}
+			std::cerr << "Intersect_2([";
+			MyBaseTrait::print(std::cerr, a.source());
+			std::cerr << ";";
+			MyBaseTrait::print(std::cerr, a.target());
+			std::cerr << "],[";
+			MyBaseTrait::print(std::cerr, b.source());
+			std::cerr << ";";
+			MyBaseTrait::print(std::cerr, b.target());
+			std::cerr  << "]) -> ";
+			MyBaseTrait::print(std::cerr, result);
+			std::cerr << std::endl;
 			return CGAL::make_object(result);
 		}
 	protected:

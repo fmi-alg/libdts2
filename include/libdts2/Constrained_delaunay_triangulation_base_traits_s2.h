@@ -221,6 +221,10 @@ protected:
 		<< doubleValue(p3.y()) << ','
 		<< doubleValue(p3.z()) << ')' << '\n';
 	}
+	static inline void print(std::ostream & out, const Point_3 & p) {
+		using Conversion = LIB_RATSS_NAMESPACE::Conversion<FT>;
+		out << '(' << Conversion::toMpq(p.x()) << ", " << Conversion::toMpq(p.y()) << ", " << Conversion::toMpq(p.z()) << ')';
+	}
 public:
 	const FT & epsilon() const;
 public:
