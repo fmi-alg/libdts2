@@ -331,6 +331,8 @@ template< template<typename, typename> class T_TRS>
 class TriangulationCreatorConstrainedDelaunay: public TriangulationCreator {
 public:
 	using Tr =  T_TRS<VertexInfo, void>;
+	using FT = typename Tr::FT;
+	using Point = typename Tr::Point;
 	using Vertex_handle = typename Tr::Vertex_handle;
 	using Finite_vertices_iterator = typename Tr::Finite_vertices_iterator;
 private:
@@ -354,12 +356,24 @@ public:
 			}
 		}
 		Vertex_handle nullHandle;
+		auto csd2 = [](const Point & a, const Point & b) -> FT {
+			auto x = a.x() - b.x();
+			auto y = a.y() - b.y();
+			auto z = a.z() - b.z();
+			return x*x + y*y + z*z;
+		};
+		FT maxLen(0.5);
 		for(const std::pair<int, int> & e : edges) {
 			if (e.first != e.second) {
-				const auto & p1 = pId2Vertex.at(e.first);
-				const auto & p2 = pId2Vertex.at(e.second);
-				if (p1 != p2 && p1 != nullHandle && p2 != nullHandle) {
-					m_tr.insert(p1, p2);
+				const auto & v1 = pId2Vertex.at(e.first);
+				const auto & v2 = pId2Vertex.at(e.second);
+				if (v1 != v2 && v1 != nullHandle && v2 != nullHandle) {
+					if (csd2(v1->point(), v2->point()) < maxLen) {
+						m_tr.insert(v1, v2);
+					}
+					else {
+						std::cerr << "Removed long edge" << std::endl;
+					}
 				}
 			}
 		}
