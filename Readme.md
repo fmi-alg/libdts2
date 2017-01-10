@@ -68,8 +68,8 @@ auto vh1 = tr.insert(ratss::GeoCoord(48.0, 8.0));
 auto vh2 = tr.insert(ratss::GeoCoord(49.0, 9.0));
 auto vh3 = tr.insert(ratss::GeoCoord(48.0, 9.0));
 auto vh4 = tr.insert(ratss::GeoCoord(49.0, 8.0));
-tr.insert_constraint(vh1, vh2);
-tr.insert_constrained(vh3, vh4);
+tr.insert(vh1, vh2);
+tr.insert(vh3, vh4);
 ```
 
 # License
