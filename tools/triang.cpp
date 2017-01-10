@@ -622,6 +622,15 @@ void Config::help(std::ostream & out) const {
 		"\t-t type\ttype = [d,delaunay, c,constrained,cx,constrained-intersection,cxe,constrained-intesection-exact, cxs, constrained-intersection-exact-spherical]\n"
 		"\t-g type\ttype = [wx, witout_special, simplest, simplest_andre]\n";
 	ratss::BasicCmdLineOptions::options_help(out);
+	out << '\n';
+	out << "The input format is as follows:\n"
+		"number of nodes\n"
+		"number of edges\n"
+		"nodes - one node per line\n"
+		"edges - one edge per line\n"
+		"A node is any coordinate type supported by the -if switch\n"
+		"The i-th node gets the id i. There shall not be multiple nodes with the same coordinates.\n"
+		"An edge has the format: source-node-id target-node-id\n";
 	out << std::endl;
 }
 
