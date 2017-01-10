@@ -65,10 +65,11 @@ public:
 	Triangulation_base_s2(const Triangulation_base_s2& other) = delete;
 	Triangulation_base_s2 & operator=(Triangulation_base_s2 && other);
 public: //insertion
-	void insert(double lat, double lon);
-	void insert(const std::pair<double, double> & latLon);
-	void insert(const SphericalCoord & latLon);
-	void insert(const GeoCoord & latLon);
+	Vertex_handle insert(const Point & p);
+	Vertex_handle insert(double lat, double lon);
+	Vertex_handle insert(const std::pair<double, double> & p);
+	Vertex_handle insert(const SphericalCoord & p);
+	Vertex_handle insert(const GeoCoord & p);
 
 	template<typename T_ITERATOR>
 	void insert(T_ITERATOR begin, T_ITERATOR end) { insert(begin, end, true); }
@@ -240,28 +241,40 @@ TMPL_CLS::operator=(TMPL_CLS && other) {
 //END constructors
 
 //BEGIN insertion operations
+
 TMPL_HDR
-void 
+typename TMPL_CLS::Vertex_handle
+TMPL_CLS::insert(const Point & p) {
+	if (p.x() * p.x() + p.y()*p.y() + p.z() * p.z() == 1) {
+		return m_cdts.insert(p);
+	}
+	else {
+		m_cdts.insert(project(p));
+	}
+}
+
+TMPL_HDR
+typename TMPL_CLS::Vertex_handle 
 TMPL_CLS::insert(double lat, double lon) {
-	insert(std::pair<double, double>(lat, lon));
+	return insert(GeoCoord(lat, lon));
 }
 
 TMPL_HDR
-void 
+typename TMPL_CLS::Vertex_handle 
 TMPL_CLS::insert(const std::pair<double, double> & latLon) {
-	insert(&latLon, (&latLon)+1);
+	insert(GeoCoord(latLon.first, latLon.second));
 }
 
 TMPL_HDR
-void 
-TMPL_CLS::insert(const SphericalCoord & latLon) {
-	insert(&latLon, (&latLon)+1);
+typename TMPL_CLS::Vertex_handle 
+TMPL_CLS::insert(const SphericalCoord & p) {
+	m_cdts.insert(project(p));
 }
 
 TMPL_HDR
-void 
-TMPL_CLS::insert(const GeoCoord & latLon) {
-	insert(&latLon, (&latLon)+1);
+typename TMPL_CLS::Vertex_handle 
+TMPL_CLS::insert(const GeoCoord & p) {
+	m_cdts.insert(project(p));
 }
 
 TMPL_HDR
