@@ -6,7 +6,7 @@
   * points
   * constraints
   *
-  * Points may be encoded in any format accepted my ratss::InputPoint
+  * Points may be encoded in any format accepted my ratss::FloatPoint
   * Constraints reference points: id1 id2
   * 
   */
@@ -59,10 +59,10 @@ struct TriangulationWriter {
 	using Point = typename TRS::Point;
 	using FT = typename TRS::FT;
 	
-	ratss::OutputPoint::Format outFormat;
+	ratss::RationalPoint::Format outFormat;
 	GraphOutputType got;
 	
-	TriangulationWriter(ratss::OutputPoint::Format outFormat, GraphOutputType got) : outFormat(outFormat), got(got) {}
+	TriangulationWriter(ratss::RationalPoint::Format outFormat, GraphOutputType got) : outFormat(outFormat), got(got) {}
 	
 	void write(std::ostream & out, TRS & trs) {
 		switch (got) {
@@ -105,7 +105,7 @@ struct TriangulationWriter {
 		out << vertexCount << '\n';
 		out << edgeCount << '\n';
 		
-		ratss::OutputPoint op(3);
+		ratss::RationalPoint op(3);
 		std::vector<int> vertexId2OutId(maxVertexId+1);
 		std::size_t counter = 0;
 		for(Finite_vertices_iterator it(trs.finite_vertices_begin()), end(trs.finite_vertices_end()); it != end; ++it) {
@@ -205,7 +205,7 @@ struct TriangulationWriter {
 // 		std::string triangle_rgb_value = "255 255 255 0";
 
 		std::string node_rgb_value = "0 0 0 0";
-		std::string triang_edge_rgb_value = "0 0 0 100";
+		std::string triang_edge_rgb_value = "120 120 0 255";
 		std::string constraint_edge_rgb_value = "0 0 0 255";
 		std::string intersection_edge_rgb_value = "255 0 0 255";
 		std::string triangle_rgb_value = "255 255 255 0";
@@ -293,11 +293,11 @@ struct TriangulationWriter {
 class TriangulationCreator {
 public:
 	GraphOutputType got;
-	ratss::OutputPoint::Format pointFormat;
+	ratss::RationalPoint::Format pointFormat;
 	using Points = std::vector<std::pair<Point3, VertexInfo>>;
 	using Edges = std::vector<std::pair<int, int>>;
 public:
-	TriangulationCreator() : got(GOT_INVALID), pointFormat(ratss::OutputPoint::FM_INVALID) {}
+	TriangulationCreator() : got(GOT_INVALID), pointFormat(ratss::RationalPoint::FM_INVALID) {}
 	virtual ~TriangulationCreator() {}
 public:
 	virtual void create(Points & points, Edges & edges, InputOutput & io, bool clear) = 0;
@@ -703,8 +703,8 @@ void Data::read(InputOutput & io, const Config & cfg) {
 	points.reserve(num_points);
 	edges.reserve(num_edges);
 	
-	ratss::InputPoint ip;
-	ratss::OutputPoint op;
+	ratss::FloatPoint ip;
+	ratss::RationalPoint op;
 	ratss::ProjectSN proj;
 	
 	if (cfg.progress) {
@@ -716,15 +716,27 @@ void Data::read(InputOutput & io, const Config & cfg) {
 			is.get();
 			continue;
 		}
-		ip.assign(is, cfg.inFormat, cfg.precision);
-		if (cfg.normalize) {
-			ip.normalize();
-		}
-		ip.setPrecision(cfg.precision);
-		op.clear();
-		op.resize(ip.coords.size());
-		proj.snap(ip.coords.begin(), ip.coords.end(), op.coords.begin(), cfg.snapType, cfg.significands);
 		
+		bool opFromIp = !cfg.rationalPassThrough;
+		if (cfg.rationalPassThrough) {
+			op.assign(is, cfg.inFormat, cfg.precision);
+			if (!op.valid()) {
+				ip.assign(op.coords.begin(), op.coords.end(), cfg.precision);
+				opFromIp = true;
+			}
+		}
+		else {
+			ip.assign(is, cfg.inFormat, cfg.precision);
+		}
+		if (opFromIp) {
+			if (cfg.normalize) {
+				ip.normalize();
+			}
+			ip.setPrecision(cfg.precision);
+			op.clear();
+			op.resize(ip.coords.size());
+			proj.snap(ip.coords.begin(), ip.coords.end(), op.coords.begin(), cfg.snapType, cfg.significands);
+		}
 		K::FT x = ratss::Conversion<K::FT>::moveFrom(op.coords.at(0));
 		K::FT y = ratss::Conversion<K::FT>::moveFrom(op.coords.at(1));
 		K::FT z = ratss::Conversion<K::FT>::moveFrom(op.coords.at(2));
