@@ -54,10 +54,10 @@ Currently input points can be any of:
 #### A small example
 
 ```C++
-This file has predefined typedefs for various triangulations.
+//This file has predefined typedefs for various triangulations.
 #include <libdts/Constrained_delaunay_triangulation_s2.h>
 
-The following triangulation supports in-exact intersections and can store information in its vertices and faces:
+//The following triangulation supports in-exact intersections and can store information in its vertices and faces:
 
 template<typename VertexInfo = void, typename FaceInfo = void>
 using MyTriangulation = Constrained_Delaunay_triangulation_with_inexact_intersections_with_info_s2<VertexInfo, FaceInfo>;
