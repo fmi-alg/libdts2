@@ -29,12 +29,14 @@ Usually a computation precision of 53 is more than enough to represent points on
 
 #### Getting sample graphs
 There is a tool to create sample graphs out of OpenStreetMap data:
+
 1. Download and build https://github.com/dbahrdt/OsmGraphCreator.git
 2. Create graph of the type topotext and add the --no-reverse-edge switch
 3. For triang select geo as an input type: -if geo
 
 #### Visualizing graphs
 There is a tool to visualize graphs create by the triang tool:
+
 1. Download and build the dev-branch of https://github.com/invor/simplestGraphRendering
 2. create an output of type -g simplest_andre
 3. Start simplestGraphRendering with the options -f sg
