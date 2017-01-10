@@ -21,6 +21,7 @@
 #include <libratss/util/InputOutputPoints.h>
 #include <libratss/util/InputOutput.h>
 #include <libratss/Conversion.h>
+#include <libratss/debug.h>
 
 using K = CGAL::Exact_predicates_exact_constructions_kernel;
 using Point3 = K::Point_3;
@@ -355,15 +356,23 @@ public:
 				vh =(Vertex_handle) it;
 			}
 		}
+		insert_constraints(pId2Vertex, edges, io);
+		if (clear) {
+			edges = Edges();
+		}
+	}
+	FT csd2 (const Point & a, const Point & b) {
+		auto x = a.x() - b.x();
+		auto y = a.y() - b.y();
+		auto z = a.z() - b.z();
+		return x*x + y*y + z*z;
+	}
+	
+	NO_OPTIMIZE void insert_constraints(std::vector<Vertex_handle> & pId2Vertex, Edges & edges, InputOutput & io) {
 		Vertex_handle nullHandle;
-		auto csd2 = [](const Point & a, const Point & b) -> FT {
-			auto x = a.x() - b.x();
-			auto y = a.y() - b.y();
-			auto z = a.z() - b.z();
-			return x*x + y*y + z*z;
-		};
 		FT maxLen(0.5);
-		for(const std::pair<int, int> & e : edges) {
+		for(std::size_t i(0), s(edges.size()); i < s; ++i) {
+			const std::pair<int, int> & e = edges[i];
 			if (e.first != e.second) {
 				const auto & v1 = pId2Vertex.at(e.first);
 				const auto & v2 = pId2Vertex.at(e.second);
@@ -376,9 +385,6 @@ public:
 					}
 				}
 			}
-		}
-		if (clear) {
-			edges = Edges();
 		}
 	}
 	
