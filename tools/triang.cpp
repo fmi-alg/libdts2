@@ -301,6 +301,7 @@ public:
 	TriangulationCreator() : got(GOT_INVALID), pointFormat(ratss::RationalPoint::FM_INVALID) {}
 	virtual ~TriangulationCreator() {}
 public:
+	///@param points need to be exactly on the sphere
 	virtual void create(Points & points, Edges & edges, InputOutput & io, bool clear) = 0;
 	virtual void write(InputOutput & io) = 0;
 };
@@ -315,7 +316,7 @@ public:
 	TriangulationCreatorDelaunay(int significands) : m_tr(significands) {}
 	
 	virtual void create(Points & points, Edges & edges, InputOutput & io, bool clear) override {
-		m_tr.insert(points.begin(), points.end());
+		m_tr.insert(points.begin(), points.end(), false);
 		if (clear) {
 			points = Points();
 			edges = Edges();
@@ -343,7 +344,7 @@ public:
 	
 	virtual void create(Points & points, Edges & edges, InputOutput & io, bool clear) override  {
 		std::size_t ps = points.size();
-		m_tr.insert(points.begin(), points.end());
+		m_tr.insert(points.begin(), points.end(), false);
 		if (clear) {
 			points = Points();
 		}
@@ -417,12 +418,13 @@ public:
 			CORE::Expr y = ratss::Conversion<CORE::Expr>::moveFrom( ratss::Conversion<K::FT>::toMpq(pi.first.y()) );
 			CORE::Expr z = ratss::Conversion<CORE::Expr>::moveFrom( ratss::Conversion<K::FT>::toMpq(pi.first.z()) );
 			Point_3 myPoint(x, y, z);
+			assert(x*x + y*y + z*z == 1);
 			myPoints.emplace_back(std::move(myPoint), pi.second);
 		}
 		if (clear) {
 			points = Points();
 		}
-		m_tr.insert(myPoints.begin(), myPoints.end());
+		m_tr.insert(myPoints.begin(), myPoints.end(), false);
 		myPoints = std::vector< std::pair<Point_3, VertexInfo> >();
 		
 		std::vector<Vertex_handle> pId2Vertex(ps);
@@ -743,6 +745,7 @@ void Data::read(InputOutput & io, const Config & cfg) {
 			op.resize(ip.coords.size());
 			proj.snap(ip.coords.begin(), ip.coords.end(), op.coords.begin(), cfg.snapType, cfg.significands);
 		}
+		assert(op.valid());
 		K::FT x = ratss::Conversion<K::FT>::moveFrom(op.coords.at(0));
 		K::FT y = ratss::Conversion<K::FT>::moveFrom(op.coords.at(1));
 		K::FT z = ratss::Conversion<K::FT>::moveFrom(op.coords.at(2));
