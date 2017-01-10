@@ -96,6 +96,8 @@ public: //info
 	bool is_constrained(const Edge & e) const;
 };
 
+///The following typedefs may be of interest for users
+
 template<typename T_TDS = typename internal::ConstrainedTriangulationDataStructureSelector<Constrained_delaunay_triangulation_traits_s2> >
 using Constrained_Delaunay_triangulation_no_intersections_s2 =
 	Constrained_delaunay_triangulation_s2<
