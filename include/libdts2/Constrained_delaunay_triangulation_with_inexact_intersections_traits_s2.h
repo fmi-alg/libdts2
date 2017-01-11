@@ -96,14 +96,21 @@ public:
 				return v;
 			}
 			mpq_class sqLenQ( Conversion<FT>::toMpq(sqLen) );
-			std::size_t sqLenPrec = projector().calc().maxBitCount(sqLenQ);
-			mpfr::mpreal sqLenF(Conversion<mpq_class>::toMpreal(sqLenQ, sqLenPrec));
+			int calcPrec = std::max<std::size_t>(projector().calc().maxBitCount(sqLenQ), precision()*2);
+			
+			mpfr::mpreal sqLenF(Conversion<mpq_class>::toMpreal(sqLenQ, calcPrec));
 			mpfr::mpreal lenF = projector().calc().sqrt(sqLenF);
-			mpfr::mpreal xf(Conversion<FT>::toMpreal(v.x(), sqLenPrec));
-			mpfr::mpreal yf(Conversion<FT>::toMpreal(v.y(), sqLenPrec));
-			mpfr::mpreal zf(Conversion<FT>::toMpreal(v.z(), sqLenPrec));
+			
+			mpfr::mpreal xf(Conversion<FT>::toMpreal(v.x(), calcPrec));
+			mpfr::mpreal yf(Conversion<FT>::toMpreal(v.y(), calcPrec));
+			mpfr::mpreal zf(Conversion<FT>::toMpreal(v.z(), calcPrec));
+			
+			xf /= lenF;
+			yf /= lenF;
+			zf /= lenF;
+			
 			mpq_class xq, yq, zq;
-			projector().snap(xf, yf, zf, xq, yq, zq, precision());
+			projector().snap(xf, yf, zf, xq, yq, zq, precision(), Projector::ST_FX | Projector::ST_PLANE);
 			return Point_3( Conversion<FT>::moveFrom(xq),
 							Conversion<FT>::moveFrom(yq),
 							Conversion<FT>::moveFrom(zq)
