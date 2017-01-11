@@ -77,4 +77,4 @@ tr.insert(vh3, vh4);
 
 # License
 libdts2 is licensed under LGPL v2.1
-Since libdts2 links with mpfr, gmp and cgal the resulting binaries are usually governed by the GPL v2
+Since libdts2 links with mpfr, mpfr C++, gmp, gmpxx and cgal the resulting binaries are usually governed by the GPL v3
