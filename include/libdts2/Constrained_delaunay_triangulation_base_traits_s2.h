@@ -39,6 +39,7 @@ protected: //we only want to expose typedefs that are really needed by the trian
 	//stuff for intersection support
 	using Construct_segment_3 = typename MyBaseTrait::Construct_segment_3;
 	using Intersect_3 = typename MyBaseTrait::Intersect_3;
+	using Do_intersect_3 = typename MyBaseTrait::Do_intersect_3;
 	using Plane_3 = typename MyBaseTrait::Plane_3;
 	using Line_3 = typename MyBaseTrait::Line_3;
 	using Ray_3 = typename MyBaseTrait::Ray_3;
@@ -214,6 +215,10 @@ protected:
 	
 	Intersect_3 intersect_3_object() const {
 		return baseTraits().intersect_3_object();
+	}
+	
+	Do_intersect_3 do_intersect_3_object() const {
+		return baseTraits().do_intersect_3_object();
 	}
 protected:
 	static inline void print(const Point_3 & p3) {

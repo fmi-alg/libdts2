@@ -145,7 +145,7 @@ public:
 	~Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2() {}
 public: //predicate creation Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2
 	inline Intersect_2 intersect_2_object() const {
-		return Intersect_2(MyBaseTrait::intersect_3_object(), MyBaseTrait::orientation_3_object(), intersect_base_2_object());
+		return Intersect_2(MyBaseTrait::do_intersect_3_object(), MyBaseTrait::intersect_3_object(), MyBaseTrait::orientation_3_object(), intersect_base_2_object());
 	}
 	
 	inline Construct_line_2 construct_line_2_object() const {

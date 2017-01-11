@@ -32,6 +32,7 @@ protected:
 	//stuff for intersection support
 	using Construct_segment_3 = typename MyBaseTrait::Construct_segment_3;
 	using Intersect_3 = typename MyBaseTrait::Intersect_3;
+	using Do_intersect_3 = typename MyBaseTrait::Do_intersect_3;
 	using Plane_3 = typename MyBaseTrait::Plane_3;
 	using Line_3 = typename MyBaseTrait::Line_3;
 	using Ray_3 = typename MyBaseTrait::Ray_3;
@@ -78,8 +79,12 @@ protected: //own implementations not support by the base traits
 		using MyParent = Constrained_delaunay_triangulation_with_intersections_base_traits_s2<T_KERNEL>;
 		using Conversion = LIB_RATSS_NAMESPACE::Conversion<FT>;
 	public:
-		Intersect_2(const Intersect_3 & it3, const Orientation_3 & ot3) : m_it3(it3), m_ot3 (ot3) {}
-		Intersect_2(const Intersect_3 & it3, const Orientation_3 & ot3, const MyBaseClass & base) : MyBaseClass(base), m_it3(it3), m_ot3 (ot3) {}
+		Intersect_2(const Do_intersect_3 & dit3, const Intersect_3 & it3, const Orientation_3 & ot3) :
+		m_dit3(dit3), m_it3(it3), m_ot3 (ot3)
+		{}
+		Intersect_2(const Do_intersect_3 & dit3, const Intersect_3 & it3, const Orientation_3 & ot3, const MyBaseClass & base) :
+		MyBaseClass(base), m_dit3(dit3), m_it3(it3), m_ot3 (ot3)
+		{}
 		CGAL::Object operator()(const Segment & a, const Segment & b) const {
 // 			std::cerr << "Intersect_2 called -- BEGIN" << std::endl;
 // 			std::cerr << "a=" << a << std::endl;
@@ -96,6 +101,15 @@ protected: //own implementations not support by the base traits
 			}
 			
 			const Line_3 * line3 = boost::get<Line_3>(&*xRes);
+			
+			//we need to check if the line passes through the segment a and b
+			//This has to be done since the line3 represents the intersection points of the two great circles induces by segments a and b
+			//Their intersection is not necessarily an intersection of the segments.
+			if (!m_dit3(*line3, a) || !m_dit3(*line3, b)) {
+				assert(false);
+				return CGAL::Object();
+			}
+			
 // 			std::cerr << "*line3=" << *line3 << std::endl;
 			
 			
@@ -169,6 +183,7 @@ protected: //own implementations not support by the base traits
 			tp3 = b.source();
 		}
 	private:
+		Do_intersect_3 m_dit3;
 		Intersect_3 m_it3;
 		Orientation_3 m_ot3;
 	};

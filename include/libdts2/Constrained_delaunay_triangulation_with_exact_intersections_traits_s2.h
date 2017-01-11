@@ -127,7 +127,7 @@ public:
 	~Constrained_delaunay_triangulation_with_exact_intersections_traits_s2() {}
 public: //predicate creation functions
 	inline Intersect_2 intersect_2_object() const {
-		return Intersect_2(MyBaseTrait::intersect_3_object(), MyBaseTrait::orientation_3_object());
+		return Intersect_2(MyBaseTrait::do_intersect_3_object(), MyBaseTrait::intersect_3_object(), MyBaseTrait::orientation_3_object());
 	}
 	
 	inline Project_on_sphere project_on_sphere_object() const {
