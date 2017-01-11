@@ -18,6 +18,7 @@ Usually a computation precision of 53 is more than enough to represent points on
 ## Dependecies
 * CGAL
 * gmpxx
+* mpfr
 
 ## Quickstart guide
 ### Building a triangulation
@@ -44,7 +45,7 @@ There is a tool to visualize graphs create by the triang tool:
 ### Use the library
 1. add the repository to your project, make sure to checkout the subprojects of libdts2
 2. make sure to add the appropriate compile definitions to your project. If you're using CMake and you're adding libdts2 as a subdirectory then these are exported. See the CMakeLists.txt for a list of exported variables.
-3. add <libdts/Constrained_delaunay_triangulation_s2.h> as include
+3. add <libdts2/Constrained_delaunay_triangulation_s2.h> as include
 4. select an appropriate triangulation class, see below for a small example
 
 #### Input formats
