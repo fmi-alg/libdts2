@@ -692,7 +692,7 @@ TMPL_CLS::selfCheck() {
 		assert(ot2(q3, r3, s3_in) == CGAL::LEFT_TURN);
 		assert(ot2(r3, p3, s3_in) == CGAL::LEFT_TURN);
 		
-		std::cout << geom_traits().doubleValue(p3.z()) << " " << geom_traits().doubleValue(q3.z()) << " " << geom_traits().doubleValue(r3.z()) << std::endl;
+// 		std::cout << geom_traits().doubleValue(p3.z()) << " " << geom_traits().doubleValue(q3.z()) << " " << geom_traits().doubleValue(r3.z()) << std::endl;
 		
 		assert(ot2(p3, q3, s3_out) == CGAL::RIGHT_TURN);
 		assert(ot2(q3, r3, s3_out) == CGAL::LEFT_TURN);
