@@ -373,7 +373,7 @@ public:
 		Vertex_handle nullHandle;
 		FT maxLen(0.5);
 		for(std::size_t i(0), s(edges.size()); i < s; ++i) {
-			const std::pair<int, int> & e = edges[i];
+			const std::pair<int, int> & e = edges[s-i-1];
 			if (e.first != e.second) {
 				const auto & v1 = pId2Vertex.at(e.first);
 				const auto & v2 = pId2Vertex.at(e.second);
