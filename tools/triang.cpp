@@ -28,6 +28,8 @@ using Point3 = K::Point_3;
 
 typedef enum {TT_DELAUNAY, TT_CONSTRAINED, TT_CONSTRAINED_INEXACT, TT_CONSTRAINED_EXACT, TT_CONSTRAINED_EXACT_SPHERICAL} TriangulationType;
 typedef enum {GOT_INVALID, GOT_WITHOUT_SPECIAL, GOT_SIMPLEST_GRAPH_RENDERING, GOT_SIMPLEST_GRAPH_RENDERING_ANDRE} GraphOutputType;
+typedef enum {GIT_INVALID, GIT_NODES_EDGES, GIT_EDGES} GraphInputType;
+typedef enum {TIO_INVALID, TIO_NODES_EDGES, TIO_EDGES} TriangulationInputOrder;
 
 struct VertexInfo {
 	VertexInfo() : id(-1) {}
@@ -303,6 +305,8 @@ public:
 public:
 	///@param points need to be exactly on the sphere
 	virtual void create(Points & points, Edges & edges, InputOutput & io, bool clear) = 0;
+	virtual void add(const Point3 & p) = 0;
+	virtual void add(const Point3 & p1, const Point3 & p2) = 0;
 	virtual void write(InputOutput & io) = 0;
 };
 
@@ -322,7 +326,16 @@ public:
 			edges = Edges();
 		}
 	}
+
+	virtual void add(const Point3 & p) override {
+		m_tr.insert(p);
+	}
 	
+	virtual void add(const Point3 & p1, const Point3 & p2) override {
+		m_tr.insert(p1);
+		m_tr.insert(p2);
+	}
+
 	virtual void write(InputOutput & io) override {
 		TriangulationWriter<Tr> writer(pointFormat, got);
 		writer.write(io.output(), m_tr);
@@ -389,6 +402,14 @@ public:
 		}
 	}
 	
+	virtual void add(const Point3 & p) override {
+		m_tr.insert(p);
+	}
+	
+	virtual void add(const Point3 & p1, const Point3 & p2) override {
+		m_tr.insert(p1, p2);
+	}
+	
 	virtual void write(InputOutput & io) override  {
 		TriangulationWriter<Tr> writer(pointFormat, got);
 		writer.write(io.output(), m_tr);
@@ -409,17 +430,22 @@ private:
 public:
 	TriangulationCreatorExactIntersectionsConstrainedDelaunay(int significands) : m_tr(significands) {}
 	
+	
+	Point_3 toMyPoint(const Point3 & p) {
+		CORE::Expr x = ratss::Conversion<CORE::Expr>::moveFrom( ratss::Conversion<K::FT>::toMpq(p.x()) );
+		CORE::Expr y = ratss::Conversion<CORE::Expr>::moveFrom( ratss::Conversion<K::FT>::toMpq(p.y()) );
+		CORE::Expr z = ratss::Conversion<CORE::Expr>::moveFrom( ratss::Conversion<K::FT>::toMpq(p.z()) );
+		Point_3 myPoint(x, y, z);
+		assert(x*x + y*y + z*z == 1);
+		return myPoint;
+	}
+	
 	virtual void create(Points & points, Edges & edges, InputOutput & io, bool clear) override {
 		std::size_t ps = points.size();
 		std::vector< std::pair<Point_3, VertexInfo> > myPoints;
 		myPoints.reserve(ps);
 		for(const std::pair<Point3, VertexInfo> & pi : points) {
-			CORE::Expr x = ratss::Conversion<CORE::Expr>::moveFrom( ratss::Conversion<K::FT>::toMpq(pi.first.x()) );
-			CORE::Expr y = ratss::Conversion<CORE::Expr>::moveFrom( ratss::Conversion<K::FT>::toMpq(pi.first.y()) );
-			CORE::Expr z = ratss::Conversion<CORE::Expr>::moveFrom( ratss::Conversion<K::FT>::toMpq(pi.first.z()) );
-			Point_3 myPoint(x, y, z);
-			assert(x*x + y*y + z*z == 1);
-			myPoints.emplace_back(std::move(myPoint), pi.second);
+			myPoints.emplace_back(toMyPoint(pi.first), pi.second);
 		}
 		if (clear) {
 			points = Points();
@@ -448,6 +474,14 @@ public:
 		if (clear) {
 			edges = Edges();
 		}
+	}
+	
+	virtual void add(const Point3 & p) override {
+		m_tr.insert(toMyPoint(p));
+	}
+	
+	virtual void add(const Point3 & p1, const Point3 & p2) override {
+		m_tr.insert(toMyPoint(p1), toMyPoint(p2));
 	}
 	
 	virtual void write(InputOutput & io) override {
@@ -499,7 +533,15 @@ public:
 			edges = Edges();
 		}
 	}
+
+	virtual void add(const Point3 & p) override {
+		m_tr.insert(p);
+	}
 	
+	virtual void add(const Point3 & p1, const Point3 & p2) override {
+		m_tr.insert(p1, p2);
+	}
+
 	virtual void write(InputOutput & io) override {
 		TriangulationWriter<Tr> writer(pointFormat, got);
 		writer.write(io.output(), m_tr);
@@ -509,7 +551,9 @@ public:
 class Config: public ratss::BasicCmdLineOptions {
 public:
 	TriangulationType triangType;
-	GraphOutputType got;
+	GraphOutputType got = GOT_INVALID;
+	GraphInputType git = GIT_INVALID;
+	TriangulationInputOrder tio = TIO_NODES_EDGES;
 public:
 	using ratss::BasicCmdLineOptions::parse;
 public:
@@ -521,14 +565,25 @@ public:
 struct Data {
 	Data();
 	~Data();
+
+	ratss::FloatPoint ip;
+	ratss::RationalPoint op;
+	ratss::ProjectSN proj;
+
 	std::vector<std::pair<Point3, VertexInfo>> points;
 	std::vector<std::pair<int, int>> edges;
 	TriangulationCreator * tc;
 	
 	void init(const Config& cfg);
 	void read(InputOutput& io, const Config& cfg);
-	void create(InputOutput& io);
+	void create(InputOutput& io, const Config& cfg);
 	void write(InputOutput& io, const Config& cfg);
+	
+	void readNodesEdges(InputOutput& io, const Config& cfg);
+	void readEdges(InputOutput& io, const Config& cfg);
+	Point3 readPoint(std::istream& is, const Config& cfg);
+
+
 };
 
 ///now the main
@@ -560,7 +615,7 @@ int main(int argc, char ** argv) {
 	data.read(io, cfg);
 	
 	io.info() << "Creating triangulation..." << std::endl;
-	data.create(io);
+	data.create(io, cfg);
 	
 	io.info() << "Writing triangulation..." << std::endl;
 	data.write(io, cfg);
@@ -595,7 +650,7 @@ bool Config::parse(const std::string & token,int & i, int argc, char ** argv) {
 		}
 		++i;
 	}
-	else if (token == "-g" && i+1 < argc) {
+	else if (token == "-go" && i+1 < argc) {
 		std::string type( argv[i+1] );
 		if (type == "wx") {
 			got = GOT_WITHOUT_SPECIAL;
@@ -611,6 +666,32 @@ bool Config::parse(const std::string & token,int & i, int argc, char ** argv) {
 		}
 		++i;
 	}
+	else if (token == "-gi" && i+1 < argc) {
+		std::string type( argv[i+1] );
+		if (type == "ne" | type == "nodes-edges") {
+			git = GIT_NODES_EDGES;
+		}
+		else if (type == "e" || type == "edges") {
+			git = GIT_EDGES;
+		}
+		else {
+			throw ratss::BasicCmdLineOptions::ParseError("Unknown graph input type: " + type);
+		}
+		++i;
+	}
+	else if (token == "-io" && i+1 < argc) {
+		std::string type( argv[i+1] );
+		if (type == "ne" | type == "nodes-edges") {
+			tio= TIO_NODES_EDGES;
+		}
+		else if (type == "e" || type == "edges") {
+			tio = TIO_EDGES;
+		}
+		else {
+			throw ratss::BasicCmdLineOptions::ParseError("Unknown graph input type: " + type);
+		}
+		++i;
+	}
 	else {
 		return false;
 	}
@@ -620,17 +701,21 @@ bool Config::parse(const std::string & token,int & i, int argc, char ** argv) {
 void Config::help(std::ostream & out) const {
 	out << "triang OPTIONS:\n"
 		"\t-t type\ttype = [d,delaunay, c,constrained,cx,constrained-intersection,cxe,constrained-intesection-exact, cxs, constrained-intersection-exact-spherical]\n"
-		"\t-g type\ttype = [wx, witout_special, simplest, simplest_andre]\n";
+		"\t-go type\tgraph output type = [wx, witout_special, simplest, simplest_andre]\n"
+		"\t-gi type\tgraph input type = [ne, nodes-edges, e, edges]\n"
+		"\t-io type\tinput order type = [ne, nodes-edges, e, edges]\n";
 	ratss::BasicCmdLineOptions::options_help(out);
 	out << '\n';
-	out << "The input format is as follows:\n"
-		"number of nodes\n"
-		"number of edges\n"
-		"nodes - one node per line\n"
-		"edges - one edge per line\n"
-		"A node is any coordinate type supported by the -if switch\n"
-		"The i-th node gets the id i. There shall not be multiple nodes with the same coordinates.\n"
-		"An edge has the format: source-node-id target-node-id\n";
+	out << "For gi=ne the input format is as follows:\n"
+		"\tnumber of nodes\n"
+		"\tnumber of edges\n"
+		"\tnodes - one node per line\n"
+		"\tedges - one edge per line\n"
+		"\tA node is any coordinate type supported by the -if switch\n"
+		"\tThe i-th node gets the id i. There shall not be multiple nodes with the same coordinates.\n"
+		"\tAn edge has the format: source-node-id target-node-id\n"
+		"For gi=e the input format is:\n"
+		"src-node target-node\n";
 	out << std::endl;
 }
 
@@ -657,6 +742,19 @@ void Config::print(std::ostream & out) const {
 		break;
 	}
 	out << '\n';
+	out << "Graph input type: ";
+	switch (git) {
+	case GIT_NODES_EDGES:
+		out << "nodes and edges";
+		break;
+	case GIT_EDGES:
+		out << "edges";
+		break;
+	default:
+		out << "invalid";
+		break;
+	};
+	out << '\n';
 	out << "Graph output type: ";
 	switch (got) {
 	case GOT_WITHOUT_SPECIAL:
@@ -667,6 +765,19 @@ void Config::print(std::ostream & out) const {
 		break;
 	case GOT_SIMPLEST_GRAPH_RENDERING_ANDRE:
 		out << "simplest graph rendering andre";
+		break;
+	default:
+		out << "invalid";
+		break;
+	};
+	out << '\n';
+	out << "Input order: ";
+	switch (git) {
+	case TIO_NODES_EDGES:
+		out << "nodes then edges";
+		break;
+	case TIO_EDGES:
+		out << "edges";
 		break;
 	default:
 		out << "invalid";
@@ -710,7 +821,20 @@ void Data::init(const Config & cfg) {
 }
 
 void Data::read(InputOutput & io, const Config & cfg) {
-	std::istream & is = io.input();
+	switch (cfg.git) {
+	case GIT_NODES_EDGES:
+		readNodesEdges(io, cfg);
+		break;
+	case GIT_EDGES:
+		readEdges(io, cfg);
+	default:
+		throw std::runtime_error("Invalid graph input format");
+		break;
+	}
+}
+
+void Data::readNodesEdges(InputOutput & io, const Config & cfg) {
+std::istream & is = io.input();
 
 	std::size_t num_points, num_edges;
 	is >> num_points >> num_edges;
@@ -719,10 +843,6 @@ void Data::read(InputOutput & io, const Config & cfg) {
 	
 	points.reserve(num_points);
 	edges.reserve(num_edges);
-	
-	ratss::FloatPoint ip;
-	ratss::RationalPoint op;
-	ratss::ProjectSN proj;
 	
 	if (cfg.progress) {
 		io.info() << std::endl;
@@ -733,35 +853,7 @@ void Data::read(InputOutput & io, const Config & cfg) {
 			is.get();
 			continue;
 		}
-		
-		bool opFromIp = !cfg.rationalPassThrough;
-		if (cfg.rationalPassThrough) {
-			op.assign(is, cfg.inFormat, cfg.precision);
-			if (!op.valid()) {
-				ip.assign(op.coords.begin(), op.coords.end(), cfg.precision);
-				opFromIp = true;
-			}
-		}
-		else {
-			ip.assign(is, cfg.inFormat, cfg.precision);
-		}
-		if (opFromIp) {
-			if (cfg.normalize) {
-				ip.normalize();
-			}
-			ip.setPrecision(cfg.precision);
-			op.clear();
-			op.resize(ip.coords.size());
-			proj.snap(ip.coords.begin(), ip.coords.end(), op.coords.begin(), cfg.snapType, cfg.significands);
-		}
-		assert(op.valid());
-		K::FT x = ratss::Conversion<K::FT>::moveFrom(op.coords.at(0));
-		K::FT y = ratss::Conversion<K::FT>::moveFrom(op.coords.at(1));
-		K::FT z = ratss::Conversion<K::FT>::moveFrom(op.coords.at(2));
-		Point3 p3(x, y, z);
-		VertexInfo vi(counter);
-		points.emplace_back(std::move(p3), vi);
-
+		points.emplace_back(readPoint(is, cfg), VertexInfo(counter));
 		++counter;
 		if (cfg.progress && counter % 1000 == 0) {
 			io.info() << '\xd' << counter/1000 << "k" << std::flush;
@@ -789,8 +881,99 @@ void Data::read(InputOutput & io, const Config & cfg) {
 	}
 }
 
-void Data::create(InputOutput & io) {
-	tc->create(points, edges, io, true);
+void Data::readEdges(InputOutput& io, const Config& cfg) {
+	ratss::FloatPoint ip;
+	ratss::RationalPoint op;
+	ratss::ProjectSN proj;
+	
+	std::istream & is = io.input();
+	
+	if (cfg.progress) {
+		io.info() << std::endl;
+	}
+	std::size_t counter = 0;
+	while( is.good() ) {
+		if (is.peek() == '\n') {
+			is.get();
+			continue;
+		}
+		Point3 src( readPoint(is, cfg) );
+		Point3 tgt( readPoint(is, cfg) );
+		
+		int srcId = points.size();
+		int tgtId = srcId+1;
+		
+		points.emplace_back(src, VertexInfo(srcId));
+		points.emplace_back(tgt, VertexInfo(tgtId));
+		edges.emplace_back(srcId, tgtId);
+		
+		++counter;
+		if (cfg.progress && counter % 1000 == 0) {
+			io.info() << '\xd' << counter/1000 << "k" << std::flush;
+		}
+	}
+	if (cfg.progress) {
+		io.info() << std::endl;
+	}
+}
+
+Point3 Data::readPoint(std::istream& is, const Config& cfg) {
+	bool opFromIp = !cfg.rationalPassThrough;
+	if (cfg.rationalPassThrough) {
+		op.assign(is, cfg.inFormat, cfg.precision, 3);
+		if (!op.valid()) {
+			ip.assign(op.coords.begin(), op.coords.end(), cfg.precision);
+			opFromIp = true;
+		}
+	}
+	else {
+		ip.assign(is, cfg.inFormat, cfg.precision, 3);
+	}
+	if (opFromIp) {
+		if (cfg.normalize) {
+			ip.normalize();
+		}
+		ip.setPrecision(cfg.precision);
+		op.clear();
+		op.resize(ip.coords.size());
+		proj.snap(ip.coords.begin(), ip.coords.end(), op.coords.begin(), cfg.snapType, cfg.significands);
+	}
+	assert(op.valid());
+	K::FT x = ratss::Conversion<K::FT>::moveFrom(op.coords.at(0));
+	K::FT y = ratss::Conversion<K::FT>::moveFrom(op.coords.at(1));
+	K::FT z = ratss::Conversion<K::FT>::moveFrom(op.coords.at(2));
+	Point3 p3(x, y, z);
+	
+	return p3;
+}
+
+void Data::create(InputOutput& io, const Config& cfg) {
+	if (cfg.tio == TIO_NODES_EDGES) {
+		tc->create(points, edges, io, true);
+	}
+	else {
+		if (cfg.progress) {
+			io.info() << '\n' << std::flush;
+		}
+		
+		for(
+			std::size_t i(0),
+			s(edges.size())
+			;i < s; ++i)
+		{
+			const auto & e = edges[i];
+			const auto & src = points.at(e.first).first;
+			const auto & tgt = points.at(e.second).first;
+			tc->add(src, tgt);
+			if (cfg.progress && i % 1000 == 0) {
+				io.info() << '\xd' << i/1000 << 'k';
+			}
+		}
+		
+		if (cfg.progress) {
+			io.info() << std::endl;
+		}
+	}
 	points.clear();
 	edges.clear();
 }
