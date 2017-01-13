@@ -32,11 +32,14 @@ typedef enum {GIT_INVALID, GIT_NODES_EDGES, GIT_EDGES} GraphInputType;
 typedef enum {TIO_INVALID, TIO_NODES_EDGES, TIO_EDGES} TriangulationInputOrder;
 
 struct VertexInfo {
-	VertexInfo() : id(-1) {}
+	VertexInfo() : id(def_instance_counter) { --def_instance_counter;}
 	VertexInfo(int id) : id(id) {}
 	bool valid() const { return id >= 0; }
 	int id;
+	static int def_instance_counter;
 };
+
+int VertexInfo::def_instance_counter = -1;
 
 bool is_constrained(const dts2::Delaunay_triangulation_with_info_s2<VertexInfo, void> & trs, const dts2::Delaunay_triangulation_with_info_s2<VertexInfo, void>::Edge & e) {
 	return false;
@@ -45,6 +48,27 @@ bool is_constrained(const dts2::Delaunay_triangulation_with_info_s2<VertexInfo, 
 template<typename T_TRS>
 bool is_constrained(const T_TRS & trs, const typename T_TRS::Edge & e) {
 	return trs.is_constrained(e);
+}
+
+extern "C" void debug_print_point3(const Point3 &p ) {
+	ratss::ProjectS2 proj;
+	ratss::GeoCoord gc;
+	proj.toGeo(p.x(), p.y(), p.z(), gc.lat, gc.lon, 53);
+	std::cerr << ratss::Conversion<K::FT>::toMpq(p.x()) << " " << ratss::Conversion<K::FT>::toMpq(p.y()) << " " << ratss::Conversion<K::FT>::toMpq(p.z()) << std::endl;
+	std::streamsize prec = std::cerr.precision();
+	std::cerr.precision(std::numeric_limits<double>::digits10+1);
+	std::cerr << gc << std::endl;
+	std::cerr.precision(prec);
+}
+
+extern "C" void debug_print_vertex_handle_icdt(const dts2::Constrained_Delaunay_triangulation_with_inexact_intersections_with_info_s2<VertexInfo, void>::Vertex_handle & vh) {
+	if (vh == dts2::Constrained_Delaunay_triangulation_with_inexact_intersections_with_info_s2<VertexInfo, void>::Vertex_handle()) {
+		std::cerr << "VertexHandle is null" << std::endl;
+	}
+	else {
+		std::cerr << "VertexInfo=" << vh->info().id << std::endl;
+		debug_print_point3(vh->point());
+	}
 }
 
 using InputOutput = ratss::InputOutput;
