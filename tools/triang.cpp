@@ -41,7 +41,7 @@ struct VertexInfo {
 
 int VertexInfo::def_instance_counter = -1;
 
-bool is_constrained(const dts2::Delaunay_triangulation_with_info_s2<VertexInfo, void> & trs, const dts2::Delaunay_triangulation_with_info_s2<VertexInfo, void>::Edge & e) {
+bool is_constrained(const dts2::Delaunay_triangulation_with_info_s2<VertexInfo, void> & /*trs*/, const dts2::Delaunay_triangulation_with_info_s2<VertexInfo, void>::Edge & /*e*/) {
 	return false;
 }
 
@@ -343,7 +343,7 @@ private:
 public:
 	TriangulationCreatorDelaunay(int significands) : m_tr(significands) {}
 	
-	virtual void create(Points & points, Edges & edges, InputOutput & io, bool clear) override {
+	virtual void create(Points & points, Edges & edges, InputOutput & /*io*/, bool clear) override {
 		m_tr.insert(points.begin(), points.end(), false);
 		if (clear) {
 			points = Points();
@@ -406,7 +406,7 @@ public:
 		return x*x + y*y + z*z;
 	}
 	
-	NO_OPTIMIZE void insert_constraints(std::vector<Vertex_handle> & pId2Vertex, Edges & edges, InputOutput & io) {
+	NO_OPTIMIZE void insert_constraints(std::vector<Vertex_handle> & pId2Vertex, Edges & edges, InputOutput & /*io*/) {
 		Vertex_handle nullHandle;
 		FT maxLen(0.5);
 		for(std::size_t i(0), s(edges.size()); i < s; ++i) {
@@ -464,7 +464,7 @@ public:
 		return myPoint;
 	}
 	
-	virtual void create(Points & points, Edges & edges, InputOutput & io, bool clear) override {
+	virtual void create(Points & points, Edges & edges, InputOutput & /*io*/, bool clear) override {
 		std::size_t ps = points.size();
 		std::vector< std::pair<Point_3, VertexInfo> > myPoints;
 		myPoints.reserve(ps);
@@ -528,7 +528,7 @@ private:
 public:
 	TriangulationCreatorExactIntersectionsSphericalConstrainedDelaunay(int significands) : m_tr(significands) {}
 	
-	virtual void create(Points & points, Edges & edges, InputOutput & io, bool clear) override {
+	virtual void create(Points & points, Edges & edges, InputOutput & /*io*/, bool clear) override {
 		std::size_t ps = points.size();
 		m_tr.insert(points.begin(), points.end());
 		if (clear) {
@@ -908,7 +908,6 @@ std::istream & is = io.input();
 void Data::readEdges(InputOutput& io, const Config& cfg) {
 	ratss::FloatPoint ip;
 	ratss::RationalPoint op;
-	ratss::ProjectSN proj;
 	
 	std::istream & is = io.input();
 	
