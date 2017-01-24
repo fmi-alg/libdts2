@@ -692,7 +692,7 @@ bool Config::parse(const std::string & token,int & i, int argc, char ** argv) {
 	}
 	else if (token == "-gi" && i+1 < argc) {
 		std::string type( argv[i+1] );
-		if (type == "ne" | type == "nodes-edges") {
+		if (type == "ne" || type == "nodes-edges") {
 			git = GIT_NODES_EDGES;
 		}
 		else if (type == "e" || type == "edges") {
@@ -705,7 +705,7 @@ bool Config::parse(const std::string & token,int & i, int argc, char ** argv) {
 	}
 	else if (token == "-io" && i+1 < argc) {
 		std::string type( argv[i+1] );
-		if (type == "ne" | type == "nodes-edges") {
+		if (type == "ne" || type == "nodes-edges") {
 			tio= TIO_NODES_EDGES;
 		}
 		else if (type == "e" || type == "edges") {

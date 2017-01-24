@@ -143,7 +143,7 @@ protected: //own implementations not support by the base traits
 			
 // 			std::cerr << "result=" << result << std::endl;
 // 			std::cerr << "Intersect_2 called -- END" << std::endl;
-			bool resultIsEndpoint = result == a.source() || result == b.source() || result == a.target() | result == b.target();
+// 			bool resultIsEndpoint = result == a.source() || result == b.source() || result == a.target() || result == b.target();
 			std::cerr << "Intersect_2([";
 			MyBaseTrait::print(std::cerr, a.source());
 			std::cerr << ";";
