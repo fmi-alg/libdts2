@@ -249,7 +249,7 @@ TMPL_CLS::insert(const Point & p) {
 		return m_cdts.insert(p);
 	}
 	else {
-		m_cdts.insert(project(p));
+		return m_cdts.insert(project(p));
 	}
 }
 
