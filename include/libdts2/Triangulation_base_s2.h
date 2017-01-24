@@ -478,7 +478,7 @@ TMPL_CLS::project(const Point_3 & p) const {
 
 TMPL_HDR
 typename TMPL_CLS::Point_3 
-TMPL_CLS::projectFromSpherical(const mpfr::mpreal & theta, const mpfr::mpreal & phi) const {
+TMPL_CLS::projectFromSpherical(const mpfr::mpreal & /*theta*/, const mpfr::mpreal & /*phi*/) const {
 	assert(false);
 	return Point_3();
 }
