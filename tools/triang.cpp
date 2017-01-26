@@ -578,10 +578,12 @@ public:
 	GraphOutputType got = GOT_INVALID;
 	GraphInputType git = GIT_INVALID;
 	TriangulationInputOrder tio = TIO_NODES_EDGES;
+	int intersectSignificands = -1;
 public:
 	using ratss::BasicCmdLineOptions::parse;
 public:
 	virtual bool parse(const std::string & currentToken,int & i, int argc, char ** argv) override;
+	virtual void parse_completed() override;
 	void help(std::ostream & out) const;
 	void print(std::ostream & out) const;
 };
@@ -716,18 +718,30 @@ bool Config::parse(const std::string & token,int & i, int argc, char ** argv) {
 		}
 		++i;
 	}
+	else if (token == "-is" && i+1 < argc) {
+		intersectSignificands = ::atoi(argv[i+1]);
+		++i;
+	}
 	else {
 		return false;
 	}
 	return true;
 }
 
+void Config::parse_completed() {
+	if (intersectSignificands < 2) {
+		intersectSignificands = significands;
+	}
+}
+
+
 void Config::help(std::ostream & out) const {
 	out << "triang OPTIONS:\n"
 		"\t-t type\ttype = [d,delaunay, c,constrained,cx,constrained-intersection,cxe,constrained-intesection-exact, cxs, constrained-intersection-exact-spherical]\n"
 		"\t-go type\tgraph output type = [wx, witout_special, simplest, simplest_andre]\n"
 		"\t-gi type\tgraph input type = [ne, nodes-edges, e, edges]\n"
-		"\t-io type\tinput order type = [ne, nodes-edges, e, edges]\n";
+		"\t-io type\tinput order type = [ne, nodes-edges, e, edges]\n"
+		"\t-is num\tsignificands used to calculate intersection points\n";
 	ratss::BasicCmdLineOptions::options_help(out);
 	out << '\n';
 	out << "For gi=ne the input format is as follows:\n"
@@ -807,6 +821,9 @@ void Config::print(std::ostream & out) const {
 		out << "invalid";
 		break;
 	};
+	if (triangType == TT_CONSTRAINED_INEXACT) {
+		out << "Intersection point significands: " << intersectSignificands << '\n';
+	}
 	out << '\n';
 	ratss::BasicCmdLineOptions::options_selection(out);
 }
