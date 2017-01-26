@@ -408,7 +408,7 @@ public:
 		return x*x + y*y + z*z;
 	}
 	
-	NO_OPTIMIZE void insert_constraints(std::vector<Vertex_handle> & pId2Vertex, Edges & edges, InputOutput & /*io*/) {
+	void insert_constraints(std::vector<Vertex_handle> & pId2Vertex, Edges & edges, InputOutput & /*io*/) {
 		Vertex_handle nullHandle;
 		FT maxLen(0.5);
 		for(std::size_t i(0), s(edges.size()); i < s; ++i) {
