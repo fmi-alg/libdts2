@@ -90,7 +90,7 @@ public: //triangulation types
 public:
 	using Project_on_sphere = typename MyBaseClass::Project_on_sphere;
 public:
-	Delaunay_triangulation_s2(int precision);
+	Delaunay_triangulation_s2(int significands);
 	Delaunay_triangulation_s2(Delaunay_triangulation_s2 && other);
 	Delaunay_triangulation_s2(const Delaunay_triangulation_s2 & other) = delete;
 	Delaunay_triangulation_s2 & operator=(Delaunay_triangulation_s2 && other);
@@ -117,8 +117,8 @@ namespace LIB_DTS2_NAMESPACE {
 #define TMPL_CLS Delaunay_triangulation_s2<T_GEOM_TRAITS, T_TDS>
 
 TMPL_HDR
-TMPL_CLS::Delaunay_triangulation_s2(int _precision) :
-MyBaseClass(_precision)
+TMPL_CLS::Delaunay_triangulation_s2(int _significands) :
+MyBaseClass(_significands)
 {}
 
 TMPL_HDR

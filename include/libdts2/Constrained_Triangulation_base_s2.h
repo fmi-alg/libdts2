@@ -15,7 +15,7 @@ public:
 	using Intersection_tag = typename T_BASE_TRIANGULATION::Intersection_tag;
 	using Itag = Intersection_tag;
 public:
-	Constrained_triangulation_base_s2(int precision);
+	Constrained_triangulation_base_s2(int significands);
 	Constrained_triangulation_base_s2(const Geom_traits & traits);
 	Constrained_triangulation_base_s2(Constrained_triangulation_base_s2 && other);
 	Constrained_triangulation_base_s2(const Constrained_triangulation_base_s2 & other) = delete;
@@ -31,8 +31,8 @@ namespace LIB_DTS2_NAMESPACE {
 
 //BEGIN constructors
 TMPL_HDR
-TMPL_CLS::Constrained_triangulation_base_s2(int precision) :
-MyBaseClass(precision)
+TMPL_CLS::Constrained_triangulation_base_s2(int significands) :
+MyBaseClass(significands)
 {}
 
 

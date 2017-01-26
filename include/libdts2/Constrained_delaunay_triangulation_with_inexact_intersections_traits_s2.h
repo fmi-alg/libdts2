@@ -96,7 +96,7 @@ public:
 				return v;
 			}
 			mpq_class sqLenQ( Conversion<FT>::toMpq(sqLen) );
-			int calcPrec = std::max<std::size_t>(projector().calc().maxBitCount(sqLenQ), precision()*2);
+			int calcPrec = std::max<std::size_t>(projector().calc().maxBitCount(sqLenQ), significands()*2);
 			
 			mpfr::mpreal sqLenF(Conversion<mpq_class>::toMpreal(sqLenQ, calcPrec));
 			mpfr::mpreal lenF = projector().calc().sqrt(sqLenF);
@@ -110,7 +110,7 @@ public:
 			zf /= lenF;
 			
 			mpq_class xq, yq, zq;
-			projector().snap(xf, yf, zf, xq, yq, zq, precision(), Projector::ST_FX | Projector::ST_PLANE);
+			projector().snap(xf, yf, zf, xq, yq, zq, significands(), Projector::ST_FX | Projector::ST_PLANE);
 			return Point_3( Conversion<FT>::moveFrom(xq),
 							Conversion<FT>::moveFrom(yq),
 							Conversion<FT>::moveFrom(zq)
@@ -141,9 +141,9 @@ public:
 	///This does not correctly initialize this trait!
 	Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2() : m_intersectSignificands(-1) {}
 	///@param epsilon set the value of the z-coordinate above which no points should exist
-	Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2(const FT & _epsilon, int _precision, int _intersectSignificands = -1) :
-	MyBaseTrait(_epsilon, _precision ),
-	m_intersectSignificands(_intersectSignificands > 0 ? _intersectSignificands : _precision)
+	Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2(const FT & _epsilon, int _significands, int _intersectSignificands = -1) :
+	MyBaseTrait(_epsilon, _significands ),
+	m_intersectSignificands(_intersectSignificands > 0 ? _intersectSignificands : _significands)
 	{}
 	
 	Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2(const Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2 & other) :

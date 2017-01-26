@@ -60,7 +60,7 @@ public: //triangulation types
 public:
 	using Project_on_sphere = typename Geom_traits::Project_on_sphere;
 public:
-	Triangulation_base_s2(int precision);
+	Triangulation_base_s2(int significands);
 	Triangulation_base_s2(const Geom_traits & traits);
 	Triangulation_base_s2(Triangulation_base_s2 && other);
 	Triangulation_base_s2(const Triangulation_base_s2& other) = delete;
@@ -124,7 +124,7 @@ public: //projection
 	SphericalCoord toSpherical(const Point_3 & p) const;
 	GeoCoord toGeo(const Point_3 & p) const;
 public:
-	int precision() const;
+	int significands() const;
 	const Geom_traits & geom_traits() const;
 	const Triangulation & trs() const;
 	const Tds & tds() const;
@@ -211,11 +211,11 @@ namespace LIB_DTS2_NAMESPACE {
 
 //BEGIN constructors
 TMPL_HDR
-TMPL_CLS::Triangulation_base_s2(int _precision) :
+TMPL_CLS::Triangulation_base_s2(int _significands) :
 Triangulation_base_s2(
 	Geom_traits(
 		LIB_RATSS_NAMESPACE::Conversion<FT>::moveFrom(mpq_class(std::numeric_limits<uint64_t>::max()-1, std::numeric_limits<uint64_t>::max())),
-		_precision
+		_significands
 	)
 )
 {}
@@ -508,8 +508,8 @@ TMPL_CLS::toGeo(const Point_3 & p) const {
 //BEGIN member variable access
 TMPL_HDR
 int 
-TMPL_CLS::precision() const {
-	return geom_traits().precision();
+TMPL_CLS::significands() const {
+	return geom_traits().significands();
 }
 
 TMPL_HDR

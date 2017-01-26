@@ -165,7 +165,7 @@ public:
 		template<typename T>
 		using Conversion = LIB_RATSS_NAMESPACE::Conversion<T>;
 	public:
-		Project_on_sphere(int _precision, const Projector & p) : m_precision(_precision), m_proj(p) {}
+		Project_on_sphere(int _significands, const Projector & p) : m_significands(_significands), m_proj(p) {}
 	public:
 		//TODO:mark deprecated
 		Point_3 operator()(const std::pair<double, double> & geoCoord) const {
@@ -173,7 +173,7 @@ public:
 		}
 		Point_3 operator()(const LIB_RATSS_NAMESPACE::GeoCoord & geoCoord) const {
 			mpq_class x, y, z;
-			m_proj.projectFromGeo(geoCoord.lat, geoCoord.lon, x, y, z, precision());
+			m_proj.projectFromGeo(geoCoord.lat, geoCoord.lon, x, y, z, significands());
 			return Point_3(
 				Conversion<FT>::moveFrom(x),
 				Conversion<FT>::moveFrom(y),
@@ -182,7 +182,7 @@ public:
 		}
 		Point_3 operator()(const LIB_RATSS_NAMESPACE::SphericalCoord & sphericalCoord) const {
 			mpq_class x, y, z;
-			m_proj.projectFromSpherical(sphericalCoord.theta, sphericalCoord.phi, x, y, z, precision());
+			m_proj.projectFromSpherical(sphericalCoord.theta, sphericalCoord.phi, x, y, z, significands());
 			return Point_3(
 				Conversion<FT>::moveFrom(x),
 				Conversion<FT>::moveFrom(y),
@@ -190,14 +190,14 @@ public:
 			);
 		}
 	public:
-		int precision() const {
-			return m_precision;
+		int significands() const {
+			return m_significands;
 		}
 		const Projector & projector() const {
 			return m_proj;
 		}
 	private:
-		int m_precision;
+		int m_significands;
 		Projector m_proj;
 	};
 	
@@ -242,16 +242,16 @@ public: //object functions
 	m_epsZ(FT(std::numeric_limits<double>::epsilon()))
 	{}
 	///@param epsilon set the value of the z-coordinate above which no points should exist
-	Constrained_delaunay_triangulation_base_traits_s2(const FT & _epsilon, int _precision) :
+	Constrained_delaunay_triangulation_base_traits_s2(const FT & _epsilon, int _significands) :
 	m_epsZ(_epsilon),
-	m_precision(_precision)
+	m_significands(_significands)
 	{}
 	
 	Constrained_delaunay_triangulation_base_traits_s2(const Constrained_delaunay_triangulation_base_traits_s2 & other) :
 	m_traits(other.m_traits),
 	m_epsZ(other.m_epsZ),
 	m_proj(other.m_proj),
-	m_precision(other.m_precision)
+	m_significands(other.m_significands)
 	{}
 	
 	~Constrained_delaunay_triangulation_base_traits_s2() {}
@@ -302,7 +302,7 @@ public: //object functions
 	}
 	
 	Project_on_sphere project_on_sphere_object() const {
-		return Project_on_sphere(precision(), projector());
+		return Project_on_sphere(significands(), projector());
 	}
 
 	Project_on_sphere project_on_sphere_object(int _significands) const {
@@ -310,7 +310,7 @@ public: //object functions
 	}
 	
 public:
-	int precision() const { return m_precision; }
+	int significands() const { return m_significands; }
 	const FT & epsZ() const { return m_epsZ; }
 	const MyBaseTrait & baseTraits() const { return m_traits; }
 	const Projector & projector() const { return m_proj; }
@@ -320,7 +320,7 @@ private:
 	MyBaseTrait m_traits;
 	FT m_epsZ;
 	Projector m_proj;
-	int m_precision;
+	int m_significands;
 };
 
 #undef DEBUG_OUT

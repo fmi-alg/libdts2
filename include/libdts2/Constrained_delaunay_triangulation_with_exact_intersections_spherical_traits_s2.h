@@ -69,7 +69,7 @@ public:
 			mpfr::mpreal yf(Conversion<FT>::toMpreal(v.y(), sqLenPrec));
 			mpfr::mpreal zf(Conversion<FT>::toMpreal(v.z(), sqLenPrec));
 			mpq_class xq, yq, zq;
-			projector().snap(xf, yf, zf, xq, yq, zq, precision());
+			projector().snap(xf, yf, zf, xq, yq, zq, significands());
 			return Point_3( Conversion<FT>::moveFrom(xq),
 							Conversion<FT>::moveFrom(yq),
 							Conversion<FT>::moveFrom(zq)
