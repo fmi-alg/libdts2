@@ -135,18 +135,20 @@ public:
 	using Intersect_2 = MyBaseTrait::Intersect_2<Intersect_base_2>;
 protected:
 	inline Intersect_base_2 intersect_base_2_object() const {
-		return Intersect_base_2( project_on_sphere_object() );
+		return Intersect_base_2( project_on_sphere_object( intersectSignificands() ) );
 	}
 public:
 	///This does not correctly initialize this trait!
-	Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2() {}
+	Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2() : m_intersectSignificands(-1) {}
 	///@param epsilon set the value of the z-coordinate above which no points should exist
-	Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2(const FT & _epsilon, int _precision) :
-	MyBaseTrait(_epsilon, _precision )
+	Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2(const FT & _epsilon, int _precision, int _intersectSignificands = -1) :
+	MyBaseTrait(_epsilon, _precision ),
+	m_intersectSignificands(_intersectSignificands > 0 ? _intersectSignificands : _precision)
 	{}
 	
 	Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2(const Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2 & other) :
-	MyBaseTrait(other)
+	MyBaseTrait(other),
+	m_intersectSignificands(other.m_intersectSignificands)
 	{}
 
 	~Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2() {}
@@ -166,6 +168,16 @@ public: //predicate creation Constrained_delaunay_triangulation_with_inexact_int
 	inline Project_on_sphere project_on_sphere_object() const {
 		return Project_on_sphere(MyBaseTrait::project_on_sphere_object());
 	}
+	
+	inline Project_on_sphere project_on_sphere_object(int _significands) const {
+		return Project_on_sphere(MyBaseTrait::project_on_sphere_object(_significands));
+	}
+public:
+	inline int intersectSignificands() const {
+		return m_intersectSignificands;
+	}
+private:
+	int m_intersectSignificands;
 };
 
 }//end LIB_DTS2_NAMESPACE

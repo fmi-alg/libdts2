@@ -304,6 +304,10 @@ public: //object functions
 	Project_on_sphere project_on_sphere_object() const {
 		return Project_on_sphere(precision(), projector());
 	}
+
+	Project_on_sphere project_on_sphere_object(int _significands) const {
+		return Project_on_sphere(_significands, projector());
+	}
 	
 public:
 	int precision() const { return m_precision; }
