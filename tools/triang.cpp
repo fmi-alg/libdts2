@@ -27,7 +27,7 @@ using K = CGAL::Exact_predicates_exact_constructions_kernel;
 using Point3 = K::Point_3;
 
 typedef enum {TT_DELAUNAY, TT_CONSTRAINED, TT_CONSTRAINED_INEXACT, TT_CONSTRAINED_EXACT, TT_CONSTRAINED_EXACT_SPHERICAL} TriangulationType;
-typedef enum {GOT_INVALID, GOT_WITHOUT_SPECIAL, GOT_SIMPLEST_GRAPH_RENDERING, GOT_SIMPLEST_GRAPH_RENDERING_ANDRE} GraphOutputType;
+typedef enum {GOT_INVALID, GOT_NONE, GOT_WITHOUT_SPECIAL, GOT_SIMPLEST_GRAPH_RENDERING, GOT_SIMPLEST_GRAPH_RENDERING_ANDRE} GraphOutputType;
 typedef enum {GIT_INVALID, GIT_NODES_EDGES, GIT_EDGES} GraphInputType;
 typedef enum {TIO_INVALID, TIO_NODES_EDGES, TIO_EDGES} TriangulationInputOrder;
 
@@ -93,6 +93,8 @@ struct TriangulationWriter {
 	
 	void write(std::ostream & out, TRS & trs) {
 		switch (got) {
+		case GOT_NONE:
+			break;
 		case GOT_WITHOUT_SPECIAL:
 			writeWithoutSpecial(out, trs);
 			break;
@@ -678,7 +680,10 @@ bool Config::parse(const std::string & token,int & i, int argc, char ** argv) {
 	}
 	else if (token == "-go" && i+1 < argc) {
 		std::string type( argv[i+1] );
-		if (type == "wx") {
+		if (type == "none") {
+			got = GOT_NONE;
+		}
+		else if (type == "wx") {
 			got = GOT_WITHOUT_SPECIAL;
 		}
 		else if (type == "simplest") {
@@ -738,7 +743,7 @@ void Config::parse_completed() {
 void Config::help(std::ostream & out) const {
 	out << "triang OPTIONS:\n"
 		"\t-t type\ttype = [d,delaunay, c,constrained,cx,constrained-intersection,cxe,constrained-intesection-exact, cxs, constrained-intersection-exact-spherical]\n"
-		"\t-go type\tgraph output type = [wx, witout_special, simplest, simplest_andre]\n"
+		"\t-go type\tgraph output type = [none, wx, witout_special, simplest, simplest_andre]\n"
 		"\t-gi type\tgraph input type = [ne, nodes-edges, e, edges]\n"
 		"\t-io type\tinput order type = [ne, nodes-edges, e, edges]\n"
 		"\t-is num\tsignificands used to calculate intersection points\n";
@@ -795,6 +800,9 @@ void Config::print(std::ostream & out) const {
 	out << '\n';
 	out << "Graph output type: ";
 	switch (got) {
+	case GOT_NONE:
+		out << "none";
+		break;
 	case GOT_WITHOUT_SPECIAL:
 		out << "without special";
 		break;
