@@ -61,6 +61,7 @@ public:
 	using Project_on_sphere = typename Geom_traits::Project_on_sphere;
 public:
 	Triangulation_base_s2(int precision);
+	Triangulation_base_s2(const Geom_traits & traits);
 	Triangulation_base_s2(Triangulation_base_s2 && other);
 	Triangulation_base_s2(const Triangulation_base_s2& other) = delete;
 	Triangulation_base_s2 & operator=(Triangulation_base_s2 && other);
@@ -211,15 +212,19 @@ namespace LIB_DTS2_NAMESPACE {
 //BEGIN constructors
 TMPL_HDR
 TMPL_CLS::Triangulation_base_s2(int _precision) :
-m_cdts(
+Triangulation_base_s2(
 	Geom_traits(
 		LIB_RATSS_NAMESPACE::Conversion<FT>::moveFrom(mpq_class(std::numeric_limits<uint64_t>::max()-1, std::numeric_limits<uint64_t>::max())),
 		_precision
 	)
-),
+)
+{}
+
+TMPL_HDR
+TMPL_CLS::Triangulation_base_s2(const Geom_traits & traits) :
+m_cdts(traits),
 m_p( this->geom_traits().project_on_sphere_object() )
 {
-	
 	assert(epsZ() > 0 && epsZ() < 1);
 	addAuxiliaryPoints();
 	selfCheck();
