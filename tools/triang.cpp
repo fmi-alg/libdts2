@@ -379,7 +379,10 @@ public:
 private:
 	Tr m_tr;
 public:
-	TriangulationCreatorConstrainedDelaunay(int significands) : m_tr(significands) {}
+	TriangulationCreatorConstrainedDelaunay(int significands) :
+	m_tr(significands)
+	{}
+	TriangulationCreatorConstrainedDelaunay(int significands, int intersectionSignificands);
 	
 	virtual void create(Points & points, Edges & edges, InputOutput & io, bool clear) override  {
 		std::size_t ps = points.size();
@@ -445,6 +448,18 @@ public:
 using TriangulationCreatorNoIntersectionsConstrainedDelaunay = TriangulationCreatorConstrainedDelaunay<dts2::Constrained_Delaunay_triangulation_no_intersections_with_info_s2>;
 using TriangulationCreatorInExactIntersectionsConstrainedDelaunay = TriangulationCreatorConstrainedDelaunay<dts2::Constrained_Delaunay_triangulation_with_inexact_intersections_with_info_s2>;
 
+template<>
+TriangulationCreatorNoIntersectionsConstrainedDelaunay::TriangulationCreatorConstrainedDelaunay(int significands, int /*intersectionSignificands*/) :
+TriangulationCreatorConstrainedDelaunay(significands)
+{}
+
+template<>
+TriangulationCreatorInExactIntersectionsConstrainedDelaunay::TriangulationCreatorConstrainedDelaunay(int significands, int intersectionSignificands) :
+m_tr(
+	TriangulationCreatorInExactIntersectionsConstrainedDelaunay::Tr::Geom_traits(significands, intersectionSignificands)
+)
+{}
+
 class TriangulationCreatorExactIntersectionsConstrainedDelaunay: public TriangulationCreator {
 public:
 	using Tr =  dts2::Constrained_Delaunay_triangulation_with_exact_intersections_with_info_s2<VertexInfo, void>;
@@ -455,7 +470,6 @@ private:
 	Tr m_tr;
 public:
 	TriangulationCreatorExactIntersectionsConstrainedDelaunay(int significands) : m_tr(significands) {}
-	
 	
 	Point_3 toMyPoint(const Point3 & p) {
 		CORE::Expr x = ratss::Conversion<CORE::Expr>::moveFrom( ratss::Conversion<K::FT>::toMpq(p.x()) );
@@ -856,7 +870,7 @@ void Data::init(const Config & cfg) {
 		tc = new TriangulationCreatorNoIntersectionsConstrainedDelaunay(cfg.significands);
 		break;
 	case TT_CONSTRAINED_INEXACT:
-		tc = new TriangulationCreatorInExactIntersectionsConstrainedDelaunay(cfg.significands);
+		tc = new TriangulationCreatorInExactIntersectionsConstrainedDelaunay(cfg.significands, cfg.intersectSignificands);
 		break;
 	case TT_CONSTRAINED_EXACT:
 		tc = new TriangulationCreatorExactIntersectionsConstrainedDelaunay(cfg.significands);
