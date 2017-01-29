@@ -456,7 +456,11 @@ TriangulationCreatorConstrainedDelaunay(significands)
 template<>
 TriangulationCreatorInExactIntersectionsConstrainedDelaunay::TriangulationCreatorConstrainedDelaunay(int significands, int intersectionSignificands) :
 m_tr(
-	TriangulationCreatorInExactIntersectionsConstrainedDelaunay::Tr::Geom_traits(significands, intersectionSignificands)
+	TriangulationCreatorInExactIntersectionsConstrainedDelaunay::Tr::Geom_traits(
+		LIB_RATSS_NAMESPACE::Conversion<TriangulationCreatorInExactIntersectionsConstrainedDelaunay::Tr::Geom_traits::FT>::moveFrom(mpq_class(std::numeric_limits<uint64_t>::max()-1, std::numeric_limits<uint64_t>::max())),
+		significands,
+		intersectionSignificands
+	)
 )
 {}
 
