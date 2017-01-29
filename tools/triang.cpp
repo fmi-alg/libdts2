@@ -790,7 +790,7 @@ void Config::print(std::ostream & out) const {
 		out << "constrained no intersections";
 		break;
 	case TT_CONSTRAINED_INEXACT:
-		out << "constrained in-exact intersecionts";
+		out << "constrained in-exact intersections";
 		break;
 	case TT_CONSTRAINED_EXACT:
 		out << "constrained exact intersections";
@@ -847,10 +847,10 @@ void Config::print(std::ostream & out) const {
 		out << "invalid";
 		break;
 	};
+	out << '\n';
 	if (triangType == TT_CONSTRAINED_INEXACT) {
 		out << "Intersection point significands: " << intersectSignificands << '\n';
 	}
-	out << '\n';
 	ratss::BasicCmdLineOptions::options_selection(out);
 }
 
@@ -901,7 +901,7 @@ void Data::read(InputOutput & io, const Config & cfg) {
 }
 
 void Data::readNodesEdges(InputOutput & io, const Config & cfg) {
-std::istream & is = io.input();
+	std::istream & is = io.input();
 
 	std::size_t num_points, num_edges;
 	is >> num_points >> num_edges;
