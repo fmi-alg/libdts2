@@ -225,7 +225,9 @@ TMPL_CLS::Triangulation_base_s2(const Geom_traits & traits) :
 m_cdts(traits),
 m_p( this->geom_traits().project_on_sphere_object() )
 {
-	assert(epsZ() > 0 && epsZ() < 1);
+	if (! (epsZ() > 0 && epsZ() < 1) ) {
+		throw std::runtime_error("libdts2::Triangulation_base_s2: epsZ musst be smaller than 1 and larger than 0");
+	}
 	addAuxiliaryPoints();
 	selfCheck();
 }
