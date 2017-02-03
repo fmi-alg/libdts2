@@ -27,7 +27,7 @@ using K = CGAL::Exact_predicates_exact_constructions_kernel;
 using Point3 = K::Point_3;
 
 typedef enum {TT_DELAUNAY, TT_CONSTRAINED, TT_CONSTRAINED_INEXACT, TT_CONSTRAINED_EXACT, TT_CONSTRAINED_EXACT_SPHERICAL} TriangulationType;
-typedef enum {GOT_INVALID, GOT_NONE, GOT_WITHOUT_SPECIAL, GOT_SIMPLEST_GRAPH_RENDERING, GOT_SIMPLEST_GRAPH_RENDERING_ANDRE} GraphOutputType;
+typedef enum {GOT_INVALID, GOT_NONE, GOT_WITHOUT_SPECIAL, GOT_WITHOUT_SPECIAL_HASH_MAP, GOT_SIMPLEST_GRAPH_RENDERING, GOT_SIMPLEST_GRAPH_RENDERING_ANDRE} GraphOutputType;
 typedef enum {GIT_INVALID, GIT_NODES_EDGES, GIT_EDGES} GraphInputType;
 typedef enum {TIO_INVALID, TIO_NODES_EDGES, TIO_EDGES} TriangulationInputOrder;
 
@@ -97,6 +97,9 @@ struct TriangulationWriter {
 			break;
 		case GOT_WITHOUT_SPECIAL:
 			writeWithoutSpecial(out, trs);
+			break;
+		case GOT_WITHOUT_SPECIAL_HASH_MAP:
+			writeWithoutSpecialHashMap(out, trs);
 			break;
 		case GOT_SIMPLEST_GRAPH_RENDERING:
 			writeSimplestGraphRendering(out, trs);
@@ -169,8 +172,70 @@ struct TriangulationWriter {
 		}
 	}
 
+	void writeWithoutSpecialHashMap(std::ostream & out, TRS & sdt) {
+		out.precision(std::numeric_limits<double>::digits10+1);
+		
+		CGAL::Unique_hash_map<Vertex_handle, uint32_t> vertex2Id;
+		uint32_t vertexId = 0;
+		uint32_t edgeCount = 0;
+		
+		Finite_vertices_iterator vIt(sdt.finite_vertices_begin()), vEnd(sdt.finite_vertices_end());
+		for(; vIt != vEnd; ++vIt) {
+			assert(!vertex2Id.is_defined(vIt));
+			if (!sdt.is_auxiliary(vIt)) {
+				vertex2Id[vIt] = vertexId;
+				++vertexId;
+			}
+		}
+
+		for(Finite_edges_iterator eIt(sdt.finite_edges_begin()), eEnd(sdt.finite_edges_end()); eIt != eEnd; ++eIt) {
+			auto & face = *(eIt->first);
+			int index = eIt->second;
+			auto vs = face.vertex(face.cw(index));
+			auto vt = face.vertex(face.ccw(index));
+			if (vertex2Id.is_defined(vs) && vertex2Id.is_defined(vt)) { //src or target is aux/inf 
+				++edgeCount;
+			}
+		}
+		
+		std::cerr << "Graph has " << vertexId << " vertices and " << edgeCount  << " edges" << std::endl;
+		
+		out << vertexId << '\n';
+		out << edgeCount << '\n';
+		
+		vIt = sdt.finite_vertices_begin();
+		for(; vIt != vEnd; ++vIt) {
+			if (vertex2Id.is_defined(vIt)) {
+				auto coords = sdt.toGeo(vIt->point());
+				out << coords.lat << ' ' << coords.lon << '\n';
+			}
+		}
+		
+		//and now the edges
+		for(Finite_edges_iterator eIt(sdt.finite_edges_begin()), eEnd(sdt.finite_edges_end()); eIt != eEnd; ++eIt) {
+			const Edge & e = *eIt;
+			auto & face = *(eIt->first);
+			int index = eIt->second;
+			auto vs = face.vertex(face.cw(index));
+			auto vt = face.vertex(face.ccw(index));
+			if (!vertex2Id.is_defined(vs) || !vertex2Id.is_defined(vt)) { //src or target is aux/inf 
+				continue;
+			}
+			out << vertex2Id[vs] << ' ' << vertex2Id[vt] << ' ';
+			if (::is_constrained(sdt, e)) {
+				out << "c";
+			}
+			else {
+				out << "n";
+			}
+			out << '\n';
+		}
+		out << std::flush;
+		
+	}
+
 	void writeSimplestGraphRendering(std::ostream & out, TRS & sdt) {
-		out.precision(20);
+		out.precision(std::numeric_limits<double>::digits10+1);
 		
 		CGAL::Unique_hash_map<Vertex_handle, uint32_t> vertex2Id;
 		uint32_t vertexId = 0;
