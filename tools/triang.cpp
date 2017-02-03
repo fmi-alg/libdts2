@@ -71,6 +71,8 @@ extern "C" void debug_print_vertex_handle_icdt(const dts2::Constrained_Delaunay_
 	}
 }
 
+dts2::Constrained_Delaunay_triangulation_with_inexact_intersections_with_info_s2<VertexInfo, void> * debug_triangulation_pointer = 0;
+
 using InputOutput = ratss::InputOutput;
 
 ///vertices need to have VertexInfo as info
@@ -112,8 +114,20 @@ struct TriangulationWriter {
 		};
 	}
 	
+	void assignVertexIds(TRS & trs, std::vector<Vertex_handle> & id2Vh) {
+		int count = 0;
+		for(Finite_vertices_iterator it(trs.finite_vertices_begin()), end(trs.finite_vertices_end()); it != end; ++it, ++count) {
+			it->info().id = count;
+		}
+		id2Vh.reserve(count);
+		for(Finite_vertices_iterator it(trs.finite_vertices_begin()), end(trs.finite_vertices_end()); it != end; ++it, ++count) {
+			id2Vh.at(it->info().id) = it;
+		}
+	}
+	
 	void writeWithoutSpecial(std::ostream & out, TRS & trs) {
 		using std::distance;
+// 		assignVertexIds(trs);
 		std::size_t vertexCount(0), edgeCount(0), maxVertexId(0);
 		for(Finite_vertices_iterator it(trs.finite_vertices_begin()), end(trs.finite_vertices_end()); it != end; ++it) {
 			if (!trs.is_special(it) && !trs.is_special(it)) {
@@ -384,6 +398,19 @@ struct TriangulationWriter {
 	
 };
 
+extern "C" void debug_dump_triangulation() {
+	if (!debug_triangulation_pointer) {
+		std::cerr << "Pointer is null" << std::endl;
+		return;
+	}
+	using CDT = dts2::Constrained_Delaunay_triangulation_with_inexact_intersections_with_info_s2<VertexInfo, void>;
+	CDT & cdt = *debug_triangulation_pointer;
+	TriangulationWriter<CDT> writer(ratss::PointBase::FM_GEO, GOT_WITHOUT_SPECIAL_HASH_MAP);
+	std::cerr << "DEBUG_GRAPH_BEGIN" << std::endl;
+	writer.write(std::cerr, cdt);
+	std::cerr << "DEBUG_GRAPH_END" << std::endl;
+}
+
 class TriangulationCreator {
 public:
 	GraphOutputType got;
@@ -527,7 +554,9 @@ m_tr(
 		intersectionSignificands
 	)
 )
-{}
+{
+	debug_triangulation_pointer = &m_tr;
+}
 
 class TriangulationCreatorExactIntersectionsConstrainedDelaunay: public TriangulationCreator {
 public:
