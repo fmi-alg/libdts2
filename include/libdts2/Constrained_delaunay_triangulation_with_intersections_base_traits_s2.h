@@ -96,11 +96,11 @@ protected: //own implementations not support by the base traits
 // 			std::cerr << "bPlane=" << aPlane << std::endl;
 			
 			auto xRes = m_it3(aPlane, bPlane);
-			if (!boost::get<Line_3>(&*xRes)) {
+			const Line_3 * line3 = boost::get<Line_3>(&*xRes);
+			
+			if (!line3) {
 				throw std::runtime_error("Trying to intersect segments on the same great circle is currenty unsupported");
 			}
-			
-			const Line_3 * line3 = boost::get<Line_3>(&*xRes);
 			
 			//we need to check if the line passes through the segment a and b
 			//This has to be done since the line3 represents the intersection points of the two great circles induces by segments a and b
