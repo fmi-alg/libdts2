@@ -2,7 +2,7 @@
 #include <libdts2/Constrained_delaunay_triangulation_s2.h>
 
 #include "TestBase.h"
-#include <vendor/libratss/common/generators.h>
+#include "../vendor/libratss/common/generators.h"
 
 namespace LIB_DTS2_NAMESPACE {
 namespace tests {
