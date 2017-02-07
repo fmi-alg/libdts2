@@ -6,6 +6,8 @@
 #include <libratss/SphericalCoord.h>
 #include <libratss/GeoCoord.h>
 
+#include <CGAL/number_utils.h>
+
 #include <CGAL/enum.h>
 
 
@@ -44,6 +46,11 @@ protected: //we only want to expose typedefs that are really needed by the trian
 	using Line_3 = typename MyBaseTrait::Line_3;
 	using Ray_3 = typename MyBaseTrait::Ray_3;
 	using Vector_3 = typename MyBaseTrait::Vector_3;
+	
+	//stuff used for Collinear_are_ordered_along_line_2
+	using Coplanar_3 = typename MyBaseTrait::Coplanar_3;
+	using Compute_scalar_product_3 = typename MyBaseTrait::Compute_scalar_product_3;
+	using Construct_cross_product_vector_3 = typename MyBaseTrait::Construct_cross_product_vector_3;
 	
 public:
 	using FT = typename MyBaseTrait::FT;
@@ -156,6 +163,48 @@ public: //own implementations
 	private:
 		Compare_y_3 m_cy3;
 	};
+	
+	///Checks if 3 points p, q,r are ordered along a great circle
+	///They are ordered along the great circle if the angle >pq is smaller than >pr
+	///AND if r,q are on the same side of the line from p to -p
+	class Collinear_are_ordered_along_line_2 {
+	public:
+		Collinear_are_ordered_along_line_2() {}
+	public:
+		bool operator()(const Point_3 & p, const Point_3 & q, const Point_3 & r) const {
+			if (!m_cop3(LIB_DTS2_ORIGIN, p, q, r)) {
+				return false;
+			}
+			if (p == q || q == r) {
+				return true;
+			}
+			//are coplanar, the direction of one point to another is defined by the vector with shorter euclidean distance
+			//the following works since p, q, r have all the same length
+			//here we check the angle >pq and >pr. >pq has to be smaller than >pr
+			auto pq_sp = m_csp3(p, q);
+			auto pr_sp = m_csp3(p, r);
+			if (pq_sp > pr_sp) {
+				return false;
+			}
+			//>pr has a larger angle than >pq BUT it can still be on the other other side of the circle
+			//we have to make sure that r, q are on the same side of the line from p to -p
+			
+			//if the cross-product of pq and pr point the same direction,
+			//then q,r are on the same side
+			//They point in the same direction if pq_cpv = l*pr_cpv with l positive
+			//They point in different direction if l negative
+			auto pq_cpv = m_ccpv3(p, q);
+			auto pr_cpv = m_ccpv3(p, r);
+			return (CGAL::sign(pq_cpv.x()) * CGAL::sign(pr_cpv.x()) == CGAL::POSITIVE ||
+					CGAL::sign(pq_cpv.y()) * CGAL::sign(pr_cpv.y()) == CGAL::POSITIVE ||
+					CGAL::sign(pq_cpv.z()) * CGAL::sign(pr_cpv.z()) == CGAL::POSITIVE);
+		}
+	private:
+		Coplanar_3 m_cop3;
+		Compute_scalar_product_3 m_csp3;
+		Construct_cross_product_vector_3 m_ccpv3;
+	};
+	
 public:
 	
 	///sub classes of this trait should sub-class this class and add an appropriate
