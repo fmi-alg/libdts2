@@ -101,7 +101,21 @@ protected: //own implementations not support by the base traits
 			const Line_3 * line3 = boost::get<Line_3>(&*xRes);
 			
 			if (!line3) {
-				throw std::runtime_error("Trying to intersect segments on the same great circle is currenty unsupported");
+				const Plane_3 * plane3 = boost::get<Plane_3>(&*xRes);
+				if (!plane3) {
+					throw std::runtime_error("Segments are not on the sphere!");
+				}
+				//Segments are coplanar
+				//check if the segments overlap. This is the case if the line from origin to a.source() intersect b and vice versa
+				if (m_dit3(Ray_3(LIB_DTS2_ORIGIN, a.source()), b)) {
+					return CGAL::make_object( a.source() );
+				}
+				else if (m_dit3(Ray_3(LIB_DTS2_ORIGIN, a.target()), b)) {
+					return CGAL::make_object( a.target() );
+				}
+				else {
+					return CGAL::Object();
+				}
 			}
 			
 			//we need to check if the line passes through the segment a and b
