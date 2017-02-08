@@ -6,6 +6,8 @@
 #include <libdts2/Constrained_delaunay_triangulation_base_traits_s2.h>
 #include <CGAL/intersections.h>
 
+#define LIB_DTS2_ORIGIN Point_3(0, 0, 0)
+
 namespace LIB_DTS2_NAMESPACE {
 
 template<typename T_KERNEL>
@@ -90,8 +92,8 @@ protected: //own implementations not support by the base traits
 // 			std::cerr << "a=" << a << std::endl;
 // 			std::cerr << "b=" << b << std::endl;
 		
-			Plane_3 aPlane(a, Point_3(0, 0, 0) );
-			Plane_3 bPlane(b, Point_3(0, 0, 0) );
+			Plane_3 aPlane(a, LIB_DTS2_ORIGIN );
+			Plane_3 bPlane(b, LIB_DTS2_ORIGIN );
 // 			std::cerr << "aPlane=" << aPlane << std::endl;
 // 			std::cerr << "bPlane=" << aPlane << std::endl;
 			
@@ -203,5 +205,7 @@ public:
 };
 
 }//end LIB_DTS2_NAMESPACE
+
+#undef LIB_DTS2_ORIGIN
 
 #endif
