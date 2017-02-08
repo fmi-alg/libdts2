@@ -111,6 +111,15 @@ protected: //own implementations not support by the base traits
 				assert(false);
 				return CGAL::Object();
 			}
+			Ray_3 ray3(LIB_DTS2_ORIGIN, *line3);
+			//it may still be the case that segments a and b are on opposite sides of the sphere
+			//But we know that the line intersects both segments.
+			//We can simply check if the ray starting from origin
+			//intersects both segments as well or does not intersect both
+			if (m_dit3(ray3, a) == m_dit3(ray3, b)) {
+				assert(false);
+				return CGAL::Object();
+			}
 			
 // 			std::cerr << "*line3=" << *line3 << std::endl;
 			
