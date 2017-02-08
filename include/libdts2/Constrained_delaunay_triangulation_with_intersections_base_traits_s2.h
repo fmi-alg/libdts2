@@ -68,6 +68,39 @@ public:
 	using Less_y_2 = typename MyBaseTrait::Less_y_2;
 	
 	using Construct_segment_2 = typename MyBaseTrait::Construct_segment_2;
+public: //own implementations
+	class Do_intersect_2 {
+	public:
+		Do_intersect_2();
+		bool operator()(const Segment_2 & a, const Segment_2 & b) const {
+			Plane_3 aPlane(a, LIB_DTS2_ORIGIN );
+			Plane_3 bPlane(b, LIB_DTS2_ORIGIN );
+// 			std::cerr << "aPlane=" << aPlane << std::endl;
+// 			std::cerr << "bPlane=" << aPlane << std::endl;
+			
+			auto xRes = m_it3(aPlane, bPlane);
+			const Line_3 * line3 = boost::get<Line_3>(&*xRes);
+			
+			if (!line3) {
+				const Plane_3 * plane3 = boost::get<Plane_3>(&*xRes);
+				if (!plane3) {
+					throw std::runtime_error("Segments are not on the sphere!");
+				}
+				//check if the segments overlap. This is the case if the line from origin to a.source() intersect b and vice versa
+				return m_dit3(Ray_3(LIB_DTS2_ORIGIN, a.source()), b) ||
+						m_dit3(Ray_3(LIB_DTS2_ORIGIN, a.target()), b);
+			}
+			else {
+				if (m_dit3(*line3, a) && m_dit3(*line3, b)) {
+					Ray_3 ray3(LIB_DTS2_ORIGIN, *line3);
+					return (m_dit3(ray3, a) == m_dit3(ray3, b));
+				}
+			}
+		}
+	protected:
+		Do_intersect_3 m_dit3;
+		Intersect_3 m_it3;
+	};
 protected:
 	using MyBaseTrait::print;
 protected: //own implementations not support by the base traits
