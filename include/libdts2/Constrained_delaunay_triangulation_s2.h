@@ -43,6 +43,11 @@ class Constrained_delaunay_triangulation_s2:
 		>
 {
 public:
+	template<typename TR_GEOM_TRAITS, typename TR_TDS, typename TR_ITAG>
+	struct Rebind {
+		using type = LIB_DTS2_NAMESPACE::Constrained_delaunay_triangulation_s2<TR_GEOM_TRAITS, TR_TDS, TR_ITAG>;
+	};
+public:
 	using MyBaseClass = Constrained_triangulation_base_s2< CGAL::Constrained_Delaunay_triangulation_2<T_GEOM_TRAITS, T_TDS, T_ITAG> >;
 public:
 	using Triangulation_data_structure = typename MyBaseClass::Triangulation_data_structure;
