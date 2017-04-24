@@ -12,12 +12,12 @@ This design simplifys many tasks in the construction of algorithm.
 Since we want to map the sphere on the 2D triangulation we have to deal with these pecularities.
 To this end we introduce 4 new vertices into our initial triangulation.
 One is at the south-pole and the other 3 form a small triangle around the north-pole.
-Furthermore we place the infinite vertex on the nort-pole.
-In essence we now have 3 inner faces each having the north-pole as a vertex and two vertices of the northern points.
-Furthermore there are 3 outer faces connected to the infinite vertex as two vertices of the northern points.
-We now implement all necessary predicates based on this mapping.
+Furthermore we place the infinite vertex at the nort-pole.
+In essence we now have 3 inner faces each having the south-pole as a vertex and two vertices of the northern points.
+Furthermore there are 3 outer faces connected to the infinite vertex at the north-pole and two vertices of the northern points.
+We now implement all necessary predicates based on this setting.
 The downside of this is of course that it is not possible to add points that would fall inside of the outer faces.
-It also now possible to create a triangulation not having the triangles of this initial construction.
+It is also not possible to create a triangulation that does not have these initial triangles and points.
 
 ## Scope
 This library currently supports Delaunay and Constrained Delaunay Triangulations without intersecting segments.
