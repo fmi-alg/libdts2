@@ -4,6 +4,21 @@ If input points are not exactly on the sphere then they are snaped on the sphere
 It essentialy provides an adaptor class for the (Delaunay) triangulation algorithms that are provided by CGAL.
 Any other triangulation algorithms/data structures following the triangulation concepts of CGAL should work aswell.
 
+### Basic idea
+The 2D triangulation data structure of CGAL distinguishes between inner faces and outer faces.
+An inner face is a triangle that is within the convex hull of the point set.
+An outer face on the other hand consists of two vertices of the convex hull and the infinite vertex.
+This design simplifys many tasks in the construction of algorithm.
+Since we want to map the sphere on the 2D triangulation we have to deal with these pecularities.
+To this end we introduce 4 new vertices into our initial triangulation.
+One is at the south-pole and the other 3 form a small triangle around the north-pole.
+Furthermore we place the infinite vertex on the nort-pole.
+In essence we now have 3 inner faces each having the north-pole as a vertex and two vertices of the northern points.
+Furthermore there are 3 outer faces connected to the infinite vertex as two vertices of the northern points.
+We now implement all necessary predicates based on this mapping.
+The downside of this is of course that it is not possible to add points that would fall inside of the outer faces.
+It also now possible to create a triangulation not having the triangles of this initial construction.
+
 ## Scope
 This library currently supports Delaunay and Constrained Delaunay Triangulations without intersecting segments.
 There is also support for Constrained Delaunay Triangulations where segments are allowed to intersect.
