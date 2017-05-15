@@ -86,7 +86,7 @@ public:
 				return v;
 			}
 			
-			mpq_class sqLenQ( Conversion<FT>::toMpq(sqLen) );
+			mpq_class sqLenQ = Conversion<FT>::toMpq(sqLen);
 			std::size_t sqLenPrec = projector().calc().maxBitCount(sqLenQ);
 			mpfr::mpreal sqLenF(Conversion<mpq_class>::toMpreal(sqLenQ, sqLenPrec));
 			mpfr::mpreal lenF = projector().calc().sqrt(sqLenF);
