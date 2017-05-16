@@ -27,13 +27,17 @@ namespace Triangulation_base_s2 {
 
 ///This is the base class for all triangulations on the sphere
 template<typename T_BASE_TRIANGULATION>
-class Triangulation_base_s2 {
+class Triangulation_base_s2: private T_BASE_TRIANGULATION {
+public:
+	using MyBaseClass = T_BASE_TRIANGULATION;
 public:
 	using Triangulation = T_BASE_TRIANGULATION;
 	using Triangulation_data_structure = typename Triangulation::Triangulation_data_structure;
 	using Geom_traits = typename Triangulation::Geom_traits;
 	using Trs = Triangulation;
 	using Tds = Triangulation_data_structure;
+public:
+	using Locate_type = typename Trs::Locate_type;
 public:
 	using FT = typename Geom_traits::FT;
 	using Point = typename Geom_traits::Point;
@@ -83,6 +87,8 @@ public: //insertion
 	
 	template<typename T_ITERATOR>
 	void insert_with_info(T_ITERATOR begin, T_ITERATOR end, bool snap);
+public:
+	using MyBaseClass::locate;
 public: //removal
 	void remove(const Vertex_handle & vh);
 public:
@@ -222,7 +228,8 @@ Triangulation_base_s2(
 
 TMPL_HDR
 TMPL_CLS::Triangulation_base_s2(const Geom_traits & traits) :
-m_cdts(traits),
+MyBaseClass(traits),
+m_cdts(*this),
 m_p( this->geom_traits().project_on_sphere_object() )
 {
 	if (! (epsZ() > 0 && epsZ() < 1) ) {
@@ -234,14 +241,16 @@ m_p( this->geom_traits().project_on_sphere_object() )
 
 TMPL_HDR
 TMPL_CLS::Triangulation_base_s2(Triangulation_base_s2 && other) :
-m_cdts(std::move(other.m_cdts)),
+MyBaseClass(other),
+m_cdts(*this),
 m_p(std::move(other.m_p))
 {}
 
 TMPL_HDR
 TMPL_CLS & 
 TMPL_CLS::operator=(TMPL_CLS && other) {
-	m_cdts = std::move(other.m_cdts);
+	MyBaseClass::operator=( std::move(other.m_cdts) );
+	m_cdts = *this;
 	m_p = std::move(other.m_p);
 	return *this;
 }
