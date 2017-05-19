@@ -70,11 +70,11 @@ public:
 	Triangulation_base_s2(const Triangulation_base_s2& other) = delete;
 	Triangulation_base_s2 & operator=(Triangulation_base_s2 && other);
 public: //insertion
-	Vertex_handle insert(const Point & p);
-	Vertex_handle insert(double lat, double lon);
-	Vertex_handle insert(const std::pair<double, double> & p);
-	Vertex_handle insert(const SphericalCoord & p);
-	Vertex_handle insert(const GeoCoord & p);
+	Vertex_handle insert(const Point & p, const Face_handle & fh = Face_handle());
+	Vertex_handle insert(double lat, double lon, const Face_handle & fh = Face_handle());
+	Vertex_handle insert(const std::pair<double, double> & p, const Face_handle & fh = Face_handle());
+	Vertex_handle insert(const SphericalCoord & p, const Face_handle & fh = Face_handle());
+	Vertex_handle insert(const GeoCoord & p, const Face_handle & fh = Face_handle());
 
 	template<typename T_ITERATOR>
 	void insert(T_ITERATOR begin, T_ITERATOR end) { insert(begin, end, true); }
@@ -260,37 +260,37 @@ TMPL_CLS::operator=(TMPL_CLS && other) {
 
 TMPL_HDR
 typename TMPL_CLS::Vertex_handle
-TMPL_CLS::insert(const Point & p) {
+TMPL_CLS::insert(const Point & p, const Face_handle & fh) {
 	if (p.x() * p.x() + p.y()*p.y() + p.z() * p.z() == 1) {
-		return m_cdts.insert(p);
+		return m_cdts.insert(p, fh);
 	}
 	else {
-		return m_cdts.insert(project(p));
+		return m_cdts.insert(project(p), fh);
 	}
 }
 
 TMPL_HDR
 typename TMPL_CLS::Vertex_handle 
-TMPL_CLS::insert(double lat, double lon) {
-	return insert(GeoCoord(lat, lon));
+TMPL_CLS::insert(double lat, double lon, const Face_handle & fh) {
+	return insert(GeoCoord(lat, lon), fh);
 }
 
 TMPL_HDR
 typename TMPL_CLS::Vertex_handle 
-TMPL_CLS::insert(const std::pair<double, double> & latLon) {
-	insert(GeoCoord(latLon.first, latLon.second));
+TMPL_CLS::insert(const std::pair<double, double> & latLon, const Face_handle & fh) {
+	insert(GeoCoord(latLon.first, latLon.second), fh);
 }
 
 TMPL_HDR
 typename TMPL_CLS::Vertex_handle 
-TMPL_CLS::insert(const SphericalCoord & p) {
-	m_cdts.insert(project(p));
+TMPL_CLS::insert(const SphericalCoord & p, const Face_handle & fh) {
+	m_cdts.insert(project(p), fh);
 }
 
 TMPL_HDR
 typename TMPL_CLS::Vertex_handle 
-TMPL_CLS::insert(const GeoCoord & p) {
-	m_cdts.insert(project(p));
+TMPL_CLS::insert(const GeoCoord & p, const Face_handle & fh) {
+	m_cdts.insert(project(p), fh);
 }
 
 TMPL_HDR
