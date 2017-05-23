@@ -108,14 +108,11 @@ public: //own implementations
 			assert(p.z() < 1 && q.z() < 1 && r.z() < 1);
 			assert(p != q);
 			
-			Orientation oriented_side;
+			Orientation oriented_side = ot3(p, q, LIB_DTS2_ORIGIN, r);
 			
-			if (p.z() >= m_epsZ && q.z() >= m_epsZ) {
+			if (oriented_side != Orientation::COLLINEAR && p.z() >= m_epsZ && q.z() >= m_epsZ) {
 				//the point always has to be on the opposite site of the infinite vertex
 				oriented_side = - ot3(p, q, LIB_DTS2_ORIGIN, Point(0, 0, 1));
-			}
-			else {
-				oriented_side = ot3(p, q, LIB_DTS2_ORIGIN, r);
 			}
 			return oriented_side;
 		}
