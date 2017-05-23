@@ -55,13 +55,13 @@ void CDTTest::valid() {
 
 void CDTTest::locate() {
 	auto vIt = m_cdt.finite_vertices_begin();
-	auto vEnd = m_cdt.finite_vertices_begin();
+	auto vEnd = m_cdt.finite_vertices_end();
 	CDT::Locate_type lt;
 	int li;
 	for(; vIt != vEnd; ++vIt) {
 		CDT::Face_handle fh = m_cdt.locate(vIt->point(), lt, li);
-		CPPUNIT_ASSERT_EQUAL(lt, CDT::VERTEX);
-		CPPUNIT_ASSERT((CDT::Vertex_handle)vIt != fh->vertex(li));
+		CPPUNIT_ASSERT_EQUAL(CDT::VERTEX, lt);
+		CPPUNIT_ASSERT(vIt->point() == fh->vertex(li)->point());
 	}
 }
 
