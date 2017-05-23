@@ -278,19 +278,19 @@ TMPL_CLS::insert(double lat, double lon, const Face_handle & fh) {
 TMPL_HDR
 typename TMPL_CLS::Vertex_handle 
 TMPL_CLS::insert(const std::pair<double, double> & latLon, const Face_handle & fh) {
-	insert(GeoCoord(latLon.first, latLon.second), fh);
+	return insert(GeoCoord(latLon.first, latLon.second), fh);
 }
 
 TMPL_HDR
 typename TMPL_CLS::Vertex_handle 
 TMPL_CLS::insert(const SphericalCoord & p, const Face_handle & fh) {
-	m_cdts.insert(project(p), fh);
+	return m_cdts.insert(project(p), fh);
 }
 
 TMPL_HDR
 typename TMPL_CLS::Vertex_handle 
 TMPL_CLS::insert(const GeoCoord & p, const Face_handle & fh) {
-	m_cdts.insert(project(p), fh);
+	return m_cdts.insert(project(p), fh);
 }
 
 TMPL_HDR
