@@ -37,7 +37,12 @@ public:
 	using Trs = Triangulation;
 	using Tds = Triangulation_data_structure;
 public:
-	using Locate_type = typename Trs::Locate_type;
+	using typename Triangulation::Locate_type;
+	using Triangulation::VERTEX;
+	using Triangulation::EDGE;
+	using Triangulation::FACE;
+	using Triangulation::OUTSIDE_CONVEX_HULL;
+	using Triangulation::OUTSIDE_AFFINE_HULL;
 public:
 	using FT = typename Geom_traits::FT;
 	using Point = typename Geom_traits::Point;
