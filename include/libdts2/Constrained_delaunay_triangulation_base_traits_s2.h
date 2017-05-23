@@ -287,7 +287,7 @@ public:
 public: //object functions
 	///This does not correctly initialize this trait!
 	Constrained_delaunay_triangulation_base_traits_s2() :
-	m_epsZ(FT(std::numeric_limits<double>::epsilon()))
+	m_epsZ(FT(1)-FT(std::numeric_limits<double>::epsilon()))
 	{}
 	///@param epsilon set the value of the z-coordinate above which no points should exist
 	Constrained_delaunay_triangulation_base_traits_s2(const FT & _epsilon, int _significands) :
