@@ -208,7 +208,6 @@ private:
 	void addAuxiliaryPoints();
 	Point_3 generateAuxPoint(FT xp, FT yp) const;
 private:
-	Triangulation m_cdts;
 	Project_on_sphere m_p;
 };
 
@@ -234,7 +233,6 @@ Triangulation_base_s2(
 TMPL_HDR
 TMPL_CLS::Triangulation_base_s2(const Geom_traits & traits) :
 MyBaseClass(traits),
-m_cdts(*this),
 m_p( this->geom_traits().project_on_sphere_object() )
 {
 	if (! (epsZ() > 0 && epsZ() < 1) ) {
@@ -247,15 +245,13 @@ m_p( this->geom_traits().project_on_sphere_object() )
 TMPL_HDR
 TMPL_CLS::Triangulation_base_s2(Triangulation_base_s2 && other) :
 MyBaseClass(other),
-m_cdts(*this),
 m_p(std::move(other.m_p))
 {}
 
 TMPL_HDR
 TMPL_CLS & 
 TMPL_CLS::operator=(TMPL_CLS && other) {
-	MyBaseClass::operator=( std::move(other.m_cdts) );
-	m_cdts = *this;
+	MyBaseClass::operator=(other);
 	m_p = std::move(other.m_p);
 	return *this;
 }
@@ -267,10 +263,10 @@ TMPL_HDR
 typename TMPL_CLS::Vertex_handle
 TMPL_CLS::insert(const Point & p, const Face_handle & fh) {
 	if (p.x() * p.x() + p.y()*p.y() + p.z() * p.z() == 1) {
-		return m_cdts.insert(p, fh);
+		return trs().insert(p, fh);
 	}
 	else {
-		return m_cdts.insert(project(p), fh);
+		return trs().insert(project(p), fh);
 	}
 }
 
@@ -289,13 +285,13 @@ TMPL_CLS::insert(const std::pair<double, double> & latLon, const Face_handle & f
 TMPL_HDR
 typename TMPL_CLS::Vertex_handle 
 TMPL_CLS::insert(const SphericalCoord & p, const Face_handle & fh) {
-	return m_cdts.insert(project(p), fh);
+	return trs().insert(project(p), fh);
 }
 
 TMPL_HDR
 typename TMPL_CLS::Vertex_handle 
 TMPL_CLS::insert(const GeoCoord & p, const Face_handle & fh) {
-	return m_cdts.insert(project(p), fh);
+	return trs().insert(project(p), fh);
 }
 
 TMPL_HDR
@@ -329,7 +325,7 @@ TMPL_CLS::insert_with_info(T_ITERATOR begin, T_ITERATOR end, bool snap) {
 TMPL_HDR
 void
 TMPL_CLS::remove(const Vertex_handle & vh) {
-	m_cdts.remove(vh);
+	trs().remove(vh);
 }
 //END removal operations
 
@@ -338,55 +334,55 @@ TMPL_CLS::remove(const Vertex_handle & vh) {
 TMPL_HDR
 typename TMPL_CLS::Finite_vertices_iterator 
 TMPL_CLS::finite_vertices_begin() const {
-	return m_cdts.finite_vertices_begin();
+	return trs().finite_vertices_begin();
 }
 
 TMPL_HDR
 typename TMPL_CLS::Finite_vertices_iterator 
 TMPL_CLS::finite_vertices_end() const {
-	return m_cdts.finite_vertices_end();
+	return trs().finite_vertices_end();
 }
 
 TMPL_HDR
 typename TMPL_CLS::Finite_edges_iterator 
 TMPL_CLS::finite_edges_begin() const {
-	return m_cdts.finite_edges_begin();
+	return trs().finite_edges_begin();
 }
 
 TMPL_HDR
 typename TMPL_CLS::Finite_edges_iterator 
 TMPL_CLS::finite_edges_end() const {
-	return m_cdts.finite_edges_end();
+	return trs().finite_edges_end();
 }
 
 TMPL_HDR
 typename TMPL_CLS::Finite_faces_iterator 
 TMPL_CLS::finite_faces_begin() const {
-	return m_cdts.finite_faces_begin();
+	return trs().finite_faces_begin();
 }
 
 TMPL_HDR
 typename TMPL_CLS::Finite_faces_iterator 
 TMPL_CLS::finite_faces_end() const {
-	return m_cdts.finite_faces_end();
+	return trs().finite_faces_end();
 }
 
 TMPL_HDR
 typename TMPL_CLS::Vertex_circulator 
 TMPL_CLS::incident_vertices(const Vertex_handle & vh) const {
-	return m_cdts.incident_vertices(vh);
+	return trs().incident_vertices(vh);
 }
 
 TMPL_HDR
 typename TMPL_CLS::Edge_circulator 
 TMPL_CLS::incident_edges(const Vertex_handle & vh) const {
-	return m_cdts.incident_edges(vh);
+	return trs().incident_edges(vh);
 }
 
 TMPL_HDR
 typename TMPL_CLS::Face_circulator 
 TMPL_CLS::incident_faces(const Vertex_handle & vh) const {
-	return m_cdts.incident_faces(vh);
+	return trs().incident_faces(vh);
 }
 //END iterators
 
@@ -394,7 +390,7 @@ TMPL_CLS::incident_faces(const Vertex_handle & vh) const {
 TMPL_HDR
 typename TMPL_CLS::Segment
 TMPL_CLS::segment(const Edge & e) const {
-	return m_cdts.segment(e);
+	return trs().segment(e);
 }
 //END construction
 
@@ -402,19 +398,19 @@ TMPL_CLS::segment(const Edge & e) const {
 TMPL_HDR
 std::size_t 
 TMPL_CLS::number_of_vertices() const {
-	return m_cdts.number_of_vertices();
+	return trs().number_of_vertices();
 }
 
 TMPL_HDR
 std::size_t 
 TMPL_CLS::number_of_edges() {
-	return m_cdts.number_of_edges();
+	return trs().number_of_edges();
 }
 
 TMPL_HDR
 std::size_t 
 TMPL_CLS::number_of_faces() const {
-	return m_cdts.number_of_faces();
+	return trs().number_of_faces();
 }
 
 //END size info
@@ -422,7 +418,7 @@ TMPL_CLS::number_of_faces() const {
 TMPL_HDR
 bool 
 TMPL_CLS::is_infinite(const Vertex_handle & vh) const {
-	return m_cdts.is_infinite(vh);
+	return trs().is_infinite(vh);
 }
 
 TMPL_HDR
@@ -441,13 +437,13 @@ TMPL_CLS::is_special(const Vertex_handle & vh) const {
 TMPL_HDR
 std::size_t 
 TMPL_CLS::degree(const Vertex_handle & vh) const {
-	return m_cdts.degree(vh);
+	return trs().degree(vh);
 }
 
 TMPL_HDR
 bool
 TMPL_CLS::is_valid() {
-	return m_cdts.is_valid();
+	return trs().is_valid();
 }
 //END query functions
 //BEGIN helpers
@@ -455,13 +451,13 @@ TMPL_CLS::is_valid() {
 TMPL_HDR
 int 
 TMPL_CLS::ccw(int v) const {
-	return m_cdts.ccw(v);
+	return trs().ccw(v);
 }
 
 TMPL_HDR
 int 
 TMPL_CLS::cw(int v) const {
-	return m_cdts.cw(v);
+	return trs().cw(v);
 }
 
 //END helpers
@@ -531,13 +527,13 @@ TMPL_CLS::significands() const {
 TMPL_HDR
 const typename TMPL_CLS::Geom_traits &
 TMPL_CLS::geom_traits() const {
-	return m_cdts.geom_traits();
+	return trs().geom_traits();
 }
 
 TMPL_HDR
 const typename TMPL_CLS::Triangulation & 
 TMPL_CLS::trs() const {
-	return m_cdts;
+	return *this;
 }
 
 TMPL_HDR
@@ -567,7 +563,7 @@ TMPL_CLS::insert_with_info_impl(T_ITERATOR begin, T_ITERATOR end, T_ITERATOR_VAL
 	for(;begin != end; ++begin) {
 		tmp.emplace_back(m_p(begin->first), begin->second);
 	}
-	m_cdts.insert(tmp.begin(), tmp.end());
+	trs().insert(tmp.begin(), tmp.end());
 }
 
 TMPL_HDR
@@ -589,10 +585,10 @@ TMPL_CLS::insert_with_info_impl(T_ITERATOR begin, T_ITERATOR end,
 		for(;begin != end; ++begin) {
 			tmp.emplace_back(m_p(begin->first), begin->second);
 		}
-		m_cdts.insert(tmp.begin(), tmp.end());
+		trs().insert(tmp.begin(), tmp.end());
 	}
 	else {
-		m_cdts.insert(begin, end);
+		trs().insert(begin, end);
 	}
 }
 
@@ -607,7 +603,7 @@ TMPL_CLS::insert_impl(T_ITERATOR begin, T_ITERATOR end, T_ITERATOR_VALUE_TYPE * 
 	for(;begin != end; ++begin) {
 		tmp.emplace_back( m_p(*begin) );
 	}
-	m_cdts.insert(tmp.begin(), tmp.end());
+	trs().insert(tmp.begin(), tmp.end());
 }
 
 TMPL_HDR
@@ -629,10 +625,10 @@ TMPL_CLS::insert_impl(T_ITERATOR begin, T_ITERATOR end,
 		for(;begin != end; ++begin) {
 			tmp.emplace_back( m_p(*begin) );
 		}
-		m_cdts.insert(tmp.begin(), tmp.end());
+		trs().insert(tmp.begin(), tmp.end());
 	}
 	else {
-		m_cdts.insert(begin, end);
+		trs().insert(begin, end);
 	}
 }
 
@@ -726,7 +722,7 @@ TMPL_CLS::selfCheck() {
 TMPL_HDR
 typename TMPL_CLS::Triangulation & 
 TMPL_CLS::trs() {
-	return m_cdts;
+	return *this;
 }
 
 TMPL_HDR
@@ -773,12 +769,12 @@ TMPL_CLS::addAuxiliaryPoints() {
 	auto vh_south_pole = tds().create_vertex ();
 	auto vh_inf = tds().create_vertex ();
 
-	auto fh_pyramid_13s = m_cdts.tds().create_face ();
-	auto fh_pyramid_21s = m_cdts.tds().create_face ();
-	auto fh_pyramid_32s = m_cdts.tds().create_face ();
-	auto fh_inf_i31 = m_cdts.tds().create_face ();
-	auto fh_inf_i12 = m_cdts.tds().create_face ();
-	auto fh_inf_i23 = m_cdts.tds().create_face ();
+	auto fh_pyramid_13s = tds().create_face ();
+	auto fh_pyramid_21s = tds().create_face ();
+	auto fh_pyramid_32s = tds().create_face ();
+	auto fh_inf_i31 = tds().create_face ();
+	auto fh_inf_i12 = tds().create_face ();
+	auto fh_inf_i23 = tds().create_face ();
 
 	vh_triangle_1->set_point ( p_1 );
 	vh_triangle_2->set_point ( p_2 );
@@ -811,11 +807,11 @@ TMPL_CLS::addAuxiliaryPoints() {
 	fh_inf_i12->set_neighbors (fh_pyramid_21s, fh_inf_i23, fh_inf_i31);
 	fh_inf_i23->set_neighbors (fh_pyramid_32s, fh_inf_i31, fh_inf_i12);
 
-	m_cdts.set_infinite_vertex (vh_inf);
-	m_cdts.tds().set_dimension (2);
-	assert(m_cdts.tds().dimension() == 2);
-	assert(m_cdts.tds().dimension() == m_cdts.dimension());
-	assert(m_cdts.tds().dimension() == this->dimension());
+	trs().set_infinite_vertex (vh_inf);
+	tds().set_dimension (2);
+	assert(tds().dimension() == 2);
+	assert(tds().dimension() == trs().dimension());
+	assert(tds().dimension() == this->dimension());
 
 	assert( is_valid() );
 }
