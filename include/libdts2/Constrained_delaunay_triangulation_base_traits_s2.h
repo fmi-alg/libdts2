@@ -267,12 +267,14 @@ protected:
 		return baseTraits().do_intersect_3_object();
 	}
 protected:
-	static inline void print(const Point_3 & p3) {
-		std::cout << '(' << doubleValue(p3.x()) << ','
-		<< doubleValue(p3.y()) << ','
-		<< doubleValue(p3.z()) << ')' << '\n';
+	static void print(const Point_3 & p) {
+		using Conversion = LIB_RATSS_NAMESPACE::Conversion<FT>;
+		std::cout << '(' << doubleValue(p.x()) << ','
+		<< doubleValue(p.y()) << ','
+		<< doubleValue(p.z()) << ")=("
+		<< Conversion::toMpq(p.x()) << ", " << Conversion::toMpq(p.y()) << ", " << Conversion::toMpq(p.z()) << ")\n";
 	}
-	static inline void print(std::ostream & out, const Point_3 & p) {
+	static void print(std::ostream & out, const Point_3 & p) {
 		using Conversion = LIB_RATSS_NAMESPACE::Conversion<FT>;
 		out << '(' << Conversion::toMpq(p.x()) << ", " << Conversion::toMpq(p.y()) << ", " << Conversion::toMpq(p.z()) << ')';
 	}
