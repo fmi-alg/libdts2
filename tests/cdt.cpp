@@ -13,14 +13,17 @@ CPPUNIT_TEST( valid );
 CPPUNIT_TEST_SUITE_END();
 public:
 	static std::size_t num_random_test_points;
+public:
+	using CDT = Constrained_Delaunay_triangulation_no_intersections_with_info_s2<void, void>;
 private:
-	Constrained_Delaunay_triangulation_no_intersections_with_info_s2<void, void> m_cdt;
+	CDT m_cdt;
 public:
 	CDTTest() : m_cdt(53) {}
 public:
 	virtual void setUp() override;
 public:
 	void valid();
+	void locate();
 };
 
 std::size_t CDTTest::num_random_test_points;
@@ -47,6 +50,18 @@ void CDTTest::setUp() {
 
 void CDTTest::valid() {
 	CPPUNIT_ASSERT(m_cdt.is_valid());
+}
+
+void CDTTest::locate() {
+	auto vIt = m_cdt.vertices_begin();
+	auto vEnd = m_cdt.vertices_end();
+	CDT::Locate_type lt;
+	int li;
+	for(; vIt != vEnd; ++vIt) {
+		CDT::Face_handle fh = m_cdt.locate(vIt->point(), lt, li);
+		CPPUNIT_ASSERT_EQUAL(lt, CDT::VERTEX);
+		CPPUNIT_ASSERT_EQUAL(vIt, fh->vertex(li));
+	}
 }
 
 }} //end namespace ratss::tests
