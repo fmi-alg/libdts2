@@ -813,6 +813,9 @@ TMPL_CLS::addAuxiliaryPoints() {
 
 	m_cdts.set_infinite_vertex (vh_inf);
 	m_cdts.tds().set_dimension (2);
+	assert(m_cdts.tds().dimension() == 2);
+	assert(m_cdts.tds().dimension() == m_cdts.dimension());
+	assert(m_cdts.tds().dimension() == this->dimension());
 
 	assert( is_valid() );
 }
