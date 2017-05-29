@@ -244,14 +244,14 @@ m_p( this->geom_traits().project_on_sphere_object() )
 
 TMPL_HDR
 TMPL_CLS::Triangulation_base_s2(Triangulation_base_s2 && other) :
-MyBaseClass(other),
-m_p(std::move(other.m_p))
+MyBaseClass( std::move(other) ),
+m_p( std::move(other.m_p) )
 {}
 
 TMPL_HDR
 TMPL_CLS & 
 TMPL_CLS::operator=(TMPL_CLS && other) {
-	MyBaseClass::operator=(other);
+	MyBaseClass::operator=( std::move(other) );
 	m_p = std::move(other.m_p);
 	return *this;
 }

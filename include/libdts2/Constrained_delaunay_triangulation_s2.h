@@ -196,7 +196,7 @@ MyBaseClass(traits)
 
 TMPL_HDR
 TMPL_CLS::Constrained_delaunay_triangulation_s2(TMPL_CLS && other) :
-MyBaseClass(other)
+MyBaseClass( std::move(other) )
 {}
 
 TMPL_HDR

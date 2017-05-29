@@ -43,13 +43,13 @@ MyBaseClass(traits)
 
 TMPL_HDR
 TMPL_CLS::Constrained_triangulation_base_s2(Constrained_triangulation_base_s2 && other) :
-MyBaseClass(std::move(other))
+MyBaseClass( std::move(other) )
 {}
 
 TMPL_HDR
 TMPL_CLS & 
 TMPL_CLS::operator=(TMPL_CLS && other) {
-	MyBaseClass::operator=(std::move(other));
+	MyBaseClass::operator=( std::move(other) );
 	return *this;
 }
 //END constructors
