@@ -123,7 +123,7 @@ MyBaseClass(_significands)
 
 TMPL_HDR
 TMPL_CLS::Delaunay_triangulation_s2(TMPL_CLS && other) :
-MyBaseClass(other)
+MyBaseClass( std::move(other) )
 {}
 
 TMPL_HDR
