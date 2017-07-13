@@ -818,6 +818,8 @@ void Config::parse_completed() {
 	if (triangType == TT_CONSTRAINED_INEXACT_64) {
 		significands = 31;
 		intersectSignificands = 31;
+		snapType = ratss::ProjectSN::ST_PLANE | ratss::ProjectSN::ST_FX | ratss::ProjectSN::ST_NORMALIZE;
+		
 	}
 }
 
