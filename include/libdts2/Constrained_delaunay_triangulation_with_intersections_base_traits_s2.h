@@ -155,6 +155,7 @@ protected: //own implementations not support by the base traits
 			//This has to be done since the line3 represents the intersection points of the two great circles induces by segments a and b
 			//Their intersection is not necessarily an intersection of the segments.
 			if (!m_dit3(*line3, a) || !m_dit3(*line3, b)) {
+				print(a, b);
 				assert(false);
 				return CGAL::Object();
 			}
@@ -164,6 +165,7 @@ protected: //own implementations not support by the base traits
 			//We can simply check if the ray starting from origin
 			//intersects both segments as well or does not intersect both
 			if (m_dit3(ray3, a) == m_dit3(ray3, b)) {
+				print(a, b);
 				assert(false);
 				return CGAL::Object();
 			}
@@ -202,15 +204,9 @@ protected: //own implementations not support by the base traits
 // 			std::cerr << "result=" << result << std::endl;
 // 			std::cerr << "Intersect_2 called -- END" << std::endl;
 // 			bool resultIsEndpoint = result == a.source() || result == b.source() || result == a.target() || result == b.target();
-			std::cerr << "Intersect_2([";
-			MyBaseTrait::print(std::cerr, a.source());
-			std::cerr << ";";
-			MyBaseTrait::print(std::cerr, a.target());
-			std::cerr << "],[";
-			MyBaseTrait::print(std::cerr, b.source());
-			std::cerr << ";";
-			MyBaseTrait::print(std::cerr, b.target());
-			std::cerr  << "]) -> ";
+			std::cerr << "Intersect_2(";
+			print(a, b);
+			std::cerr << " -> ";
 			MyBaseTrait::print(std::cerr, result);
 			std::cerr << std::endl;
 			return CGAL::make_object(result);
@@ -240,6 +236,19 @@ protected: //own implementations not support by the base traits
 			tp2 = a.target();
 			tp3 = b.source();
 		}
+		
+		void print(const Segment & a, const Segment & b) const {
+			std::cerr << "[";
+			MyBaseTrait::print(std::cerr, a.source());
+			std::cerr << ";";
+			MyBaseTrait::print(std::cerr, a.target());
+			std::cerr << "]x[";
+			MyBaseTrait::print(std::cerr, b.source());
+			std::cerr << ";";
+			MyBaseTrait::print(std::cerr, b.target());
+			std::cerr  << "]" << std::endl;
+		}
+		
 	private:
 		Do_intersect_3 m_dit3;
 		Intersect_3 m_it3;
