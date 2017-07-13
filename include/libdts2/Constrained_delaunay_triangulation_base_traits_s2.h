@@ -293,14 +293,18 @@ public: //object functions
 	Constrained_delaunay_triangulation_base_traits_s2(const FT & _epsilon, int _significands) :
 	m_epsZ(_epsilon),
 	m_significands(_significands)
-	{}
+	{
+		assert(m_significands > 2);
+	}
 	
 	Constrained_delaunay_triangulation_base_traits_s2(const Constrained_delaunay_triangulation_base_traits_s2 & other) :
 	m_traits(other.m_traits),
 	m_epsZ(other.m_epsZ),
 	m_proj(other.m_proj),
 	m_significands(other.m_significands)
-	{}
+	{
+		assert(m_significands > 2);
+	}
 	
 	~Constrained_delaunay_triangulation_base_traits_s2() {}
 
