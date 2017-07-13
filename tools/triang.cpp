@@ -26,7 +26,7 @@
 using K = CGAL::Exact_predicates_exact_constructions_kernel;
 using Point3 = K::Point_3;
 
-typedef enum {TT_DELAUNAY, TT_CONSTRAINED, TT_CONSTRAINED_INEXACT, TT_CONSTRAINED_EXACT, TT_CONSTRAINED_EXACT_SPHERICAL} TriangulationType;
+typedef enum {TT_DELAUNAY, TT_CONSTRAINED, TT_CONSTRAINED_INEXACT, TT_CONSTRAINED_INEXACT_64, TT_CONSTRAINED_EXACT, TT_CONSTRAINED_EXACT_SPHERICAL} TriangulationType;
 typedef enum {GOT_INVALID, GOT_NONE, GOT_WITHOUT_SPECIAL, GOT_WITHOUT_SPECIAL_HASH_MAP, GOT_SIMPLEST_GRAPH_RENDERING, GOT_SIMPLEST_GRAPH_RENDERING_ANDRE} GraphOutputType;
 typedef enum {GIT_INVALID, GIT_NODES_EDGES, GIT_EDGES} GraphInputType;
 typedef enum {TIO_INVALID, TIO_NODES_EDGES, TIO_EDGES} TriangulationInputOrder;
@@ -468,8 +468,6 @@ public:
 	using Point = typename Tr::Point;
 	using Vertex_handle = typename Tr::Vertex_handle;
 	using Finite_vertices_iterator = typename Tr::Finite_vertices_iterator;
-private:
-	Tr m_tr;
 public:
 	TriangulationCreatorConstrainedDelaunay(int significands) :
 	m_tr(significands)
@@ -478,7 +476,7 @@ public:
 	
 	virtual void create(Points & points, Edges & edges, InputOutput & io, bool clear) override  {
 		std::size_t ps = points.size();
-		m_tr.insert(points.begin(), points.end(), false);
+		insert(points.begin(), points.end());
 		if (clear) {
 			points = Points();
 		}
@@ -524,21 +522,44 @@ public:
 	}
 	
 	virtual void add(const Point3 & p) override {
-		m_tr.insert(p);
+		insert(p);
 	}
 	
 	virtual void add(const Point3 & p1, const Point3 & p2) override {
-		m_tr.insert(p1, p2);
+		insert(p1, p2);
 	}
 	
 	virtual void write(InputOutput & io) override  {
 		TriangulationWriter<Tr> writer(pointFormat, got);
 		writer.write(io.output(), m_tr);
 	}
+private:
+	//points are already snapped
+	void insert(Points::const_iterator begin, Points::const_iterator end) {
+		m_tr.insert(begin, end, false);
+	}
+	void insert(const Point3 & p) {
+		m_tr.insert(p);
+	}
+	void insert(const Point3 & p1, const Point3 & p2) {
+		m_tr.insert(p1, p2);
+	}
+private:
+	Tr m_tr;
 };
 
-using TriangulationCreatorNoIntersectionsConstrainedDelaunay = TriangulationCreatorConstrainedDelaunay<dts2::Constrained_Delaunay_triangulation_no_intersections_with_info_s2>;
-using TriangulationCreatorInExactIntersectionsConstrainedDelaunay = TriangulationCreatorConstrainedDelaunay<dts2::Constrained_Delaunay_triangulation_with_inexact_intersections_with_info_s2>;
+using TriangulationCreatorNoIntersectionsConstrainedDelaunay =
+	TriangulationCreatorConstrainedDelaunay<dts2::Constrained_Delaunay_triangulation_no_intersections_with_info_s2>;
+using TriangulationCreatorInExactIntersectionsConstrainedDelaunay =
+	TriangulationCreatorConstrainedDelaunay<dts2::Constrained_Delaunay_triangulation_with_inexact_intersections_with_info_s2>;
+using TriangulationCreatorInExactIntersectionsConstrainedDelaunay64 =
+	TriangulationCreatorConstrainedDelaunay<dts2::Constrained_Delaunay_triangulation_with_inexact_intersections_with_info_s2_64>;
+using TriangulationCreatorExactIntersectionsConstrainedDelaunay = 
+	TriangulationCreatorConstrainedDelaunay<dts2::Constrained_Delaunay_triangulation_with_exact_intersections_with_info_s2>;
+
+//TODO: use correct type here
+using TriangulationCreatorExactIntersectionsSphericalConstrainedDelaunay =
+	TriangulationCreatorInExactIntersectionsConstrainedDelaunay;
 
 template<>
 TriangulationCreatorNoIntersectionsConstrainedDelaunay::TriangulationCreatorConstrainedDelaunay(int significands, int /*intersectionSignificands*/) :
@@ -558,133 +579,75 @@ m_tr(
 	debug_triangulation_pointer = &m_tr;
 }
 
-class TriangulationCreatorExactIntersectionsConstrainedDelaunay: public TriangulationCreator {
-public:
-	using Tr =  dts2::Constrained_Delaunay_triangulation_with_exact_intersections_with_info_s2<VertexInfo, void>;
-	using Vertex_handle = typename Tr::Vertex_handle;
-	using Finite_vertices_iterator = typename Tr::Finite_vertices_iterator;
-	using Point_3 = Tr::Point_3;
-private:
-	Tr m_tr;
-public:
-	TriangulationCreatorExactIntersectionsConstrainedDelaunay(int significands) : m_tr(significands) {}
-	
-	Point_3 toMyPoint(const Point3 & p) {
-		CORE::Expr x = ratss::Conversion<CORE::Expr>::moveFrom( ratss::Conversion<K::FT>::toMpq(p.x()) );
-		CORE::Expr y = ratss::Conversion<CORE::Expr>::moveFrom( ratss::Conversion<K::FT>::toMpq(p.y()) );
-		CORE::Expr z = ratss::Conversion<CORE::Expr>::moveFrom( ratss::Conversion<K::FT>::toMpq(p.z()) );
-		Point_3 myPoint(x, y, z);
-		assert(x*x + y*y + z*z == 1);
-		return myPoint;
-	}
-	
-	virtual void create(Points & points, Edges & edges, InputOutput & /*io*/, bool clear) override {
-		std::size_t ps = points.size();
-		std::vector< std::pair<Point_3, VertexInfo> > myPoints;
-		myPoints.reserve(ps);
-		for(const std::pair<Point3, VertexInfo> & pi : points) {
-			myPoints.emplace_back(toMyPoint(pi.first), pi.second);
-		}
-		if (clear) {
-			points = Points();
-		}
-		m_tr.insert(myPoints.begin(), myPoints.end(), false);
-		myPoints = std::vector< std::pair<Point_3, VertexInfo> >();
-		
-		std::vector<Vertex_handle> pId2Vertex(ps);
-		for(Finite_vertices_iterator it(m_tr.finite_vertices_begin()), end(m_tr.finite_vertices_end()); it != end; ++it) {
-			const VertexInfo & vi = it->info();
-			if (vi.valid()) {
-				Vertex_handle & vh = pId2Vertex.at(vi.id);
-				vh =(Vertex_handle) it;
-			}
-		}
-		Vertex_handle nullHandle;
-		for(const std::pair<int, int> & e : edges) {
-			if (e.first != e.second) {
-				const auto & p1 = pId2Vertex.at(e.first);
-				const auto & p2 = pId2Vertex.at(e.second);
-				if (p1 != p2 && p1 != nullHandle && p2 != nullHandle) {
-					m_tr.insert(p1, p2);
-				}
-			}
-		}
-		if (clear) {
-			edges = Edges();
-		}
-	}
-	
-	virtual void add(const Point3 & p) override {
-		m_tr.insert(toMyPoint(p));
-	}
-	
-	virtual void add(const Point3 & p1, const Point3 & p2) override {
-		m_tr.insert(toMyPoint(p1), toMyPoint(p2));
-	}
-	
-	virtual void write(InputOutput & io) override {
-		TriangulationWriter<Tr> writer(pointFormat, got);
-		writer.write(io.output(), m_tr);
-	}
-};
+template<>
+TriangulationCreatorInExactIntersectionsConstrainedDelaunay64::TriangulationCreatorConstrainedDelaunay(int significands, int intersectionSignificands) :
+m_tr(
+	TriangulationCreatorInExactIntersectionsConstrainedDelaunay64::Tr::Geom_traits(
+		LIB_RATSS_NAMESPACE::Conversion<TriangulationCreatorInExactIntersectionsConstrainedDelaunay64::Tr::Geom_traits::FT>::moveFrom(mpq_class(std::numeric_limits<uint64_t>::max()-1, std::numeric_limits<uint64_t>::max())),
+		significands,
+		intersectionSignificands
+	)
+)
+{}
 
+template<>
+void
+TriangulationCreatorInExactIntersectionsConstrainedDelaunay64::insert(Points::const_iterator begin, Points::const_iterator end) {
+	auto tf = [](const Points::value_type & pi) {
+		return std::pair<Point, VertexInfo>(Point(pi.first.x(), pi.first.y(), pi.first.z()), pi.second);
+	};
+	using MyIterator = boost::transform_iterator<decltype(tf), Points::const_iterator>;
+	m_tr.insert(MyIterator(begin, tf), MyIterator(end, tf), false);
+}
 
-class TriangulationCreatorExactIntersectionsSphericalConstrainedDelaunay: public TriangulationCreator {
-public:
-	using Tr = dts2::Constrained_Delaunay_triangulation_with_inexact_intersections_with_info_s2<VertexInfo, void>;
-// 	using Tr =  dts2::Constrained_Delaunay_triangulation_with_exact_intersections_spherical_with_info_s2<VertexInfo, void>;
-	using Vertex_handle = typename Tr::Vertex_handle;
-	using Finite_vertices_iterator = typename Tr::Finite_vertices_iterator;
-	using Point_3 = typename Tr::Point_3;
-	using FT = typename Tr::FT;
-private:
-	Tr m_tr;
-public:
-	TriangulationCreatorExactIntersectionsSphericalConstrainedDelaunay(int significands) : m_tr(significands) {}
-	
-	virtual void create(Points & points, Edges & edges, InputOutput & /*io*/, bool clear) override {
-		std::size_t ps = points.size();
-		m_tr.insert(points.begin(), points.end());
-		if (clear) {
-			points = Points();
-		}
-		
-		std::vector<Vertex_handle> pId2Vertex(ps);
-		for(Finite_vertices_iterator it(m_tr.finite_vertices_begin()), end(m_tr.finite_vertices_end()); it != end; ++it) {
-			const VertexInfo & vi = it->info();
-			if (vi.valid()) {
-				Vertex_handle & vh = pId2Vertex.at(vi.id);
-				vh =(Vertex_handle) it;
-			}
-		}
-		Vertex_handle nullHandle;
-		for(const std::pair<int, int> & e : edges) {
-			if (e.first != e.second) {
-				const auto & p1 = pId2Vertex.at(e.first);
-				const auto & p2 = pId2Vertex.at(e.second);
-				if (p1 != p2 && p1 != nullHandle && p2 != nullHandle) {
-					m_tr.insert(p1, p2);
-				}
-			}
-		}
-		if (clear) {
-			edges = Edges();
-		}
-	}
+template<>
+void
+TriangulationCreatorInExactIntersectionsConstrainedDelaunay64::insert(const Point3 & p) {
+	m_tr.insert(Point(p.x(), p.y(), p.z()));
+}
 
-	virtual void add(const Point3 & p) override {
-		m_tr.insert(p);
-	}
-	
-	virtual void add(const Point3 & p1, const Point3 & p2) override {
-		m_tr.insert(p1, p2);
-	}
+template<>
+void
+TriangulationCreatorInExactIntersectionsConstrainedDelaunay64::insert(const Point3 & p1, const Point3 & p2) {
+	m_tr.insert(
+		Point(p1.x(), p1.y(), p1.z()),
+		Point(p2.x(), p2.y(), p2.z())
+	);
+}
 
-	virtual void write(InputOutput & io) override {
-		TriangulationWriter<Tr> writer(pointFormat, got);
-		writer.write(io.output(), m_tr);
-	}
-};
+template<>
+TriangulationCreatorExactIntersectionsConstrainedDelaunay::TriangulationCreatorConstrainedDelaunay(int significands, int /*intersectionSignificands*/) :
+m_tr(significands)
+{}
+
+TriangulationCreatorExactIntersectionsConstrainedDelaunay::Point point3_to_Epeck(const Point3 & p) {
+	CORE::Expr x = ratss::Conversion<CORE::Expr>::moveFrom( ratss::Conversion<K::FT>::toMpq(p.x()) );
+	CORE::Expr y = ratss::Conversion<CORE::Expr>::moveFrom( ratss::Conversion<K::FT>::toMpq(p.y()) );
+	CORE::Expr z = ratss::Conversion<CORE::Expr>::moveFrom( ratss::Conversion<K::FT>::toMpq(p.z()) );
+	return TriangulationCreatorExactIntersectionsConstrainedDelaunay::Point(x, y, z);
+}
+
+template<>
+void
+TriangulationCreatorExactIntersectionsConstrainedDelaunay::insert(Points::const_iterator begin, Points::const_iterator end) {
+	auto tf = [](const Points::value_type & pi) {
+		return std::pair<Point, VertexInfo>(point3_to_Epeck(pi.first), pi.second);
+	};
+	using MyIterator = boost::transform_iterator<decltype(tf), Points::const_iterator>;
+	m_tr.insert(MyIterator(begin, tf), MyIterator(end, tf), false);
+}
+
+template<>
+void
+TriangulationCreatorExactIntersectionsConstrainedDelaunay::insert(const Point3 & p) {
+	m_tr.insert(point3_to_Epeck(p));
+}
+
+template<>
+void
+TriangulationCreatorExactIntersectionsConstrainedDelaunay::insert(const Point3 & p1, const Point3 & p2) {
+	m_tr.insert(point3_to_Epeck(p1), point3_to_Epeck(p2));
+}
 
 class Config: public ratss::BasicCmdLineOptions {
 public:
@@ -779,6 +742,9 @@ bool Config::parse(const std::string & token,int & i, int argc, char ** argv) {
 		else if (type == "cx" || type == "constrained-intersection") {
 			triangType = TT_CONSTRAINED_INEXACT;
 		}
+		else if (type == "cx64" || type == "constrained-intersection-64") {
+			triangType = TT_CONSTRAINED_INEXACT_64;
+		}
 		else if (type == "cxe" || type == "constrained-intersection-exact") {
 			triangType = TT_CONSTRAINED_EXACT;
 		}
@@ -849,12 +815,16 @@ void Config::parse_completed() {
 	if (intersectSignificands < 2) {
 		intersectSignificands = significands;
 	}
+	if (triangType == TT_CONSTRAINED_INEXACT_64) {
+		significands = 31;
+		intersectSignificands = 31;
+	}
 }
 
 
 void Config::help(std::ostream & out) const {
 	out << "triang OPTIONS:\n"
-		"\t-t type\ttype = [d,delaunay, c,constrained,cx,constrained-intersection,cxe,constrained-intesection-exact, cxs, constrained-intersection-exact-spherical]\n"
+		"\t-t type\ttype = [d,delaunay, c,constrained,cx,constrained-intersection,cx64,constrained-intersection-64,cxe,constrained-intesection-exact, cxs, constrained-intersection-exact-spherical]\n"
 		"\t-go type\tgraph output type = [none, wx, witout_special, simplest, simplest_andre]\n"
 		"\t-gi type\tgraph input type = [ne, nodes-edges, e, edges]\n"
 		"\t-io type\tinput order type = [ne, nodes-edges, e, edges]\n"
@@ -885,6 +855,9 @@ void Config::print(std::ostream & out) const {
 		break;
 	case TT_CONSTRAINED_INEXACT:
 		out << "constrained in-exact intersections";
+		break;
+	case TT_CONSTRAINED_INEXACT_64:
+		out << "constrained in-exact intersections using 31 Bits for snapping";
 		break;
 	case TT_CONSTRAINED_EXACT:
 		out << "constrained exact intersections";
@@ -942,7 +915,7 @@ void Config::print(std::ostream & out) const {
 		break;
 	};
 	out << '\n';
-	if (triangType == TT_CONSTRAINED_INEXACT) {
+	if (triangType == TT_CONSTRAINED_INEXACT || triangType == TT_CONSTRAINED_INEXACT_64) {
 		out << "Intersection point significands: " << intersectSignificands << '\n';
 	}
 	ratss::BasicCmdLineOptions::options_selection(out);
@@ -969,6 +942,9 @@ void Data::init(const Config & cfg) {
 		break;
 	case TT_CONSTRAINED_INEXACT:
 		tc = new TriangulationCreatorInExactIntersectionsConstrainedDelaunay(cfg.significands, cfg.intersectSignificands);
+		break;
+	case TT_CONSTRAINED_INEXACT_64:
+		tc = new TriangulationCreatorInExactIntersectionsConstrainedDelaunay64(cfg.significands, cfg.intersectSignificands);
 		break;
 	case TT_CONSTRAINED_EXACT:
 		tc = new TriangulationCreatorExactIntersectionsConstrainedDelaunay(cfg.significands);
