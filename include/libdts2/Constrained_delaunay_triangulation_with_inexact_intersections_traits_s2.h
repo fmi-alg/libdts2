@@ -6,10 +6,12 @@
 #include <libdts2/Constrained_delaunay_triangulation_with_intersections_base_traits_s2.h>
 
 #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
+#include <libratss/CGAL/ExtendedInt64FilteredCartesian.h>
 
 namespace LIB_DTS2_NAMESPACE {
 
-class Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2;
+template<typename T_KERNEL>
+class Constrained_delaunay_triangulation_with_inexact_intersections_base_traits_s2;
 
 } //end namespace LIB_DTS2_NAMESPACE
 
@@ -19,10 +21,10 @@ namespace internal {
 	//this one is needed since Constrained_delaunay_triangulation_traits_s2 sets Point_2 = Point_3
 	//and then we get a conflict of this function in the original code
 	
-    template <class RandomAccessIterator, class Policy>
+    template <class RandomAccessIterator, class Policy, typename Kernel>
     void spatial_sort (
                        RandomAccessIterator begin, RandomAccessIterator end,
-                       const LIB_DTS2_NAMESPACE::Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2 & k, 
+                       const LIB_DTS2_NAMESPACE::Constrained_delaunay_triangulation_with_inexact_intersections_base_traits_s2<Kernel> & k, 
 		       Policy /*policy*/,
 		       std::ptrdiff_t threshold_hilbert,
 		       std::ptrdiff_t threshold_multiscale,
@@ -35,54 +37,54 @@ namespace internal {
 
 namespace LIB_DTS2_NAMESPACE {
 
-
 ///This traits class supports exact intersections of constrained segments
-class Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2:
-	public Constrained_delaunay_triangulation_with_intersections_base_traits_s2<
-		CGAL::Exact_predicates_exact_constructions_kernel
-	>
+template<typename T_KERNEL>
+class Constrained_delaunay_triangulation_with_inexact_intersections_base_traits_s2:
+	public Constrained_delaunay_triangulation_with_intersections_base_traits_s2<T_KERNEL>
 {
 public:
-	using MyBaseTrait = Constrained_delaunay_triangulation_with_intersections_base_traits_s2<CGAL::Exact_predicates_exact_constructions_kernel>;
-	using MyKernel = MyBaseTrait::MyKernel;
+	using MyBaseTrait = Constrained_delaunay_triangulation_with_intersections_base_traits_s2<T_KERNEL>;
+	using MyKernel = typename MyBaseTrait::MyKernel;
 public:
-	using FT = MyBaseTrait::FT;
-	using Oriented_side = MyBaseTrait::Oriented_side;
-	using Comparison_result = MyBaseTrait::Comparison_result;
-	using Orientation = MyBaseTrait::Orientation;
+	using FT = typename MyBaseTrait::FT;
+	using Oriented_side = typename MyBaseTrait::Oriented_side;
+	using Comparison_result = typename MyBaseTrait::Comparison_result;
+	using Orientation = typename MyBaseTrait::Orientation;
 	
-	using Segment_2 = MyBaseTrait::Segment_2;
-	using Segment = MyBaseTrait::Segment;
+	using Segment_2 = typename MyBaseTrait::Segment_2;
+	using Segment = typename MyBaseTrait::Segment;
 	
-	using Point_3 = MyBaseTrait::Point_3;
-	using Point_2 = MyBaseTrait::Point_2;
-	using Point = MyBaseTrait::Point;
+	using Point_3 = typename MyBaseTrait::Point_3;
+	using Point_2 = typename MyBaseTrait::Point_2;
+	using Point = typename MyBaseTrait::Point;
 	
-	using Compare_distance_2 = Compare_distance_3;
+	using Vector_3 = typename MyBaseTrait::Vector_3;
+	
+	using Compare_distance_2 = typename MyBaseTrait::Compare_distance_3;
 	
 	//the following is needed for spatial sorting
-	using Less_x_3 = MyBaseTrait::Less_x_3;
-	using Less_y_3 = MyBaseTrait::Less_y_3;
-	using Less_z_3 = MyBaseTrait::Less_z_3;
+	using Less_x_3 = typename MyBaseTrait::Less_x_3;
+	using Less_y_3 = typename MyBaseTrait::Less_y_3;
+	using Less_z_3 = typename MyBaseTrait::Less_z_3;
 	
 	//this is needed for spatial sorting during insertion of constraints
 	//cgal uses Spatial_sort_traits_adapter_2 to sort inserted vertices
 	//this in turn needs the following predicates
 	//maybe we should just specialize Spatial_sort_traits_adapter_2 for this Trait
 	
-	using Less_x_2 = MyBaseTrait::Less_x_2;
-	using Less_y_2 = MyBaseTrait::Less_y_2;
+	using Less_x_2 = typename MyBaseTrait::Less_x_2;
+	using Less_y_2 = typename MyBaseTrait::Less_y_2;
 	
-	using Construct_segment_2 = MyBaseTrait::Construct_segment_2;
+	using Construct_segment_2 = typename MyBaseTrait::Construct_segment_2;
 	
 	//the following is needed for inexact intersection calculation
-	using Compute_squared_distance_2 = MyKernel::Compute_squared_distance_3;
-	using Construct_line_2 = MyKernel::Construct_line_3;
-	using Line_2 = MyKernel::Line_3;
+	using Compute_squared_distance_2 = typename MyKernel::Compute_squared_distance_3;
+	using Construct_line_2 = typename MyKernel::Construct_line_3;
+	using Line_2 = typename MyKernel::Line_3;
 public:
 	class Project_on_sphere: public MyBaseTrait::Project_on_sphere {
 	public:
-		using MyBaseClass = MyBaseTrait::Project_on_sphere;
+		using MyBaseClass = typename MyBaseTrait::Project_on_sphere;
 	private:
 		template<typename T>
 		using Conversion = LIB_RATSS_NAMESPACE::Conversion<T>;
@@ -96,10 +98,10 @@ public:
 				return v;
 			}
 			mpq_class sqLenQ( Conversion<FT>::toMpq(sqLen) );
-			int calcPrec = std::max<std::size_t>(projector().calc().maxBitCount(sqLenQ), significands()*2);
+			int calcPrec = std::max<std::size_t>(MyBaseClass::projector().calc().maxBitCount(sqLenQ), MyBaseClass::significands()*2);
 			
 			mpfr::mpreal sqLenF(Conversion<mpq_class>::toMpreal(sqLenQ, calcPrec));
-			mpfr::mpreal lenF = projector().calc().sqrt(sqLenF);
+			mpfr::mpreal lenF = MyBaseClass::projector().calc().sqrt(sqLenF);
 			
 			mpfr::mpreal xf(Conversion<FT>::toMpreal(v.x(), calcPrec));
 			mpfr::mpreal yf(Conversion<FT>::toMpreal(v.y(), calcPrec));
@@ -110,7 +112,7 @@ public:
 			zf /= lenF;
 			
 			mpq_class xq, yq, zq;
-			projector().snap(xf, yf, zf, xq, yq, zq, significands(), Projector::ST_FX | Projector::ST_PLANE);
+			MyBaseClass::projector().snap(xf, yf, zf, xq, yq, zq, MyBaseClass::significands(), MyBaseTrait::Projector::ST_FX | MyBaseTrait::Projector::ST_PLANE);
 			return Point_3( Conversion<FT>::moveFrom(xq),
 							Conversion<FT>::moveFrom(yq),
 							Conversion<FT>::moveFrom(zq)
@@ -132,26 +134,26 @@ protected: //own implementations not support by the base traits
 		Project_on_sphere m_pos;
 	};
 public:
-	using Intersect_2 = MyBaseTrait::Intersect_2<Intersect_base_2>;
+	using Intersect_2 = typename MyBaseTrait::template Intersect_2<Intersect_base_2>;
 protected:
 	inline Intersect_base_2 intersect_base_2_object() const {
 		return Intersect_base_2( project_on_sphere_object( intersectSignificands() ) );
 	}
 public:
 	///This does not correctly initialize this trait!
-	Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2() : m_intersectSignificands(-1) {}
+	Constrained_delaunay_triangulation_with_inexact_intersections_base_traits_s2() : m_intersectSignificands(-1) {}
 	///@param epsilon set the value of the z-coordinate above which no points should exist
-	Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2(const FT & _epsilon, int _significands, int _intersectSignificands = -1) :
+	Constrained_delaunay_triangulation_with_inexact_intersections_base_traits_s2(const FT & _epsilon, int _significands, int _intersectSignificands = -1) :
 	MyBaseTrait(_epsilon, _significands ),
 	m_intersectSignificands(_intersectSignificands > 0 ? _intersectSignificands : _significands)
 	{}
 	
-	Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2(const Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2 & other) :
+	Constrained_delaunay_triangulation_with_inexact_intersections_base_traits_s2(const Constrained_delaunay_triangulation_with_inexact_intersections_base_traits_s2 & other) :
 	MyBaseTrait(other),
 	m_intersectSignificands(other.m_intersectSignificands)
 	{}
 
-	~Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2() {}
+	~Constrained_delaunay_triangulation_with_inexact_intersections_base_traits_s2() {}
 public: //predicate creation Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2
 	inline Intersect_2 intersect_2_object() const {
 		return Intersect_2(MyBaseTrait::do_intersect_3_object(), MyBaseTrait::intersect_3_object(), MyBaseTrait::orientation_3_object(), intersect_base_2_object());
@@ -180,6 +182,14 @@ private:
 	int m_intersectSignificands;
 };
 
+using Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2 = 
+	Constrained_delaunay_triangulation_with_inexact_intersections_base_traits_s2<CGAL::Exact_predicates_exact_constructions_kernel>;
+
+///This trait uses ExtendedInt64Pq as number type which should in theory use less space if you snap with 31 Bits
+using Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2_64 =
+	Constrained_delaunay_triangulation_with_inexact_intersections_base_traits_s2<CGAL::Exact_predicates_exact_constructions_extended_integer_kernel>;
+
+
 }//end LIB_DTS2_NAMESPACE
 
 #include <CGAL/spatial_sort.h>
@@ -187,12 +197,12 @@ private:
 namespace CGAL {
 namespace internal {
 
-    template <class RandomAccessIterator, class Policy>
+    template <class RandomAccessIterator, class Policy, typename Kernel>
     void spatial_sort (RandomAccessIterator begin, RandomAccessIterator end,
-						const LIB_DTS2_NAMESPACE::Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2 & k,
+						const LIB_DTS2_NAMESPACE::Constrained_delaunay_triangulation_with_inexact_intersections_base_traits_s2<Kernel> & k,
 						Policy, std::ptrdiff_t threshold_hilbert, std::ptrdiff_t threshold_multiscale, double ratio)
     {
-      typedef Hilbert_sort_3<LIB_DTS2_NAMESPACE::Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2, Policy> Sort;
+      typedef Hilbert_sort_3<LIB_DTS2_NAMESPACE::Constrained_delaunay_triangulation_with_inexact_intersections_base_traits_s2<Kernel>, Policy> Sort;
         boost::rand48 random;
         boost::random_number_generator<boost::rand48> rng(random);
 #if defined(CGAL_HILBERT_SORT_WITH_MEDIAN_POLICY_CROSS_PLATFORM_BEHAVIOR)
