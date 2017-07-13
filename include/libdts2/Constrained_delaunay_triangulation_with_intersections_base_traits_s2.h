@@ -164,7 +164,8 @@ protected: //own implementations not support by the base traits
 			//But we know that the line intersects both segments.
 			//We can simply check if the ray starting from origin
 			//intersects both segments as well or does not intersect both
-			if (m_dit3(ray3, a) == m_dit3(ray3, b)) {
+			//if one is intersected and the other not, then they are on different hemispheres
+			if (m_dit3(ray3, a) != m_dit3(ray3, b)) {
 				print(a, b);
 				assert(false);
 				return CGAL::Object();
