@@ -23,8 +23,95 @@
 #include <libratss/Conversion.h>
 #include <libratss/debug.h>
 
-using K = CGAL::Exact_predicates_exact_constructions_kernel;
-using Point3 = K::Point_3;
+// using K = CGAL::Exact_predicates_exact_constructions_kernel;
+// using Point3 = K::Point_3;
+
+class MemUsage {
+public:
+	MemUsage() {
+		update();
+	}
+	void update() {
+		const char* statm_path = "/proc/self/statm";
+
+		FILE * f = fopen(statm_path,"r");
+		if(!f){
+			perror(statm_path);
+			return;
+		}
+		if(7 != fscanf(f,"%ld %ld %ld %ld %ld %ld %ld", &size,&resident,&share,&text,&lib,&data,&dt)) {
+			perror(statm_path);
+		}
+		fclose(f);
+	}
+	unsigned long size,resident,share,text,lib,data,dt;
+};
+
+class Point3 {
+public:
+	using Epeck = CGAL::Exact_predicates_exact_constructions_kernel;
+	using Epeceik = CGAL::Exact_predicates_exact_constructions_extended_integer_kernel;
+	using Epecksqrt = CGAL::Exact_predicates_exact_constructions_kernel_with_sqrt;
+	
+	using EpeckPoint = Epeck::Point_3;
+	using EpeceikPoint = Epeceik::Point_3;
+	using EpecksqrtPoint = Epecksqrt::Point_3;
+	
+	using FT = mpq_class;
+// 	using FT = Epeceik::FT;
+	
+public:
+	Point3(const FT & x, const FT & y, const FT & z) :
+	m_x(x), m_y(y), m_z(z)
+	{}
+	Point3(const EpeckPoint & p):
+	m_x( ratss::convert<FT>( p.x() )),
+	m_y( ratss::convert<FT>( p.y() )),
+	m_z( ratss::convert<FT>( p.z() ))
+	{}
+	Point3(const EpeceikPoint & p):
+	m_x( ratss::convert<FT>( p.x() )),
+	m_y( ratss::convert<FT>( p.y() )),
+	m_z( ratss::convert<FT>( p.z() ))
+	{}
+	Point3(const EpecksqrtPoint & p):
+	m_x( ratss::convert<FT>( p.x() )),
+	m_y( ratss::convert<FT>( p.y() )),
+	m_z( ratss::convert<FT>( p.z() ))
+	{}
+	~Point3() {}
+public:
+	const FT & x() const { return m_x; }
+	const FT & y() const { return m_y; }
+	const FT & z() const { return m_z; }
+public:
+	operator EpeckPoint() const {
+		return EpeckPoint(
+			ratss::convert<Epeck::FT>( x() ),
+			ratss::convert<Epeck::FT>( y() ),
+			ratss::convert<Epeck::FT>( z() )
+		);
+	}
+	operator EpeceikPoint() const {
+		return EpeceikPoint(
+			ratss::convert<Epeceik::FT>( x() ),
+			ratss::convert<Epeceik::FT>( y() ),
+			ratss::convert<Epeceik::FT>( z() )
+		);
+	}
+	operator EpecksqrtPoint() const {
+		return EpecksqrtPoint(
+			ratss::convert<Epecksqrt::FT>( x() ),
+			ratss::convert<Epecksqrt::FT>( y() ),
+			ratss::convert<Epecksqrt::FT>( z() )
+		);
+	}
+private:
+	FT m_x;
+	FT m_y;
+	FT m_z;
+	
+};
 
 typedef enum {TT_DELAUNAY, TT_CONSTRAINED, TT_CONSTRAINED_INEXACT, TT_CONSTRAINED_INEXACT_64, TT_CONSTRAINED_EXACT, TT_CONSTRAINED_EXACT_SPHERICAL} TriangulationType;
 typedef enum {GOT_INVALID, GOT_NONE, GOT_WITHOUT_SPECIAL, GOT_WITHOUT_SPECIAL_HASH_MAP, GOT_SIMPLEST_GRAPH_RENDERING, GOT_SIMPLEST_GRAPH_RENDERING_ANDRE} GraphOutputType;
@@ -58,7 +145,7 @@ extern "C" void debug_print_point3(const Point3 &p ) {
 	ratss::ProjectS2 proj;
 	ratss::GeoCoord gc;
 	proj.toGeo(p.x(), p.y(), p.z(), gc.lat, gc.lon, 53);
-	std::cerr << ratss::Conversion<K::FT>::toMpq(p.x()) << " " << ratss::Conversion<K::FT>::toMpq(p.y()) << " " << ratss::Conversion<K::FT>::toMpq(p.z()) << std::endl;
+	std::cerr << p.x() << " " << p.y() << " " << p.z() << std::endl;
 	std::streamsize prec = std::cerr.precision();
 	std::cerr.precision(std::numeric_limits<double>::digits10+1);
 	std::cerr << gc << std::endl;
@@ -442,7 +529,11 @@ public:
 	TriangulationCreatorDelaunay(int significands) : m_tr(significands) {}
 	
 	virtual void create(Points & points, Edges & edges, InputOutput & /*io*/, bool clear) override {
-		m_tr.insert(points.begin(), points.end(), false);
+		auto tf = [](const Points::value_type & pi) {
+			return std::pair<Point_3, VertexInfo>((Point_3) pi.first, pi.second);
+		};
+		using MyIterator = boost::transform_iterator<decltype(tf), Points::const_iterator>;
+		m_tr.insert(MyIterator(points.begin(), tf), MyIterator(points.end(), tf), false);
 		if (clear) {
 			points = Points();
 			edges = Edges();
@@ -450,12 +541,12 @@ public:
 	}
 
 	virtual void add(const Point3 & p) override {
-		m_tr.insert(p);
+		m_tr.insert((Point_3) p);
 	}
 	
 	virtual void add(const Point3 & p1, const Point3 & p2) override {
-		m_tr.insert(p1);
-		m_tr.insert(p2);
+		m_tr.insert((Point_3) p1);
+		m_tr.insert((Point_3) p2);
 	}
 
 	virtual void write(InputOutput & io) override {
@@ -477,6 +568,8 @@ public:
 	m_tr(significands)
 	{}
 	TriangulationCreatorConstrainedDelaunay(int significands, int intersectionSignificands);
+	
+	~TriangulationCreatorConstrainedDelaunay() {}
 	
 	virtual void create(Points & points, Edges & edges, InputOutput & io, bool clear) override  {
 		std::size_t ps = points.size();
@@ -540,13 +633,17 @@ public:
 private:
 	//points are already snapped
 	void insert(Points::const_iterator begin, Points::const_iterator end) {
-		m_tr.insert(begin, end, false);
+		auto tf = [](const Points::value_type & pi) {
+			return std::pair<Point, VertexInfo>((Point) pi.first, pi.second);
+		};
+		using MyIterator = boost::transform_iterator<decltype(tf), Points::const_iterator>;
+		m_tr.insert(MyIterator(begin, tf), MyIterator(end, tf), false);
 	}
 	void insert(const Point3 & p) {
-		m_tr.insert(p);
+		m_tr.insert((Point) p);
 	}
 	void insert(const Point3 & p1, const Point3 & p2) {
-		m_tr.insert(p1, p2);
+		m_tr.insert((Point) p1, (Point) p2);
 	}
 private:
 	Tr m_tr;
@@ -595,64 +692,13 @@ m_tr(
 {}
 
 template<>
-void
-TriangulationCreatorInExactIntersectionsConstrainedDelaunay64::insert(Points::const_iterator begin, Points::const_iterator end) {
-	auto tf = [](const Points::value_type & pi) {
-		Point p(pi.first.x(), pi.first.y(), pi.first.z());
-		assert(!p.x().exact().isExtended() && !p.y().exact().isExtended() && !p.z().exact().isExtended());
-		return std::pair<Point, VertexInfo>(p, pi.second);
-	};
-	using MyIterator = boost::transform_iterator<decltype(tf), Points::const_iterator>;
-	m_tr.insert(MyIterator(begin, tf), MyIterator(end, tf), false);
-}
-
-template<>
-void
-TriangulationCreatorInExactIntersectionsConstrainedDelaunay64::insert(const Point3 & p) {
-	m_tr.insert(Point(p.x(), p.y(), p.z()));
-}
-
-template<>
-void
-TriangulationCreatorInExactIntersectionsConstrainedDelaunay64::insert(const Point3 & p1, const Point3 & p2) {
-	m_tr.insert(
-		Point(p1.x(), p1.y(), p1.z()),
-		Point(p2.x(), p2.y(), p2.z())
-	);
-}
-
-template<>
-TriangulationCreatorExactIntersectionsConstrainedDelaunay::TriangulationCreatorConstrainedDelaunay(int significands, int /*intersectionSignificands*/) :
-m_tr(significands)
-{}
-
-TriangulationCreatorExactIntersectionsConstrainedDelaunay::Point point3_to_Epeck(const Point3 & p) {
-	CORE::Expr x = ratss::Conversion<CORE::Expr>::moveFrom( ratss::Conversion<K::FT>::toMpq(p.x()) );
-	CORE::Expr y = ratss::Conversion<CORE::Expr>::moveFrom( ratss::Conversion<K::FT>::toMpq(p.y()) );
-	CORE::Expr z = ratss::Conversion<CORE::Expr>::moveFrom( ratss::Conversion<K::FT>::toMpq(p.z()) );
-	return TriangulationCreatorExactIntersectionsConstrainedDelaunay::Point(x, y, z);
-}
-
-template<>
-void
-TriangulationCreatorExactIntersectionsConstrainedDelaunay::insert(Points::const_iterator begin, Points::const_iterator end) {
-	auto tf = [](const Points::value_type & pi) {
-		return std::pair<Point, VertexInfo>(point3_to_Epeck(pi.first), pi.second);
-	};
-	using MyIterator = boost::transform_iterator<decltype(tf), Points::const_iterator>;
-	m_tr.insert(MyIterator(begin, tf), MyIterator(end, tf), false);
-}
-
-template<>
-void
-TriangulationCreatorExactIntersectionsConstrainedDelaunay::insert(const Point3 & p) {
-	m_tr.insert(point3_to_Epeck(p));
-}
-
-template<>
-void
-TriangulationCreatorExactIntersectionsConstrainedDelaunay::insert(const Point3 & p1, const Point3 & p2) {
-	m_tr.insert(point3_to_Epeck(p1), point3_to_Epeck(p2));
+TriangulationCreatorInExactIntersectionsConstrainedDelaunay64::~TriangulationCreatorConstrainedDelaunay() {
+	std::cout << "ExtendedInt64Pq::number_of_allocations=" <<
+		CGAL::ExtendedInt64Pq::number_of_allocations << std::endl;
+	std::cout << "ExtendedInt64Pq::number_of_extended_allocations=" <<
+		CGAL::ExtendedInt64Pq::number_of_extended_allocations << std::endl;
+	std::cout << "ExtendedInt64z::number_of_extended_allocations=" <<
+		CGAL::ExtendedInt64z::number_of_extended_allocations << std::endl;
 }
 
 class Config: public ratss::BasicCmdLineOptions {
@@ -1083,9 +1129,12 @@ Point3 Data::readPoint(std::istream& is, const Config& cfg) {
 		proj.snap(ip.coords.begin(), ip.coords.end(), op.coords.begin(), cfg.snapType, cfg.significands);
 	}
 	assert(op.valid());
-	K::FT x = ratss::Conversion<K::FT>::moveFrom(op.coords.at(0));
-	K::FT y = ratss::Conversion<K::FT>::moveFrom(op.coords.at(1));
-	K::FT z = ratss::Conversion<K::FT>::moveFrom(op.coords.at(2));
+	
+	using FT = Point3::FT;
+	FT x = ratss::Conversion<FT>::moveFrom( std::move(op.coords.at(0)) );
+	FT y = ratss::Conversion<FT>::moveFrom( std::move(op.coords.at(1)) );
+	FT z = ratss::Conversion<FT>::moveFrom( std::move(op.coords.at(2)) );
+	
 	Point3 p3(x, y, z);
 	
 	return p3;
@@ -1120,6 +1169,8 @@ void Data::create(InputOutput& io, const Config& cfg) {
 	}
 	points.clear();
 	edges.clear();
+	MemUsage mem;
+	std::cout << "Memory usage for triangulation: " << mem.resident << std::endl;
 }
 
 void Data::write(InputOutput & io, const Config & cfg) {
