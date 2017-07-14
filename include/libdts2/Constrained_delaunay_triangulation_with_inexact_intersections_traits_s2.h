@@ -187,6 +187,8 @@ using Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2 =
 
 ///This trait uses ExtendedInt64Pq as number type which should in theory use less space if you snap with 31 Bits
 using Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2_64 =
+// 	Constrained_delaunay_triangulation_with_inexact_intersections_base_traits_s2< CGAL::Simple_cartesian<CGAL::ExtendedInt64Pq> >;
+// 	Constrained_delaunay_triangulation_with_inexact_intersections_base_traits_s2<CGAL::Filtered_simple_cartesian_extended_integer_kernel>;
 	Constrained_delaunay_triangulation_with_inexact_intersections_base_traits_s2<CGAL::Exact_predicates_exact_constructions_extended_integer_kernel>;
 
 
