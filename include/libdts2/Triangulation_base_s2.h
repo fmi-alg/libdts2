@@ -696,14 +696,16 @@ TMPL_CLS::selfCheck() {
 
 	{ //side of oriented circle tests
 
-		
+		#ifndef NDEBUG
 		auto soc = geom_traits().side_of_oriented_circle_2_object();
-		
+		#endif
 		assert(soc(p3, q3, r3, s3_in) == CGAL::LEFT_TURN);
 		assert(soc(p3, q3, r3, s3_out) == CGAL::RIGHT_TURN);
 	}
 	{ // orientation2 test
+		#ifndef NDEBUG
 		auto ot2 = geom_traits().orientation_2_object();
+		#endif
 		
 		assert(ot2(p3, q3, s3_in) == CGAL::LEFT_TURN);
 		assert(ot2(q3, r3, s3_in) == CGAL::LEFT_TURN);
