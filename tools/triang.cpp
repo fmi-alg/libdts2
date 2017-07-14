@@ -50,6 +50,10 @@ bool is_constrained(const T_TRS & trs, const typename T_TRS::Edge & e) {
 	return trs.is_constrained(e);
 }
 
+extern "C" void debug_print_gmpq(const CGAL::Gmpq & pq) {
+	std::cerr << pq << std::endl;
+}
+
 extern "C" void debug_print_point3(const Point3 &p ) {
 	ratss::ProjectS2 proj;
 	ratss::GeoCoord gc;
@@ -594,7 +598,9 @@ template<>
 void
 TriangulationCreatorInExactIntersectionsConstrainedDelaunay64::insert(Points::const_iterator begin, Points::const_iterator end) {
 	auto tf = [](const Points::value_type & pi) {
-		return std::pair<Point, VertexInfo>(Point(pi.first.x(), pi.first.y(), pi.first.z()), pi.second);
+		Point p(pi.first.x(), pi.first.y(), pi.first.z());
+		assert(!p.x().exact().isExtended() && !p.y().exact().isExtended() && !p.z().exact().isExtended());
+		return std::pair<Point, VertexInfo>(p, pi.second);
 	};
 	using MyIterator = boost::transform_iterator<decltype(tf), Points::const_iterator>;
 	m_tr.insert(MyIterator(begin, tf), MyIterator(end, tf), false);
