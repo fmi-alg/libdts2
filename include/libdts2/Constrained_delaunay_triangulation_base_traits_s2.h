@@ -281,8 +281,16 @@ protected:
 public:
 	const FT & epsilon() const;
 public:
-	static inline double doubleValue(const FT & v) {
+	static double doubleValue(const FT & v) {
 		return LIB_RATSS_NAMESPACE::Conversion<FT>::toMpreal(v, 53).toDouble();
+	}
+	static mpq_class mpqValue(const FT & v) {
+		return LIB_RATSS_NAMESPACE::Conversion<FT>::toMpq(v);
+	}
+	static std::string ratString(const FT & v) {
+		std::stringstream ss;
+		ss << mpqValue(v);
+		return ss.str();
 	}
 public: //object functions
 	///This does not correctly initialize this trait!

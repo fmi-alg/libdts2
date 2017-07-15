@@ -752,13 +752,13 @@ TMPL_CLS::addAuxiliaryPoints() {
 	auto p_3 = generateAuxPoint(epsilon, -epsilon/2);
 	
 	if (p_1.z() < epsZ() || p_1.z() >= 1) {
-		throw std::runtime_error("Construction auf auxiliary points failed. z-value=" + std::to_string(Geom_traits::doubleValue(p_1.z())));
+		throw std::runtime_error("Construction auf auxiliary points failed. z-value=" + Geom_traits::ratString(p_1.z()));
 	}
 	if (p_2.z() < epsZ() || p_2.z() >= 1) {
-		throw std::runtime_error("Construction auf auxiliary points failed. z-value=" + std::to_string(Geom_traits::doubleValue(p_2.z())));
+		throw std::runtime_error("Construction auf auxiliary points failed. z-value=" + Geom_traits::ratString(p_2.z()));
 	}
 	if (p_3.z() < epsZ() || p_3.z() >= 1) {
-		throw std::runtime_error("Construction auf auxiliary points failed. z-value=" + std::to_string(Geom_traits::doubleValue(p_3.z())));
+		throw std::runtime_error("Construction auf auxiliary points failed. z-value=" + Geom_traits::ratString(p_3.z()));
 	}
 	
 	tds().remove_first (trs().infinite_vertex());
