@@ -528,12 +528,14 @@ private:
 public:
 	TriangulationCreatorDelaunay(int significands) : m_tr(significands) {}
 	
-	virtual void create(Points & points, Edges & edges, InputOutput & /*io*/, bool clear) override {
+	virtual void create(Points & points, Edges & edges, InputOutput & io, bool clear) override {
 		auto tf = [](const Points::value_type & pi) {
 			return std::pair<Point_3, VertexInfo>((Point_3) pi.first, pi.second);
 		};
 		using MyIterator = boost::transform_iterator<decltype(tf), Points::const_iterator>;
+		io.info() << "Inserting points..." << std::flush;
 		m_tr.insert(MyIterator(points.begin(), tf), MyIterator(points.end(), tf), false);
+		io.info() << "done" << std::endl;
 		if (clear) {
 			points = Points();
 			edges = Edges();
@@ -573,7 +575,9 @@ public:
 	
 	virtual void create(Points & points, Edges & edges, InputOutput & io, bool clear) override  {
 		std::size_t ps = points.size();
+		io.info() << "Inserting points..." << std::flush;
 		insert(points.begin(), points.end());
+		io.info() << "done" << std::endl;
 		if (clear) {
 			points = Points();
 		}
@@ -586,7 +590,9 @@ public:
 				vh =(Vertex_handle) it;
 			}
 		}
+		io.info() << "Inserting constraints..." << std::flush;
 		insert_constraints(pId2Vertex, edges, io);
+		io.info() << "done" << std::endl;
 		if (clear) {
 			edges = Edges();
 		}
