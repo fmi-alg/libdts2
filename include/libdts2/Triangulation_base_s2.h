@@ -834,7 +834,7 @@ TMPL_CLS::generateAuxPoint(FT xp, FT yp) const {
 		yp /= 2;
 		zs_prev = zs;
 		m_p.projector().plane2Sphere(xp, yp, dummy, LIB_RATSS_NAMESPACE::SP_UPPER, xs, ys, zs);
-// 		std::cout << zs << std::endl;
+// 		std::cout << "(" << Geom_traits::ratString(xp) << "," << Geom_traits::ratString(yp) << ") -> " <<  Geom_traits::ratString(zs) << std::endl;
 		assert(zs_prev < zs);
 		
 		++count;
