@@ -836,11 +836,22 @@ TMPL_CLS::generateAuxPoint(FT xp, FT yp) const {
 		m_p.projector().plane2Sphere(xp, yp, dummy, LIB_RATSS_NAMESPACE::SP_UPPER, xs, ys, zs);
 // 		std::cout << "(" << Geom_traits::ratString(xp) << "," << Geom_traits::ratString(yp) << ") -> " <<  Geom_traits::ratString(zs) << std::endl;
 		assert(zs_prev < zs);
-		
+		assert(zs < 1);
 		++count;
 	}
-// 	std::cout << "Generating an aux point took " << count << " rounds" << std::endl;
-	return Point_3(xs, ys, zs);
+// 	std::cout << "Generating an aux point ";
+// 	std::cout << "(" << Geom_traits::ratString(xp) << "," << Geom_traits::ratString(yp) << ") -> " <<  Geom_traits::ratString(zs);
+// 	std::cout <<" took " << count << " rounds" << std::endl;
+	
+	Point_3 p(xs, ys, zs);
+	
+	FT tmp = zs;
+// 	auto tmp2 =  ratss::convert< CGAL::ExtendedInt64q<CGAL::Gmpq> >( tmp );
+// 	std::cout << "tmp=" << Geom_traits::ratString(tmp) << ";" << std::flush;
+// 	std::cout << "zs=" << Geom_traits::ratString(zs) << ";" << std::flush;
+// 	std::cout << "p.z=" << Geom_traits::ratString(p.z()) << std::endl;
+	
+	return p;
 }
 //END private inital construction functions
 
