@@ -699,10 +699,10 @@ m_tr(
 
 template<>
 TriangulationCreatorInExactIntersectionsConstrainedDelaunay64::~TriangulationCreatorConstrainedDelaunay() {
-	std::cout << "ExtendedInt64Pq::number_of_allocations=" <<
-		CGAL::ExtendedInt64Pq::number_of_allocations << std::endl;
-	std::cout << "ExtendedInt64Pq::number_of_extended_allocations=" <<
-		CGAL::ExtendedInt64Pq::number_of_extended_allocations << std::endl;
+	std::cout << "ExtendedInt64q::number_of_allocations=" <<
+		CGAL::ExtendedInt64q<CGAL::Gmpq>::number_of_allocations << std::endl;
+	std::cout << "ExtendedInt64q::number_of_extended_allocations=" <<
+		CGAL::ExtendedInt64q<CGAL::Gmpq>::number_of_extended_allocations << std::endl;
 	std::cout << "ExtendedInt64z::number_of_extended_allocations=" <<
 		CGAL::ExtendedInt64z::number_of_extended_allocations << std::endl;
 }
