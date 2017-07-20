@@ -13,6 +13,7 @@
 
 #include <fstream>
 #include <libdts2/Constrained_delaunay_triangulation_s2.h>
+#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Polyhedron_3.h>
 #include <CGAL/convex_hull_3.h>
 #include <libratss/mpreal.h>
@@ -50,6 +51,9 @@ public:
 };
 
 class Point3 {
+public:
+	using Epick = CGAL::Exact_predicates_inexact_constructions_kernel;
+	using EpickPoint = Epick::Point_3;
 public:
 	using Epeck = CGAL::Exact_predicates_exact_constructions_kernel;
 	using EpeckPoint = Epeck::Point_3;
@@ -101,6 +105,7 @@ public:
 		);
 	}
 public:
+	explicit operator EpickPoint() const { return convert_to_p<Epick>(); }
 	explicit operator EpeckPoint() const { return convert_to_p<Epeck>(); }
 	explicit operator SceikPoint() const { return convert_to_p<Sceik>(); }
 	explicit operator FsceikPoint() const { return convert_to_p<Fsceik>(); }
@@ -116,7 +121,7 @@ private:
 	
 };
 
-typedef enum {TT_DELAUNAY, TT_CONVEX_HULL, TT_CONVEX_HULL_64, TT_CONSTRAINED, TT_CONSTRAINED_INEXACT, TT_CONSTRAINED_INEXACT_64, TT_CONSTRAINED_EXACT, TT_CONSTRAINED_EXACT_SPHERICAL} TriangulationType;
+typedef enum {TT_DELAUNAY, TT_CONVEX_HULL_INEXACT, TT_CONVEX_HULL, TT_CONVEX_HULL_64, TT_CONSTRAINED, TT_CONSTRAINED_INEXACT, TT_CONSTRAINED_INEXACT_64, TT_CONSTRAINED_EXACT, TT_CONSTRAINED_EXACT_SPHERICAL} TriangulationType;
 typedef enum {GOT_INVALID, GOT_NONE, GOT_WITHOUT_SPECIAL, GOT_WITHOUT_SPECIAL_HASH_MAP, GOT_SIMPLEST_GRAPH_RENDERING, GOT_SIMPLEST_GRAPH_RENDERING_ANDRE} GraphOutputType;
 typedef enum {GIT_INVALID, GIT_NODES_EDGES, GIT_EDGES} GraphInputType;
 typedef enum {TIO_INVALID, TIO_NODES_EDGES, TIO_EDGES} TriangulationInputOrder;
@@ -564,6 +569,7 @@ private:
 	Tr m_tr;
 };
 
+using EpickConvexHullTriangulationCreator = ConvexHullTriangulationCreator<CGAL::Exact_predicates_inexact_constructions_kernel>;
 using EpeckConvexHullTriangulationCreator = ConvexHullTriangulationCreator<CGAL::Exact_predicates_exact_constructions_kernel>;
 using Ei64ConvexHullTriangulationCreator = ConvexHullTriangulationCreator<CGAL::Exact_predicates_exact_constructions_extended_integer_kernel>;
 
@@ -846,6 +852,9 @@ bool Config::parse(const std::string & token,int & i, int argc, char ** argv) {
 		if (type == "d" || type == "delaunay") {
 			triangType = TT_DELAUNAY;
 		}
+		else if (type == "chi" || type == "convexhull-inexact") {
+			triangType = TT_CONVEX_HULL_INEXACT;
+		}
 		else if (type == "ch" || type == "convexhull") {
 			triangType = TT_CONVEX_HULL;
 		}
@@ -937,16 +946,15 @@ void Config::parse_completed() {
 		snapType = ratss::ProjectSN::ST_PLANE | ratss::ProjectSN::ST_FX | ratss::ProjectSN::ST_NORMALIZE;
 		
 	}
-	if (TT_CONVEX_HULL_64 || TT_CONVEX_HULL) {
+	if (TT_CONVEX_HULL_64 || TT_CONVEX_HULL || TT_CONVEX_HULL_INEXACT) {
 		tio = TIO_NODES_EDGES;
 	}
-	
 }
 
 
 void Config::help(std::ostream & out) const {
 	out << "triang OPTIONS:\n"
-		"\t-t type\ttype = [d,delaunay,ch,convexhull,ch64,convexhull-64,c,constrained,cx,constrained-intersection,cx64,constrained-intersection-64,cxe,constrained-intesection-exact, cxs, constrained-intersection-exact-spherical]\n"
+		"\t-t type\ttype = [d,delaunay,chi,convexhull-inexact,ch,convexhull,ch64,convexhull-64,c,constrained,cx,constrained-intersection,cx64,constrained-intersection-64,cxe,constrained-intesection-exact, cxs, constrained-intersection-exact-spherical]\n"
 		"\t-go type\tgraph output type = [none, wx, witout_special, simplest, simplest_andre]\n"
 		"\t-gi type\tgraph input type = [ne, nodes-edges, e, edges]\n"
 		"\t-io type\tinput order type = [ne, nodes-edges, e, edges]\n"
@@ -974,6 +982,9 @@ void Config::print(std::ostream & out) const {
 		break;
 	case TT_CONVEX_HULL:
 		out << "convex hull";
+		break;
+	case TT_CONVEX_HULL_INEXACT:
+		out << "convex hull inexact";
 		break;
 	case TT_CONVEX_HULL_64:
 		out << "convex hull using ExtendedInt64 kernel";
@@ -1064,6 +1075,9 @@ void Data::init(const Config & cfg) {
 	switch (cfg.triangType) {
 	case TT_DELAUNAY:
 		tc = new TriangulationCreatorDelaunay(cfg.significands);
+		break;
+	case TT_CONVEX_HULL_INEXACT:
+		tc = new EpickConvexHullTriangulationCreator();
 		break;
 	case TT_CONVEX_HULL:
 		tc = new EpeckConvexHullTriangulationCreator();
