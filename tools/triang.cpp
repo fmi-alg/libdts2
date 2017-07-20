@@ -632,7 +632,7 @@ using Delaunay_triangulation_with_info_s2_epeck = dts2::Delaunay_triangulation_w
 
 template<typename T_VERTEX_INFO, typename T_FACE_INFO>
 using Delaunay_triangulation_with_info_s2_fsceik =
-	dts2::Delaunay_triangulation_with_info_s2<T_VERTEX_INFO, T_FACE_INFO, CGAL::Filtered_lazy_cartesian_extended_integer_kernel>;
+	dts2::Delaunay_triangulation_with_info_s2<T_VERTEX_INFO, T_FACE_INFO, CGAL::Filtered_simple_cartesian_extended_integer_kernel>;
 
 using TriangulationCreatorDelaunayEpeck =
 	TriangulationCreatorDelaunay<Delaunay_triangulation_with_info_s2_epeck>;
