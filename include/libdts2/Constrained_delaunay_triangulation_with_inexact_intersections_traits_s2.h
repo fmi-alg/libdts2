@@ -6,7 +6,7 @@
 #include <libdts2/Constrained_delaunay_triangulation_with_intersections_base_traits_s2.h>
 
 #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
-#include <libratss/CGAL/ExtendedInt64FilteredCartesian.h>
+#include <libratss/CGAL/ExtendedInt64Cartesian.h>
 
 namespace LIB_DTS2_NAMESPACE {
 
@@ -187,9 +187,12 @@ using Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2 =
 
 ///This trait uses ExtendedInt64q as number type which should in theory use less space if you snap with 31 Bits
 using Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2_64 =
-// 	Constrained_delaunay_triangulation_with_inexact_intersections_base_traits_s2< CGAL::Simple_cartesian<CGAL::ExtendedInt64q> >;
+// 	Constrained_delaunay_triangulation_with_inexact_intersections_base_traits_s2<CGAL::Simple_cartesian_extended_integer_kernel>;
 // 	Constrained_delaunay_triangulation_with_inexact_intersections_base_traits_s2<CGAL::Filtered_simple_cartesian_extended_integer_kernel>;
-	Constrained_delaunay_triangulation_with_inexact_intersections_base_traits_s2<CGAL::Exact_predicates_exact_constructions_extended_integer_kernel>;
+	Constrained_delaunay_triangulation_with_inexact_intersections_base_traits_s2<CGAL::Filtered_lazy_cartesian_extended_integer_kernel>;
+// 	Constrained_delaunay_triangulation_with_inexact_intersections_base_traits_s2<CGAL::Filtered_lazy_cartesian_extended_1024_integer_kernel>;
+// 	Constrained_delaunay_triangulation_with_inexact_intersections_base_traits_s2<CGAL::Simple_cartesian_extended_1024_integer_kernel>;
+// 	Constrained_delaunay_triangulation_with_inexact_intersections_base_traits_s2<CGAL::Exact_predicates_exact_constructions_extended_integer_kernel>;
 
 
 }//end LIB_DTS2_NAMESPACE
