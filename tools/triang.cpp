@@ -124,7 +124,7 @@ private:
 	
 };
 
-typedef enum {TT_DELAUNAY, TT_CONVEX_HULL_INEXACT, TT_CONVEX_HULL, TT_CONVEX_HULL_64, TT_CONSTRAINED, TT_CONSTRAINED_INEXACT, TT_CONSTRAINED_INEXACT_64, TT_CONSTRAINED_EXACT, TT_CONSTRAINED_EXACT_SPHERICAL} TriangulationType;
+typedef enum {TT_DELAUNAY, TT_DELAUNAY_64, TT_CONVEX_HULL_INEXACT, TT_CONVEX_HULL, TT_CONVEX_HULL_64, TT_CONSTRAINED, TT_CONSTRAINED_INEXACT, TT_CONSTRAINED_INEXACT_64, TT_CONSTRAINED_EXACT, TT_CONSTRAINED_EXACT_SPHERICAL} TriangulationType;
 typedef enum {GOT_INVALID, GOT_NONE, GOT_WITHOUT_SPECIAL, GOT_WITHOUT_SPECIAL_HASH_MAP, GOT_SIMPLEST_GRAPH_RENDERING, GOT_SIMPLEST_GRAPH_RENDERING_ANDRE} GraphOutputType;
 typedef enum {GIT_INVALID, GIT_NODES_EDGES, GIT_EDGES} GraphInputType;
 typedef enum {TIO_INVALID, TIO_NODES_EDGES, TIO_EDGES} TriangulationInputOrder;
@@ -139,7 +139,12 @@ struct VertexInfo {
 
 int VertexInfo::def_instance_counter = -1;
 
-bool is_constrained(const dts2::Delaunay_triangulation_with_info_s2<VertexInfo, void> & /*trs*/, const dts2::Delaunay_triangulation_with_info_s2<VertexInfo, void>::Edge & /*e*/) {
+template<typename T_LINEAR_KERNEL>
+bool
+is_constrained(
+	const dts2::Delaunay_triangulation_with_info_s2<VertexInfo, void, T_LINEAR_KERNEL> & /*trs*/,
+	const typename dts2::Delaunay_triangulation_with_info_s2<VertexInfo, void, T_LINEAR_KERNEL>::Edge & /*e*/)
+{
 	return false;
 }
 
@@ -576,12 +581,14 @@ using EpickConvexHullTriangulationCreator = ConvexHullTriangulationCreator<CGAL:
 using EpeckConvexHullTriangulationCreator = ConvexHullTriangulationCreator<CGAL::Exact_predicates_exact_constructions_kernel>;
 using Ei64ConvexHullTriangulationCreator = ConvexHullTriangulationCreator<CGAL::Exact_predicates_exact_constructions_extended_integer_kernel>;
 
+template< template<typename, typename> class T_TRS>
 class TriangulationCreatorDelaunay: public TriangulationCreator {
 public:
-	using Tr =  dts2::Delaunay_triangulation_with_info_s2<VertexInfo, void>;
-	using Point_3 = Tr::Point_3;
-private:
-	Tr m_tr;
+	using Tr =  T_TRS<VertexInfo, void>;
+	using FT = typename Tr::FT;
+	using Point_3 = typename Tr::Point_3;
+	using Vertex_handle = typename Tr::Vertex_handle;
+	using Finite_vertices_iterator = typename Tr::Finite_vertices_iterator;
 public:
 	TriangulationCreatorDelaunay(int significands) : m_tr(significands) {}
 	
@@ -616,7 +623,22 @@ public:
 		TriangulationWriter<Tr> writer(pointFormat, got);
 		writer.write(io.output(), m_tr);
 	}
+private:
+	Tr m_tr;
 };
+
+template<typename T_VERTEX_INFO, typename T_FACE_INFO>
+using Delaunay_triangulation_with_info_s2_epeck = dts2::Delaunay_triangulation_with_info_s2<T_VERTEX_INFO, T_FACE_INFO, CGAL::Exact_predicates_exact_constructions_kernel>;
+
+template<typename T_VERTEX_INFO, typename T_FACE_INFO>
+using Delaunay_triangulation_with_info_s2_fsceik =
+	dts2::Delaunay_triangulation_with_info_s2<T_VERTEX_INFO, T_FACE_INFO, CGAL::Filtered_lazy_cartesian_extended_integer_kernel>;
+
+using TriangulationCreatorDelaunayEpeck =
+	TriangulationCreatorDelaunay<Delaunay_triangulation_with_info_s2_epeck>;
+	
+using TriangulationCreatorDelaunayFsceik =
+	TriangulationCreatorDelaunay<Delaunay_triangulation_with_info_s2_fsceik>;
 
 template< template<typename, typename> class T_TRS>
 class TriangulationCreatorConstrainedDelaunay: public TriangulationCreator {
@@ -855,6 +877,9 @@ bool Config::parse(const std::string & token,int & i, int argc, char ** argv) {
 		if (type == "d" || type == "delaunay") {
 			triangType = TT_DELAUNAY;
 		}
+		else if (type == "d64" || type == "delaunay-64") {
+			triangType = TT_DELAUNAY_64;
+		}
 		else if (type == "chi" || type == "convexhull-inexact") {
 			triangType = TT_CONVEX_HULL_INEXACT;
 		}
@@ -943,7 +968,7 @@ void Config::parse_completed() {
 	if (intersectSignificands < 2) {
 		intersectSignificands = significands;
 	}
-	if (triangType == TT_CONSTRAINED_INEXACT_64 || triangType == TT_CONVEX_HULL_64) {
+	if (triangType == TT_CONSTRAINED_INEXACT_64 || triangType == TT_CONVEX_HULL_64 || triangType == TT_DELAUNAY_64) {
 		significands = 31;
 		intersectSignificands = 31;
 		snapType = ratss::ProjectSN::ST_PLANE | ratss::ProjectSN::ST_FX | ratss::ProjectSN::ST_NORMALIZE;
@@ -957,7 +982,7 @@ void Config::parse_completed() {
 
 void Config::help(std::ostream & out) const {
 	out << "triang OPTIONS:\n"
-		"\t-t type\ttype = [d,delaunay,chi,convexhull-inexact,ch,convexhull,ch64,convexhull-64,c,constrained,cx,constrained-intersection,cx64,constrained-intersection-64,cxe,constrained-intesection-exact, cxs, constrained-intersection-exact-spherical]\n"
+		"\t-t type\ttype = [d,delaunay,d64,delaunay-64,chi,convexhull-inexact,ch,convexhull,ch64,convexhull-64,c,constrained,cx,constrained-intersection,cx64,constrained-intersection-64,cxe,constrained-intesection-exact, cxs, constrained-intersection-exact-spherical]\n"
 		"\t-go type\tgraph output type = [none, wx, witout_special, simplest, simplest_andre]\n"
 		"\t-gi type\tgraph input type = [ne, nodes-edges, e, edges]\n"
 		"\t-io type\tinput order type = [ne, nodes-edges, e, edges]\n"
@@ -982,6 +1007,9 @@ void Config::print(std::ostream & out) const {
 	switch (triangType) {
 	case TT_DELAUNAY:
 		out << "delaunay";
+		break;
+	case TT_DELAUNAY_64:
+		out << "delaunay using ExtendedInt64 kernel";
 		break;
 	case TT_CONVEX_HULL:
 		out << "convex hull";
@@ -1077,7 +1105,10 @@ void Data::init(const Config & cfg) {
 	}
 	switch (cfg.triangType) {
 	case TT_DELAUNAY:
-		tc = new TriangulationCreatorDelaunay(cfg.significands);
+		tc = new TriangulationCreatorDelaunayEpeck(cfg.significands);
+		break;
+	case TT_DELAUNAY_64:
+		tc = new TriangulationCreatorDelaunayFsceik(cfg.significands);
 		break;
 	case TT_CONVEX_HULL_INEXACT:
 		tc = new EpickConvexHullTriangulationCreator();
