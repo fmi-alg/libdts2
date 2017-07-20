@@ -97,12 +97,12 @@ public:
 };
 
 
-template<typename T_VERTEX_INFO, typename T_FACE_INFO>
+template<typename T_VERTEX_INFO, typename T_FACE_INFO, typename T_KERNEL = CGAL::Exact_predicates_exact_constructions_kernel>
 using Delaunay_triangulation_with_info_s2 =
 	Delaunay_triangulation_s2<
-		Delaunay_triangulation_traits_s2,
+		Delaunay_triangulation_traits_s2<T_KERNEL>,
 		typename internal::TriangulationDataStructureSelector<
-			Delaunay_triangulation_traits_s2,
+			Delaunay_triangulation_traits_s2<T_KERNEL>,
 			T_VERTEX_INFO,
 			T_FACE_INFO
 		>::type
