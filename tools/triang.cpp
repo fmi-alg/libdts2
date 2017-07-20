@@ -48,7 +48,10 @@ public:
 		fclose(f);
 	}
 	unsigned long size,resident,share,text,lib,data,dt;
+	static unsigned long pagesize;
 };
+
+unsigned long MemUsage::pagesize = ::sysconf(_SC_PAGE_SIZE);
 
 class Point3 {
 public:
@@ -1264,7 +1267,7 @@ void Data::create(InputOutput& io, const Config& cfg) {
 	points.clear();
 	edges.clear();
 	MemUsage mem;
-	std::cout << "Memory usage for triangulation: " << mem.resident << std::endl;
+	std::cout << "Memory usage for triangulation: " << mem.resident * mem.pagesize << std::endl;
 }
 
 void Data::write(InputOutput & io, const Config & cfg) {
