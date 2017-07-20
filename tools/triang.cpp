@@ -1298,7 +1298,7 @@ void Data::create(InputOutput& io, const Config& cfg) {
 	points.clear();
 	edges.clear();
 	MemUsage mem;
-	std::cout << "Memory usage for triangulation: " << mem.resident * mem.pagesize << std::endl;
+	std::cout << "Memory usage for triangulation: " << (mem.resident * mem.pagesize)/(1024*1024) << " MiB" << std::endl;
 }
 
 void Data::write(InputOutput & io, const Config & cfg) {
