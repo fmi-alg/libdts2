@@ -13,6 +13,8 @@
 
 #include <fstream>
 #include <libdts2/Constrained_delaunay_triangulation_s2.h>
+#include <CGAL/Polyhedron_3.h>
+#include <CGAL/convex_hull_3.h>
 #include <libratss/mpreal.h>
 #include <libratss/GeoCoord.h>
 #include <libratss/SphericalCoord.h>
@@ -50,31 +52,36 @@ public:
 class Point3 {
 public:
 	using Epeck = CGAL::Exact_predicates_exact_constructions_kernel;
-	using Epeceik = CGAL::Exact_predicates_exact_constructions_extended_integer_kernel;
-	using Epecksqrt = CGAL::Exact_predicates_exact_constructions_kernel_with_sqrt;
-	
 	using EpeckPoint = Epeck::Point_3;
-	using EpeceikPoint = Epeceik::Point_3;
-	using EpecksqrtPoint = Epecksqrt::Point_3;
+public:
+	using Sceik = CGAL::Simple_cartesian_extended_integer_kernel;
+	using Fsceik = CGAL::Filtered_simple_cartesian_extended_integer_kernel;
+	using Flceik = CGAL::Filtered_lazy_cartesian_extended_integer_kernel;
+	using Epeceik = CGAL::Exact_predicates_exact_constructions_extended_integer_kernel;
 	
+	using SceikPoint = Sceik::Point_3;
+	using FsceikPoint = Fsceik::Point_3;
+	using FlceikPoint = Flceik::Point_3;
+	using EpeceikPoint = Epeceik::Point_3;
+public:
+	using Sce1024ik = CGAL::Simple_cartesian_extended_1024_integer_kernel;
+	using Fsce1024ik = CGAL::Filtered_simple_cartesian_extended_1024_integer_kernel;
+	using Flce1024ik = CGAL::Filtered_lazy_cartesian_extended_1024_integer_kernel;
+	
+	using Fsce1024ikPoint = Fsce1024ik::Point_3;
+	using Flce1024ikPoint = Flce1024ik::Point_3;
+public:
+	using Epecksqrt = CGAL::Exact_predicates_exact_constructions_kernel_with_sqrt;
+	using EpecksqrtPoint = Epecksqrt::Point_3;
+public:
 	using FT = mpq_class;
 // 	using FT = Epeceik::FT;
-	
 public:
 	Point3(const FT & x, const FT & y, const FT & z) :
 	m_x(x), m_y(y), m_z(z)
 	{}
-	Point3(const EpeckPoint & p):
-	m_x( ratss::convert<FT>( p.x() )),
-	m_y( ratss::convert<FT>( p.y() )),
-	m_z( ratss::convert<FT>( p.z() ))
-	{}
-	Point3(const EpeceikPoint & p):
-	m_x( ratss::convert<FT>( p.x() )),
-	m_y( ratss::convert<FT>( p.y() )),
-	m_z( ratss::convert<FT>( p.z() ))
-	{}
-	Point3(const EpecksqrtPoint & p):
+	template<typename T_POINT>
+	Point3(const T_POINT & p) :
 	m_x( ratss::convert<FT>( p.x() )),
 	m_y( ratss::convert<FT>( p.y() )),
 	m_z( ratss::convert<FT>( p.z() ))
@@ -85,27 +92,23 @@ public:
 	const FT & y() const { return m_y; }
 	const FT & z() const { return m_z; }
 public:
-	operator EpeckPoint() const {
-		return EpeckPoint(
-			ratss::convert<Epeck::FT>( x() ),
-			ratss::convert<Epeck::FT>( y() ),
-			ratss::convert<Epeck::FT>( z() )
+	template<typename T_KERNEL>
+	typename T_KERNEL::Point_3 convert_to_p() const {
+		return typename T_KERNEL::Point_3(
+			ratss::convert<typename T_KERNEL::FT>( x() ),
+			ratss::convert<typename T_KERNEL::FT>( y() ),
+			ratss::convert<typename T_KERNEL::FT>( z() )
 		);
 	}
-	operator EpeceikPoint() const {
-		return EpeceikPoint(
-			ratss::convert<Epeceik::FT>( x() ),
-			ratss::convert<Epeceik::FT>( y() ),
-			ratss::convert<Epeceik::FT>( z() )
-		);
-	}
-	operator EpecksqrtPoint() const {
-		return EpecksqrtPoint(
-			ratss::convert<Epecksqrt::FT>( x() ),
-			ratss::convert<Epecksqrt::FT>( y() ),
-			ratss::convert<Epecksqrt::FT>( z() )
-		);
-	}
+public:
+	explicit operator EpeckPoint() const { return convert_to_p<Epeck>(); }
+	explicit operator SceikPoint() const { return convert_to_p<Sceik>(); }
+	explicit operator FsceikPoint() const { return convert_to_p<Fsceik>(); }
+	explicit operator FlceikPoint() const { return convert_to_p<Flceik>(); }
+	explicit operator EpeceikPoint() const { return convert_to_p<Epeceik>(); }
+	explicit operator Fsce1024ikPoint() const { return convert_to_p<Fsce1024ik>(); }
+	explicit operator Flce1024ikPoint() const { return convert_to_p<Flce1024ik>(); }
+	explicit operator EpecksqrtPoint() const { return convert_to_p<Epecksqrt>(); }
 private:
 	FT m_x;
 	FT m_y;
@@ -113,7 +116,7 @@ private:
 	
 };
 
-typedef enum {TT_DELAUNAY, TT_CONSTRAINED, TT_CONSTRAINED_INEXACT, TT_CONSTRAINED_INEXACT_64, TT_CONSTRAINED_EXACT, TT_CONSTRAINED_EXACT_SPHERICAL} TriangulationType;
+typedef enum {TT_DELAUNAY, TT_CONVEX_HULL, TT_CONVEX_HULL_64, TT_CONSTRAINED, TT_CONSTRAINED_INEXACT, TT_CONSTRAINED_INEXACT_64, TT_CONSTRAINED_EXACT, TT_CONSTRAINED_EXACT_SPHERICAL} TriangulationType;
 typedef enum {GOT_INVALID, GOT_NONE, GOT_WITHOUT_SPECIAL, GOT_WITHOUT_SPECIAL_HASH_MAP, GOT_SIMPLEST_GRAPH_RENDERING, GOT_SIMPLEST_GRAPH_RENDERING_ANDRE} GraphOutputType;
 typedef enum {GIT_INVALID, GIT_NODES_EDGES, GIT_EDGES} GraphInputType;
 typedef enum {TIO_INVALID, TIO_NODES_EDGES, TIO_EDGES} TriangulationInputOrder;
@@ -519,6 +522,51 @@ public:
 	virtual void write(InputOutput & io) = 0;
 };
 
+template<typename T_KERNEL>
+class ConvexHullTriangulationCreator: public TriangulationCreator {
+public:
+	using K = T_KERNEL;
+	using Point_3 = typename K::Point_3;
+	using Tr = CGAL::Polyhedron_3<K>;
+public:
+	ConvexHullTriangulationCreator() {}
+	virtual ~ConvexHullTriangulationCreator() {}
+public:
+	///@param points need to be exactly on the sphere
+	virtual void create(Points & points, Edges & edges, InputOutput & io, bool clear) {
+		auto tf = [](const Points::value_type & pi) {
+			return (Point_3) pi.first;
+		};
+		using MyIterator = boost::transform_iterator<decltype(tf), Points::const_iterator>;
+		
+		if (clear) {
+			edges = Edges();
+		}
+		io.info() << "Creating triangulation using convex hull algorithm..." << std::flush;
+		CGAL::convex_hull_3(MyIterator(points.begin(), tf), MyIterator(points.end(), tf), m_tr);
+		io.info() << "done" << std::endl;
+		if (clear) {
+			points = Points();
+		}
+	}
+	virtual void add(const Point3 & /*p*/) {
+		throw std::runtime_error("Convex hull based triangulation does not allow a dynamic creation");
+	}
+	virtual void add(const Point3 & /*p1*/, const Point3 & /*p2*/) {
+		throw std::runtime_error("Convex hull based triangulation does not allow a dynamic creation");
+	}
+	virtual void write(InputOutput & /*io*/) {
+		if (got != GOT_NONE) {
+			throw std::runtime_error("Convex hull based triangulation does not support writing of triangulation");
+		}
+	}
+private:
+	Tr m_tr;
+};
+
+using EpeckConvexHullTriangulationCreator = ConvexHullTriangulationCreator<CGAL::Exact_predicates_exact_constructions_kernel>;
+using Ei64ConvexHullTriangulationCreator = ConvexHullTriangulationCreator<CGAL::Exact_predicates_exact_constructions_extended_integer_kernel>;
+
 class TriangulationCreatorDelaunay: public TriangulationCreator {
 public:
 	using Tr =  dts2::Delaunay_triangulation_with_info_s2<VertexInfo, void>;
@@ -529,6 +577,10 @@ public:
 	TriangulationCreatorDelaunay(int significands) : m_tr(significands) {}
 	
 	virtual void create(Points & points, Edges & edges, InputOutput & io, bool clear) override {
+		if (clear) {
+			edges = Edges();
+		}
+	
 		auto tf = [](const Points::value_type & pi) {
 			return std::pair<Point_3, VertexInfo>((Point_3) pi.first, pi.second);
 		};
@@ -536,9 +588,9 @@ public:
 		io.info() << "Inserting points..." << std::flush;
 		m_tr.insert(MyIterator(points.begin(), tf), MyIterator(points.end(), tf), false);
 		io.info() << "done" << std::endl;
+		
 		if (clear) {
 			points = Points();
-			edges = Edges();
 		}
 	}
 
@@ -576,7 +628,7 @@ public:
 	virtual void create(Points & points, Edges & edges, InputOutput & io, bool clear) override  {
 		std::size_t ps = points.size();
 		io.info() << "Inserting points..." << std::flush;
-		insert(points.begin(), points.end());
+		this->insert(points.begin(), points.end());
 		io.info() << "done" << std::endl;
 		if (clear) {
 			points = Points();
@@ -629,7 +681,7 @@ public:
 	}
 	
 	virtual void add(const Point3 & p1, const Point3 & p2) override {
-		insert(p1, p2);
+		insert_constraint(p1, p2);
 	}
 	
 	virtual void write(InputOutput & io) override  {
@@ -648,7 +700,7 @@ private:
 	void insert(const Point3 & p) {
 		m_tr.insert((Point) p);
 	}
-	void insert(const Point3 & p1, const Point3 & p2) {
+	void insert_constraint(const Point3 & p1, const Point3 & p2) {
 		m_tr.insert((Point) p1, (Point) p2);
 	}
 private:
@@ -794,6 +846,12 @@ bool Config::parse(const std::string & token,int & i, int argc, char ** argv) {
 		if (type == "d" || type == "delaunay") {
 			triangType = TT_DELAUNAY;
 		}
+		else if (type == "ch" || type == "convexhull") {
+			triangType = TT_CONVEX_HULL;
+		}
+		else if (type == "ch64" || type == "convexhull-64") {
+			triangType = TT_CONVEX_HULL_64;
+		}
 		else if (type == "c" || type == "constrained") {
 			triangType = TT_CONSTRAINED;
 		}
@@ -873,18 +931,22 @@ void Config::parse_completed() {
 	if (intersectSignificands < 2) {
 		intersectSignificands = significands;
 	}
-	if (triangType == TT_CONSTRAINED_INEXACT_64) {
+	if (triangType == TT_CONSTRAINED_INEXACT_64 || triangType == TT_CONVEX_HULL_64) {
 		significands = 31;
 		intersectSignificands = 31;
 		snapType = ratss::ProjectSN::ST_PLANE | ratss::ProjectSN::ST_FX | ratss::ProjectSN::ST_NORMALIZE;
 		
 	}
+	if (TT_CONVEX_HULL_64 || TT_CONVEX_HULL) {
+		tio = TIO_NODES_EDGES;
+	}
+	
 }
 
 
 void Config::help(std::ostream & out) const {
 	out << "triang OPTIONS:\n"
-		"\t-t type\ttype = [d,delaunay, c,constrained,cx,constrained-intersection,cx64,constrained-intersection-64,cxe,constrained-intesection-exact, cxs, constrained-intersection-exact-spherical]\n"
+		"\t-t type\ttype = [d,delaunay,ch,convexhull,ch64,convexhull-64,c,constrained,cx,constrained-intersection,cx64,constrained-intersection-64,cxe,constrained-intesection-exact, cxs, constrained-intersection-exact-spherical]\n"
 		"\t-go type\tgraph output type = [none, wx, witout_special, simplest, simplest_andre]\n"
 		"\t-gi type\tgraph input type = [ne, nodes-edges, e, edges]\n"
 		"\t-io type\tinput order type = [ne, nodes-edges, e, edges]\n"
@@ -910,6 +972,12 @@ void Config::print(std::ostream & out) const {
 	case TT_DELAUNAY:
 		out << "delaunay";
 		break;
+	case TT_CONVEX_HULL:
+		out << "convex hull";
+		break;
+	case TT_CONVEX_HULL_64:
+		out << "convex hull using ExtendedInt64 kernel";
+		break;
 	case TT_CONSTRAINED:
 		out << "constrained no intersections";
 		break;
@@ -917,7 +985,7 @@ void Config::print(std::ostream & out) const {
 		out << "constrained in-exact intersections";
 		break;
 	case TT_CONSTRAINED_INEXACT_64:
-		out << "constrained in-exact intersections using 31 Bits for snapping";
+		out << "constrained in-exact intersections using ExtendedInt64 kernel";
 		break;
 	case TT_CONSTRAINED_EXACT:
 		out << "constrained exact intersections";
@@ -996,6 +1064,12 @@ void Data::init(const Config & cfg) {
 	switch (cfg.triangType) {
 	case TT_DELAUNAY:
 		tc = new TriangulationCreatorDelaunay(cfg.significands);
+		break;
+	case TT_CONVEX_HULL:
+		tc = new EpeckConvexHullTriangulationCreator();
+		break;
+	case TT_CONVEX_HULL_64:
+		tc = new Ei64ConvexHullTriangulationCreator();
 		break;
 	case TT_CONSTRAINED:
 		tc = new TriangulationCreatorNoIntersectionsConstrainedDelaunay(cfg.significands);
