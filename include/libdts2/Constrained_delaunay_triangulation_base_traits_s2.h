@@ -18,11 +18,11 @@ namespace LIB_DTS2_NAMESPACE {
 #define DEBUG_OUT(__STR) {std::cout <<  __STR << std::endl;}
 #define LIB_DTS2_ORIGIN Point_3(0, 0, 0)
 
-template<typename T_KERNEL>
+template<typename T_LINEAR_KERNEL>
 class Constrained_delaunay_triangulation_base_traits_s2 {
 public:
-	using MyBaseTrait = T_KERNEL;
-	using MyKernel = T_KERNEL;
+	using MyBaseTrait = T_LINEAR_KERNEL;
+	using MyKernel = T_LINEAR_KERNEL;
 	using MySelf = Constrained_delaunay_triangulation_base_traits_s2<MyBaseTrait>;
 protected: //we only want to expose typedefs that are really needed by the triangulation
 	using Segment_3 = typename MyBaseTrait::Segment_3;

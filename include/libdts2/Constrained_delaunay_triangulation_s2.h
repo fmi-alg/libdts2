@@ -104,10 +104,14 @@ public: //info
 
 ///The following typedefs may be of interest for users
 
-template<typename T_TDS = typename internal::ConstrainedTriangulationDataStructureSelector<Constrained_delaunay_triangulation_traits_s2> >
+template<typename T_TDS =
+	typename internal::ConstrainedTriangulationDataStructureSelector<
+		Constrained_delaunay_triangulation_traits_s2<CGAL::Exact_predicates_exact_constructions_kernel>
+	>
+>
 using Constrained_Delaunay_triangulation_no_intersections_s2 =
 	Constrained_delaunay_triangulation_s2<
-		Constrained_delaunay_triangulation_traits_s2,
+		typename T_TDS::Geom_traits,
 		T_TDS, CGAL::No_intersection_tag>;
 
 template<typename T_TDS = typename internal::ConstrainedTriangulationDataStructureSelector<Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2> >
@@ -137,9 +141,9 @@ using Constrained_Delaunay_triangulation_with_exact_intersections_spherical_s2 =
 template<typename T_VERTEX_INFO, typename T_FACE_INFO>
 using Constrained_Delaunay_triangulation_no_intersections_with_info_s2 =
 	Constrained_delaunay_triangulation_s2<
-		Constrained_delaunay_triangulation_traits_s2,
+		Constrained_delaunay_triangulation_traits_s2<CGAL::Exact_predicates_exact_constructions_kernel>,
 		typename internal::ConstrainedTriangulationDataStructureSelector<
-			Constrained_delaunay_triangulation_traits_s2,
+			Constrained_delaunay_triangulation_traits_s2<CGAL::Exact_predicates_exact_constructions_kernel>,
 			T_VERTEX_INFO,
 			T_FACE_INFO
 		>::type,

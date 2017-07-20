@@ -9,6 +9,7 @@
 
 namespace LIB_DTS2_NAMESPACE {
 
+template<typename T_LINEAR_KERNEL>
 class Constrained_delaunay_triangulation_traits_s2;
 
 } //end namespace LIB_DTS2_NAMESPACE
@@ -19,10 +20,10 @@ namespace internal {
 	//this one is needed since Constrained_delaunay_triangulation_traits_s2 sets Point_2 = Point_3
 	//and then we get a conflict of this function in the original code
 	
-    template <class RandomAccessIterator, class Policy>
+    template <class RandomAccessIterator, class Policy, typename T_LINEAR_KERNEL>
     void spatial_sort (
                        RandomAccessIterator begin, RandomAccessIterator end,
-                       const LIB_DTS2_NAMESPACE::Constrained_delaunay_triangulation_traits_s2 & k, 
+                       const LIB_DTS2_NAMESPACE::Constrained_delaunay_triangulation_traits_s2<T_LINEAR_KERNEL> & k, 
 		       Policy /*policy*/,
 		       std::ptrdiff_t threshold_hilbert,
 		       std::ptrdiff_t threshold_multiscale,
@@ -33,46 +34,45 @@ namespace internal {
 
 namespace LIB_DTS2_NAMESPACE {
 
+template<typename T_LINEAR_KERNEL = CGAL::Exact_predicates_exact_constructions_kernel>
 class Constrained_delaunay_triangulation_traits_s2:
-	public Constrained_delaunay_triangulation_base_traits_s2<
-		CGAL::Exact_predicates_exact_constructions_kernel
-	>
+	public Constrained_delaunay_triangulation_base_traits_s2<T_LINEAR_KERNEL>
 {
 public:
-	using MyBaseTrait = Constrained_delaunay_triangulation_base_traits_s2<CGAL::Exact_predicates_exact_constructions_kernel>;
+	using MyBaseTrait = Constrained_delaunay_triangulation_base_traits_s2<T_LINEAR_KERNEL>;
 public:
-	using FT = MyBaseTrait::FT;
-	using Oriented_side = MyBaseTrait::Oriented_side;
-	using Comparison_result = MyBaseTrait::Comparison_result;
-	using Orientation = MyBaseTrait::Orientation;
+	using FT = typename MyBaseTrait::FT;
+	using Oriented_side = typename MyBaseTrait::Oriented_side;
+	using Comparison_result = typename MyBaseTrait::Comparison_result;
+	using Orientation = typename MyBaseTrait::Orientation;
 	
-	using Segment_2 = MyBaseTrait::Segment_2;
-	using Segment = MyBaseTrait::Segment;
+	using Segment_2 = typename MyBaseTrait::Segment_2;
+	using Segment = typename MyBaseTrait::Segment;
 	
-	using Point_3 = MyBaseTrait::Point_3;
-	using Point_2 = MyBaseTrait::Point_2;
-	using Point = MyBaseTrait::Point;
+	using Point_3 = typename MyBaseTrait::Point_3;
+	using Point_2 = typename MyBaseTrait::Point_2;
+	using Point = typename MyBaseTrait::Point;
 	
-	using Compare_distance_2 = Compare_distance_3;
+	using Compare_distance_2 = typename MyBaseTrait::Compare_distance_3;
 	
 	//the following is needed for spatial sorting
-	using Less_x_3 = MyBaseTrait::Less_x_3;
-	using Less_y_3 = MyBaseTrait::Less_y_3;
-	using Less_z_3 = MyBaseTrait::Less_z_3;
+	using Less_x_3 = typename MyBaseTrait::Less_x_3;
+	using Less_y_3 = typename MyBaseTrait::Less_y_3;
+	using Less_z_3 = typename MyBaseTrait::Less_z_3;
 	
 	//this is needed for spatial sorting during insertion of constraints
 	//cgal uses Spatial_sort_traits_adapter_2 to sort inserted vertices
 	//this in turn needs the following predicates
 	//maybe we should just specialize Spatial_sort_traits_adapter_2 for this Trait
 	
-	using Less_x_2 = MyBaseTrait::Less_x_2;
-	using Less_y_2 = MyBaseTrait::Less_y_2;
+	using Less_x_2 = typename MyBaseTrait::Less_x_2;
+	using Less_y_2 = typename MyBaseTrait::Less_y_2;
 	
-	using Construct_segment_2 = MyBaseTrait::Construct_segment_2;
+	using Construct_segment_2 = typename MyBaseTrait::Construct_segment_2;
 public:
 	class Project_on_sphere: public MyBaseTrait::Project_on_sphere {
 	public:
-		using MyBaseClass = MyBaseTrait::Project_on_sphere;
+		using MyBaseClass = typename MyBaseTrait::Project_on_sphere;
 	private:
 		template<typename T>
 		using Conversion = LIB_RATSS_NAMESPACE::Conversion<T>;
@@ -87,14 +87,14 @@ public:
 			}
 			
 			mpq_class sqLenQ = Conversion<FT>::toMpq(sqLen);
-			std::size_t sqLenPrec = projector().calc().maxBitCount(sqLenQ);
+			std::size_t sqLenPrec = MyBaseClass::projector().calc().maxBitCount(sqLenQ);
 			mpfr::mpreal sqLenF(Conversion<mpq_class>::toMpreal(sqLenQ, sqLenPrec));
-			mpfr::mpreal lenF = projector().calc().sqrt(sqLenF);
+			mpfr::mpreal lenF = MyBaseClass::projector().calc().sqrt(sqLenF);
 			mpfr::mpreal xf(Conversion<FT>::toMpreal(v.x(), sqLenPrec));
 			mpfr::mpreal yf(Conversion<FT>::toMpreal(v.y(), sqLenPrec));
 			mpfr::mpreal zf(Conversion<FT>::toMpreal(v.z(), sqLenPrec));
 			mpq_class xq, yq, zq;
-			projector().snap(xf, yf, zf, xq, yq, zq, significands());
+			MyBaseClass::projector().snap(xf, yf, zf, xq, yq, zq, MyBaseClass::significands());
 			return Point_3( Conversion<FT>::moveFrom(xq),
 							Conversion<FT>::moveFrom(yq),
 							Conversion<FT>::moveFrom(zq)
@@ -129,12 +129,12 @@ public:
 namespace CGAL {
 namespace internal {
 
-    template <class RandomAccessIterator, class Policy>
+    template <class RandomAccessIterator, class Policy, typename T_LINEAR_KERNEL>
     void spatial_sort (RandomAccessIterator begin, RandomAccessIterator end,
-						const LIB_DTS2_NAMESPACE::Constrained_delaunay_triangulation_traits_s2& k,
+						const LIB_DTS2_NAMESPACE::Constrained_delaunay_triangulation_traits_s2<T_LINEAR_KERNEL>& k,
 						Policy, std::ptrdiff_t threshold_hilbert, std::ptrdiff_t threshold_multiscale, double ratio)
     {
-      typedef Hilbert_sort_3<LIB_DTS2_NAMESPACE::Constrained_delaunay_triangulation_traits_s2, Policy> Sort;
+      typedef Hilbert_sort_3<LIB_DTS2_NAMESPACE::Constrained_delaunay_triangulation_traits_s2<T_LINEAR_KERNEL>, Policy> Sort;
         boost::rand48 random;
         boost::random_number_generator<boost::rand48> rng(random);
 #if defined(CGAL_HILBERT_SORT_WITH_MEDIAN_POLICY_CROSS_PLATFORM_BEHAVIOR)
