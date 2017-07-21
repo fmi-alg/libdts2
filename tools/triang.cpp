@@ -200,7 +200,7 @@ struct TriangulationWriter {
 	
 	TriangulationWriter(ratss::RationalPoint::Format outFormat, GraphOutputType got) : outFormat(outFormat), got(got) {}
 	
-	void write(std::ostream & out, TRS & trs) {
+	void write(InputOutput & out, TRS & trs) {
 		switch (got) {
 		case GOT_NONE:
 			break;
@@ -232,7 +232,8 @@ struct TriangulationWriter {
 		}
 	}
 	
-	void writeWithoutSpecial(std::ostream & out, TRS & trs) {
+	void writeWithoutSpecial(InputOutput & io, TRS & trs) {
+		std::ostream & out = io.output();
 		using std::distance;
 // 		assignVertexIds(trs);
 		std::size_t vertexCount(0), edgeCount(0), maxVertexId(0);
@@ -293,7 +294,9 @@ struct TriangulationWriter {
 		}
 	}
 
-	void writeWithoutSpecialHashMap(std::ostream & out, TRS & sdt) {
+	void writeWithoutSpecialHashMap(InputOutput & io, TRS & sdt) {
+		std::ostream & out = io.output();
+		
 		out.precision(std::numeric_limits<double>::digits10+1);
 		
 		CGAL::Unique_hash_map<Vertex_handle, uint32_t> vertex2Id;
@@ -319,7 +322,7 @@ struct TriangulationWriter {
 			}
 		}
 		
-		std::cerr << "Graph has " << vertexId << " vertices and " << edgeCount  << " edges" << std::endl;
+		io.info() << "Graph has " << vertexId << " vertices and " << edgeCount  << " edges" << std::endl;
 		
 		out << vertexId << '\n';
 		out << edgeCount << '\n';
@@ -355,7 +358,8 @@ struct TriangulationWriter {
 		
 	}
 
-	void writeSimplestGraphRendering(std::ostream & out, TRS & sdt) {
+	void writeSimplestGraphRendering(InputOutput & io, TRS & sdt) {
+		std::ostream & out = io.output();
 		out.precision(std::numeric_limits<double>::digits10+1);
 		
 		CGAL::Unique_hash_map<Vertex_handle, uint32_t> vertex2Id;
@@ -374,7 +378,7 @@ struct TriangulationWriter {
 			++faceCount;
 		}
 		
-		std::cout << "Graph has " << vertexId << " vertices, " << faceCount << '/' << faceCount*3 << " faces/edges" << std::endl;
+		io.info() << "Graph has " << vertexId << " vertices, " << faceCount << '/' << faceCount*3 << " faces/edges" << std::endl;
 		
 		out << vertexId << '\n';
 		out << faceCount*3 << '\n';
@@ -410,7 +414,8 @@ struct TriangulationWriter {
 	// Farbe ist 1-5
 	// start/ziel als index
 	// lat/lon als float
-	void writeSimplestGraphRenderingAndre(std::ostream & out, TRS & sdt) {
+	void writeSimplestGraphRenderingAndre(InputOutput & io, TRS & sdt) {
+		std::ostream & out = io.output();
 		out.precision(20);
 
 // 		std::string node_rgb_value = "0 0 0 0";
@@ -447,7 +452,7 @@ struct TriangulationWriter {
 			++faceCount;
 		}
 		
-		std::cout << "Graph has " << vertexId << " vertices, " << faceCount << '/' << faceCount*3 << " faces/edges" << std::endl;
+		io.info() << "Graph has " << vertexId << " vertices, " << faceCount << '/' << faceCount*3 << " faces/edges" << std::endl;
 		
 		out << vertexId << '\n';
 		out << edgeCount << '\n';
@@ -514,7 +519,8 @@ extern "C" void debug_dump_triangulation() {
 	CDT & cdt = *debug_triangulation_pointer;
 	TriangulationWriter<CDT> writer(ratss::PointBase::FM_GEO, GOT_WITHOUT_SPECIAL_HASH_MAP);
 	std::cerr << "DEBUG_GRAPH_BEGIN" << std::endl;
-	writer.write(std::cerr, cdt);
+	InputOutput io(std::cin, std::cerr);
+	writer.write(io, cdt);
 	std::cerr << "DEBUG_GRAPH_END" << std::endl;
 }
 
@@ -621,7 +627,7 @@ public:
 
 	virtual void write(InputOutput & io) override {
 		TriangulationWriter<Tr> writer(pointFormat, got);
-		writer.write(io.output(), m_tr);
+		writer.write(io, m_tr);
 	}
 private:
 	Tr m_tr;
@@ -717,7 +723,7 @@ public:
 	
 	virtual void write(InputOutput & io) override  {
 		TriangulationWriter<Tr> writer(pointFormat, got);
-		writer.write(io.output(), m_tr);
+		writer.write(io, m_tr);
 	}
 private:
 	//points are already snapped
@@ -782,12 +788,14 @@ m_tr(
 
 template<>
 TriangulationCreatorInExactIntersectionsConstrainedDelaunay64::~TriangulationCreatorConstrainedDelaunay() {
-	std::cout << "ExtendedInt64q::number_of_allocations=" <<
+#ifdef WITH_EI64_COUNT_ALLOCATIONS
+	std::cerr << "ExtendedInt64q::number_of_allocations=" <<
 		CGAL::ExtendedInt64q<CGAL::Gmpq>::number_of_allocations << std::endl;
-	std::cout << "ExtendedInt64q::number_of_extended_allocations=" <<
+	std::cerr << "ExtendedInt64q::number_of_extended_allocations=" <<
 		CGAL::ExtendedInt64q<CGAL::Gmpq>::number_of_extended_allocations << std::endl;
-	std::cout << "ExtendedInt64z::number_of_extended_allocations=" <<
+	std::cerr << "ExtendedInt64z::number_of_extended_allocations=" <<
 		CGAL::ExtendedInt64z::number_of_extended_allocations << std::endl;
+#endif
 }
 
 class Config: public ratss::BasicCmdLineOptions {
@@ -1298,7 +1306,7 @@ void Data::create(InputOutput& io, const Config& cfg) {
 	points.clear();
 	edges.clear();
 	MemUsage mem;
-	std::cout << "Memory usage for triangulation: " << (mem.resident * mem.pagesize)/(1024*1024) << " MiB" << std::endl;
+	io.info() << "Memory usage for triangulation: " << (mem.resident * mem.pagesize)/(1024*1024) << " MiB" << std::endl;
 }
 
 void Data::write(InputOutput & io, const Config & cfg) {
