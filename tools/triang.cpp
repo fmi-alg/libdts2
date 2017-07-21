@@ -11,7 +11,11 @@
   * 
   */
 
+#include <time.h>
+#include <sys/time.h>
 #include <fstream>
+#include <string>
+#include <malloc.h>
 #include <libdts2/Constrained_delaunay_triangulation_s2.h>
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Polyhedron_3.h>
@@ -50,6 +54,86 @@ public:
 	unsigned long size,resident,share,text,lib,data,dt;
 	static unsigned long pagesize;
 };
+
+std::ostream & operator<<(std::ostream & out, const MemUsage & mem) {
+	out << (mem.resident * mem.pagesize)/(1024*1024) << " MiB";
+	return out;
+}
+
+class TimeMeasurer {
+private:
+	struct timeval m_begin, m_end;
+public:
+	TimeMeasurer() {
+		::memset(&m_begin, 0, sizeof(struct timeval));
+		::memset(&m_end, 0, sizeof(struct timeval));
+	}
+	
+	~TimeMeasurer() {}
+	
+	inline void begin() {
+		gettimeofday(&m_begin, NULL);
+	}
+	
+	inline void end() {
+		gettimeofday(&m_end, NULL);
+	}
+	
+	inline long beginTime() const {
+		return m_begin.tv_sec;
+	}
+	
+	/** @return returns the elapsed time in useconds  */
+	inline long elapsedTime() const {
+		long mtime, seconds, useconds;
+		seconds  = m_end.tv_sec  - m_begin.tv_sec;
+		useconds = m_end.tv_usec - m_begin.tv_usec;
+		mtime = (long)((double)((seconds) * 1000*1000 + useconds) + 0.5);
+		return mtime;
+	}
+	
+	inline long elapsedUseconds() const {
+		return elapsedTime();
+	}
+
+	inline long elapsedMilliSeconds() const {
+		return elapsedTime()/1000;
+	}
+	
+	inline long elapsedSeconds() const {
+		return elapsedTime()/1000000;
+	}
+
+	inline long elapsedMinutes() const {
+		return elapsedSeconds()/60;
+	}
+	inline long elapsedHours() const {
+		return elapsedSeconds()/3600;
+	}
+};
+
+std::ostream & operator<<(std::ostream & out, const TimeMeasurer & tm) {
+	long tms[4];
+	tms[0] = tm.elapsedMilliSeconds()%1000;
+	tms[1] = tm.elapsedSeconds()%60; //seconds
+	tms[2] = tm.elapsedMinutes()%60; //minutes
+	tms[3] = tm.elapsedHours(); //hours
+	std::string e[4] = {"ms", "s", "M", "h"};
+	
+	bool hasPrev = false;
+	for(int i = 3; i >= 0; --i) {
+		if (tms[i]) {
+			if (hasPrev)
+				out << " ";
+			hasPrev = true;
+			out << tms[i] << e[i];
+		}
+	}
+	if (!hasPrev) {
+		out << "0s";
+	}
+	return out;
+}
 
 unsigned long MemUsage::pagesize = ::sysconf(_SC_PAGE_SIZE);
 
@@ -858,19 +942,43 @@ int main(int argc, char ** argv) {
 		cfg.print(io.info());
 		io.info() << std::endl;
 	}
+	TimeMeasurer ttm;
+	TimeMeasurer tm;
+	MemUsage mem;
 	
+	ttm.begin();
 	
 	io.info() << "Initializing triangulation..." << std::endl;
 	data.init(cfg);
 	
-	io.info() << "Reading graph..." << std::endl;
-	data.read(io, cfg);
+	{
+		io.info() << "Reading graph..." << std::endl;
+		tm.begin();
+		data.read(io, cfg);
+		tm.end();
+		::malloc_trim(0);
+		mem.update();
+		io.info() << "Memory usage: " << mem << std::endl;
+		io.info() << "Reading the graph took " << tm << std::endl;
+	}
 	
-	io.info() << "Creating triangulation..." << std::endl;
-	data.create(io, cfg);
+	{
+		io.info() << "Creating triangulation..." << std::endl;
+		tm.begin();
+		data.create(io, cfg);
+		tm.end();
+		::malloc_trim(0);
+		mem.update();
+		io.info() << "Memory usage: " << mem << std::endl;
+		io.info() << "Time: " << tm << std::endl;
+	}
+	
 	
 	io.info() << "Writing triangulation..." << std::endl;
 	data.write(io, cfg);
+	
+	ttm.end();
+	io.info() << "Total time: " << ttm << std::endl;
 	
 	io.info() << "All operations succeeded. Exiting" << std::endl;
 	return 0;
@@ -1305,8 +1413,6 @@ void Data::create(InputOutput& io, const Config& cfg) {
 	}
 	points.clear();
 	edges.clear();
-	MemUsage mem;
-	io.info() << "Memory usage for triangulation: " << (mem.resident * mem.pagesize)/(1024*1024) << " MiB" << std::endl;
 }
 
 void Data::write(InputOutput & io, const Config & cfg) {
