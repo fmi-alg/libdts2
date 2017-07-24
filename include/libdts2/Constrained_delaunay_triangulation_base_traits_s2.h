@@ -9,8 +9,6 @@
 #include <CGAL/number_utils.h>
 
 #include <CGAL/enum.h>
-
-
 #include <assert.h>
 
 namespace LIB_DTS2_NAMESPACE {
@@ -123,16 +121,51 @@ public: //own implementations
 	};
 	
 	class Side_of_oriented_circle_2 {
+	private:
+		using PositionOnSphere = LIB_RATSS_NAMESPACE::PositionOnSphere;
 	public:
 		Side_of_oriented_circle_2(const Orientation_3 & _ot3) : ot3(_ot3) {}
 		Orientation operator()(const Point_3 & p, const Point_3 & q, const Point_3 & r, const Point_3 & s) const
 		{
 			assert(p != q && p != r && q != r && r != s);
-			auto oriented_side = ot3(p, q, r, s);
+			Orientation oriented_side;
+			PositionOnSphere pos = positionOnSphere(p);
+			if (pos == positionOnSphere(q) && pos == positionOnSphere(r) && pos == positionOnSphere(s)) {
+				auto pp( sphere2Plane(p, pos) );
+				auto qp( sphere2Plane(q, pos) );
+				auto rp( sphere2Plane(r, pos) );
+				auto sp( sphere2Plane(s, pos) );
+				oriented_side = m_soc2(pp, qp, rp, sp);
+				assert(oriented_side == ot3(p, q, r, s));
+			}
+			else {
+				oriented_side = ot3(p, q, r, s);
+			}
 			return oriented_side;
 		}
 	private:
+		PositionOnSphere positionOnSphere(const Point_3 & p) const {
+			return m_proj.positionOnSphere(p.x(), p.y(), p.z());
+		}
+		typename LinearKernel::Point_2 sphere2Plane(const Point_3 & p, PositionOnSphere pos) const {
+			FT xp, yp, zp;
+			pos = m_proj.sphere2Plane(p.x(), p.y(), p.z(), xp, yp, zp, pos);
+			int apos = std::abs(pos);
+			if (apos == 1) {
+				return typename LinearKernel::Point_2(yp, zp);
+			}
+			else if (apos == 2) {
+				return typename LinearKernel::Point_2(xp, zp);
+			}
+			else {
+				assert(apos == 3);
+				return typename LinearKernel::Point_2(xp, yp);
+			}
+		}
+	private:
 		Orientation_3 ot3;
+		typename LinearKernel::Side_of_oriented_circle_2 m_soc2;
+		Projector m_proj;
 	};
 	
 	class Compare_x_2 {
