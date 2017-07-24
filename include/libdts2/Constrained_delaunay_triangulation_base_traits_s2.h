@@ -21,6 +21,7 @@ namespace LIB_DTS2_NAMESPACE {
 template<typename T_LINEAR_KERNEL>
 class Constrained_delaunay_triangulation_base_traits_s2 {
 public:
+	using LinearKernel = T_LINEAR_KERNEL;
 	using MyBaseTrait = T_LINEAR_KERNEL;
 	using MyKernel = T_LINEAR_KERNEL;
 	using MySelf = Constrained_delaunay_triangulation_base_traits_s2<MyBaseTrait>;
