@@ -872,13 +872,17 @@ m_tr(
 
 template<>
 TriangulationCreatorInExactIntersectionsConstrainedDelaunay64::~TriangulationCreatorConstrainedDelaunay() {
-#ifdef WITH_EI64_COUNT_ALLOCATIONS
+#ifdef WITH_EI64_STATS
 	std::cerr << "ExtendedInt64q::number_of_allocations=" <<
 		CGAL::ExtendedInt64q<CGAL::Gmpq>::number_of_allocations << std::endl;
 	std::cerr << "ExtendedInt64q::number_of_extended_allocations=" <<
 		CGAL::ExtendedInt64q<CGAL::Gmpq>::number_of_extended_allocations << std::endl;
 	std::cerr << "ExtendedInt64z::number_of_extended_allocations=" <<
 		CGAL::ExtendedInt64z::number_of_extended_allocations << std::endl;
+	std::cerr << "ExtendedInt64q::max_numerator_bits=" <<
+		CGAL::ExtendedInt64q<CGAL::Gmpq>::max_numerator_bits << std::endl;
+	std::cerr << "ExtendedInt64q::max_denominator_bits=" <<
+		CGAL::ExtendedInt64q<CGAL::Gmpq>::max_denominator_bits << std::endl;
 #endif
 }
 
