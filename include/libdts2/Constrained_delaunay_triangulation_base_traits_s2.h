@@ -15,7 +15,11 @@
 
 namespace LIB_DTS2_NAMESPACE {
 
-#define DEBUG_OUT(__STR) {std::cout <<  __STR << std::endl;}
+#ifndef NDEBUG
+	#define DEBUG_OUT(__STR) {std::cout <<  __STR << std::endl;}
+#else
+	#define DEBUG_OUT(__) {}
+#endif
 #define LIB_DTS2_ORIGIN Point_3(0, 0, 0)
 
 template<typename T_LINEAR_KERNEL>
