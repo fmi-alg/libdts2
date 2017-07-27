@@ -20,6 +20,7 @@
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Polyhedron_3.h>
 #include <CGAL/convex_hull_3.h>
+#include <CGAL/Spatial_sort_traits_adapter_3.h>
 #include <libratss/mpreal.h>
 #include <libratss/GeoCoord.h>
 #include <libratss/SphericalCoord.h>
@@ -165,8 +166,10 @@ public:
 	using Epecksqrt = CGAL::Exact_predicates_exact_constructions_kernel_with_sqrt;
 	using EpecksqrtPoint = Epecksqrt::Point_3;
 public:
-	using FT = mpq_class;
-// 	using FT = Epeceik::FT;
+// 	using FT = mpq_class;
+	using K = Sceik;
+	using FT = K::FT;
+	using R = K::Point_3::R;
 public:
 	Point3(const FT & x, const FT & y, const FT & z) :
 	m_x(x), m_y(y), m_z(z)
@@ -208,10 +211,96 @@ private:
 	
 };
 
+class BinaryIo {
+public:
+	BinaryIo() : m_io(0) {}
+	void setIo(ratss::InputOutput * io) {
+		m_io = io;
+	}
+public:
+	template<typename T>
+	T get() { return get(static_cast<T*>(0)); };
+	template<typename T>
+	void write(const T & v);
+private:
+	template<typename T>
+	T get(T *); //we need this, since we cannot simply specialize this based on T, since it is only the return type
+	CGAL::ExtendedInt64q<CGAL::Gmpq>::PQ get(CGAL::ExtendedInt64q<CGAL::Gmpq>::PQ*);
+	CGAL::ExtendedInt64q<CGAL::Gmpq> get(CGAL::ExtendedInt64q<CGAL::Gmpq>*);
+	Point3 get(Point3*);
+private:
+	ratss::InputOutput * m_io;
+};
+
+template<typename T>
+T
+BinaryIo::get(T*) {
+	assert(std::is_pod<T>::value);
+	char tmp[sizeof(T)];
+	m_io->input().read(tmp, sizeof(T));
+	T result;
+	::memmove(&result, tmp, sizeof(T));
+	return result;
+}
+
+template<typename T>
+void
+BinaryIo::write(T const & v) {
+	assert(std::is_pod<T>::value);
+	char tmp[sizeof(T)];
+	::memmove(tmp, &v, sizeof(T));
+	m_io->output().write(tmp, sizeof(T));
+}
+
+CGAL::ExtendedInt64q<CGAL::Gmpq>::PQ
+BinaryIo::get(CGAL::ExtendedInt64q<CGAL::Gmpq>::PQ* = 0) {
+	return CGAL::ExtendedInt64q<CGAL::Gmpq>::PQ(this->get<int64_t>(), this->get<int64_t>());
+}
+
+CGAL::ExtendedInt64q<CGAL::Gmpq>
+BinaryIo::get(CGAL::ExtendedInt64q<CGAL::Gmpq>* = 0) {
+	return CGAL::ExtendedInt64q<CGAL::Gmpq>( this->get<CGAL::ExtendedInt64q<CGAL::Gmpq>::PQ>() );
+}
+
+Point3
+BinaryIo::get(Point3* = 0) {
+	using FT = CGAL::ExtendedInt64q<CGAL::Gmpq>;
+	return Point3(
+		ratss::convert<Point3::FT>( this->get<FT>() ),
+		ratss::convert<Point3::FT>( this->get<FT>() ),
+		ratss::convert<Point3::FT>( this->get<FT>() )
+	);
+}
+
+template<>
+void
+BinaryIo::write(const CGAL::ExtendedInt64q<CGAL::Gmpq>::PQ & v) {
+	this->write<int64_t>(v.num);
+	this->write<int64_t>(v.den);
+}
+
+template<>
+void
+BinaryIo::write(const CGAL::ExtendedInt64q<CGAL::Gmpq> & v) {
+	if (v.isExtended()) {
+		throw std::domain_error("Unable to serialize extended CGAL::ExtendedInt64q<CGAL::Gmpq>");
+	}
+	this->write(v.getPq());
+}
+
+template<>
+void
+BinaryIo::write(const Point3 & v) {
+	using FT = CGAL::ExtendedInt64q<CGAL::Gmpq>;
+	this->write( ratss::convert<FT>( v.x() ) );
+	this->write( ratss::convert<FT>( v.y() ) );
+	this->write( ratss::convert<FT>( v.z() ) );
+}
+
 typedef enum {TT_DELAUNAY, TT_DELAUNAY_64, TT_CONVEX_HULL_INEXACT, TT_CONVEX_HULL, TT_CONVEX_HULL_64, TT_CONSTRAINED, TT_CONSTRAINED_INEXACT, TT_CONSTRAINED_INEXACT_64, TT_CONSTRAINED_EXACT, TT_CONSTRAINED_EXACT_SPHERICAL} TriangulationType;
 typedef enum {GOT_INVALID, GOT_NONE, GOT_WITHOUT_SPECIAL, GOT_WITHOUT_SPECIAL_HASH_MAP, GOT_SIMPLEST_GRAPH_RENDERING, GOT_SIMPLEST_GRAPH_RENDERING_ANDRE} GraphOutputType;
-typedef enum {GIT_INVALID, GIT_NODES_EDGES, GIT_EDGES} GraphInputType;
-typedef enum {TIO_INVALID, TIO_NODES_EDGES, TIO_EDGES} TriangulationInputOrder;
+typedef enum {GIT_INVALID, GIT_NODES_EDGES, GIT_EDGES, GIT_NODES_EDGES_BINARY} GraphInputType;
+typedef enum {TIO_INVALID, TIO_NODES_EDGES, TIO_EDGES, TIO_NODES_EDGES_BINARY} TriangulationInputOrder;
 
 struct VertexInfo {
 	VertexInfo() : id(def_instance_counter) { --def_instance_counter;}
@@ -679,6 +768,7 @@ public:
 	using Point_3 = typename Tr::Point_3;
 	using Vertex_handle = typename Tr::Vertex_handle;
 	using Finite_vertices_iterator = typename Tr::Finite_vertices_iterator;
+	using Face_handle = typename Tr::Face_handle;
 public:
 	TriangulationCreatorDelaunay(int significands) : m_tr(significands) {}
 	
@@ -701,12 +791,12 @@ public:
 	}
 
 	virtual void add(const Point3 & p) override {
-		m_tr.insert((Point_3) p);
+		m_lastAddFh = m_tr.insert((Point_3) p, m_lastAddFh)->face();
 	}
 	
 	virtual void add(const Point3 & p1, const Point3 & p2) override {
-		m_tr.insert((Point_3) p1);
-		m_tr.insert((Point_3) p2);
+		m_tr.insert((Point_3) p1, m_lastAddFh);
+		m_lastAddFh = m_tr.insert((Point_3) p2, m_lastAddFh)->face();
 	}
 
 	virtual void write(InputOutput & io) override {
@@ -715,6 +805,7 @@ public:
 	}
 private:
 	Tr m_tr;
+	Face_handle m_lastAddFh;
 };
 
 template<typename T_VERTEX_INFO, typename T_FACE_INFO>
@@ -738,6 +829,7 @@ public:
 	using Point = typename Tr::Point;
 	using Vertex_handle = typename Tr::Vertex_handle;
 	using Finite_vertices_iterator = typename Tr::Finite_vertices_iterator;
+	using Face_handle = typename Tr::Face_handle;
 public:
 	TriangulationCreatorConstrainedDelaunay(int significands) :
 	m_tr(significands)
@@ -798,11 +890,14 @@ public:
 	}
 	
 	virtual void add(const Point3 & p) override {
-		insert(p);
+		m_lastAddFh = insert(p, m_lastAddFh)->face();
 	}
 	
 	virtual void add(const Point3 & p1, const Point3 & p2) override {
+		Vertex_handle vh1 = insert(p1, m_lastAddFh);
+		Vertex_handle vh2 = insert(p2, m_lastAddFh);
 		insert_constraint(p1, p2);
+		m_lastAddFh = vh1->face();
 	}
 	
 	virtual void write(InputOutput & io) override  {
@@ -818,14 +913,18 @@ private:
 		using MyIterator = boost::transform_iterator<decltype(tf), Points::const_iterator>;
 		m_tr.insert(MyIterator(begin, tf), MyIterator(end, tf), false);
 	}
-	void insert(const Point3 & p) {
-		m_tr.insert((Point) p);
+	Vertex_handle insert(const Point3 & p, const Face_handle & fh) {
+		return m_tr.insert((Point) p, fh);
 	}
 	void insert_constraint(const Point3 & p1, const Point3 & p2) {
 		m_tr.insert((Point) p1, (Point) p2);
 	}
+	void insert(const Vertex_handle & vh1, const Vertex_handle & vh2) {
+		m_tr.insert(vh1, vh2);
+	}
 private:
 	Tr m_tr;
+	Face_handle m_lastAddFh;
 };
 
 using TriangulationCreatorNoIntersectionsConstrainedDelaunay =
@@ -893,6 +992,7 @@ public:
 	GraphInputType git = GIT_INVALID;
 	TriangulationInputOrder tio = TIO_NODES_EDGES;
 	int intersectSignificands = -1;
+	std::string rewriteFileName;
 public:
 	using ratss::BasicCmdLineOptions::parse;
 public:
@@ -903,6 +1003,8 @@ public:
 };
 
 struct Data {
+	using Points = std::vector<std::pair<Point3, VertexInfo>>;
+
 	Data();
 	~Data();
 
@@ -916,14 +1018,13 @@ struct Data {
 	
 	void init(const Config& cfg);
 	void read(InputOutput& io, const Config& cfg);
+	void rewrite(InputOutput&io, const Config& cfg);
 	void create(InputOutput& io, const Config& cfg);
 	void write(InputOutput& io, const Config& cfg);
 	
 	void readNodesEdges(InputOutput& io, const Config& cfg);
 	void readEdges(InputOutput& io, const Config& cfg);
 	Point3 readPoint(std::istream& is, const Config& cfg);
-
-
 };
 
 ///now the main
@@ -964,6 +1065,15 @@ int main(int argc, char ** argv) {
 		mem.update();
 		io.info() << "Memory usage: " << mem << std::endl;
 		io.info() << "Reading the graph took " << tm << std::endl;
+	}
+	
+	if (cfg.git != GIT_NODES_EDGES_BINARY && cfg.tio == TIO_NODES_EDGES_BINARY) {
+		io.info() << "Rewriting the graph..." << std::endl;
+		tm.begin();
+		data.rewrite(io, cfg);
+		tm.end();
+		io.info() << "Memory usage: " << mem << std::endl;
+		io.info() << "Rewriting the graph took " << tm << std::endl;
 	}
 	
 	{
@@ -1069,6 +1179,9 @@ bool Config::parse(const std::string & token,int & i, int argc, char ** argv) {
 		else if (type == "e" || type == "edges") {
 			tio = TIO_EDGES;
 		}
+		else if (type == "nei" || type == "nodes-edges-iterative") {
+			tio = TIO_NODES_EDGES_BINARY;
+		}
 		else {
 			throw ratss::BasicCmdLineOptions::ParseError("Unknown graph input type: " + type);
 		}
@@ -1095,7 +1208,12 @@ void Config::parse_completed() {
 		
 	}
 	if (TT_CONVEX_HULL_64 || TT_CONVEX_HULL || TT_CONVEX_HULL_INEXACT) {
-		tio = TIO_NODES_EDGES;
+		if (tio != TIO_NODES_EDGES && tio != TIO_NODES_EDGES_BINARY) {
+			tio = TIO_NODES_EDGES;
+		}
+	}
+	if (tio == TIO_NODES_EDGES_BINARY && rewriteFileName.empty()) {
+		rewriteFileName = inFileName + ".triang.temp";
 	}
 }
 
@@ -1104,8 +1222,8 @@ void Config::help(std::ostream & out) const {
 	out << "triang OPTIONS:\n"
 		"\t-t type\ttype = [d,delaunay,d64,delaunay-64,chi,convexhull-inexact,ch,convexhull,ch64,convexhull-64,c,constrained,cx,constrained-intersection,cx64,constrained-intersection-64,cxe,constrained-intesection-exact, cxs, constrained-intersection-exact-spherical]\n"
 		"\t-go type\tgraph output type = [none, wx, witout_special, simplest, simplest_andre]\n"
-		"\t-gi type\tgraph input type = [ne, nodes-edges, e, edges]\n"
-		"\t-io type\tinput order type = [ne, nodes-edges, e, edges]\n"
+		"\t-gi type\tgraph input type = [ne, nodes-edges, e, edges, nei, nodes-edges-iterative]\n"
+		"\t-io type\tinput order type = [ne, nodes-edges, e, edges, nei, nodes-edges-iterative]\n"
 		"\t-is num\tsignificands used to calculate intersection points\n";
 	ratss::BasicCmdLineOptions::options_help(out);
 	out << '\n';
@@ -1118,7 +1236,9 @@ void Config::help(std::ostream & out) const {
 		"\tThe i-th node gets the id i. There shall not be multiple nodes with the same coordinates.\n"
 		"\tAn edge has the format: source-node-id target-node-id\n"
 		"For gi=e the input format is:\n"
-		"src-node target-node\n";
+		"\tsrc-node target-node\n"
+		"For gi=nei the input format is:\n"
+		"\tcomplicated binary format, code IS documentation!";
 	out << std::endl;
 }
 
@@ -1193,12 +1313,15 @@ void Config::print(std::ostream & out) const {
 	};
 	out << '\n';
 	out << "Input order: ";
-	switch (git) {
+	switch (tio) {
 	case TIO_NODES_EDGES:
 		out << "nodes then edges";
 		break;
 	case TIO_EDGES:
 		out << "edges";
+		break;
+	case TIO_NODES_EDGES_BINARY:
+		out << "nodes then edges iterative";
 		break;
 	default:
 		out << "invalid";
@@ -1266,11 +1389,73 @@ void Data::read(InputOutput & io, const Config & cfg) {
 		break;
 	case GIT_EDGES:
 		readEdges(io, cfg);
+	case GIT_NODES_EDGES_BINARY:
+		break;
 	default:
 		throw std::runtime_error("Invalid graph input format");
 		break;
 	}
 }
+
+
+class MyPropertyMap {
+public:
+	using BaseTrait = Point3::K;
+	using key_type = uint32_t;
+	using value_type = BaseTrait::Point_3;
+	using reference = value_type;
+	using category = boost::readable_property_map_tag;
+public:
+	MyPropertyMap(Data::Points * pts) : m_pts(pts) {}
+	value_type get(key_type p) const {
+		return (value_type) m_pts->at(p).first;
+	}
+private:
+	Data::Points * m_pts;
+};
+
+MyPropertyMap::value_type get(const MyPropertyMap & p, MyPropertyMap::key_type k) {
+	return p.get(k);
+}
+
+MyPropertyMap::value_type get(MyPropertyMap * p, MyPropertyMap::key_type k) {
+	return p->get(k);
+}
+
+void Data::rewrite(InputOutput& io, const Config& cfg) {
+	assert(cfg.tio == TIO_NODES_EDGES_BINARY);
+
+	using SortTraits = CGAL::Spatial_sort_traits_adapter_3<MyPropertyMap::BaseTrait, MyPropertyMap>;
+	
+	InputOutput myio;
+	myio.setOutput(cfg.rewriteFileName);
+	
+	BinaryIo bio;
+	bio.setIo(&myio);
+	
+	std::vector<MyPropertyMap::key_type> remap(points.size(), 0);
+	for(MyPropertyMap::key_type i(0), s(points.size()); i < s; ++i) {
+		remap.at(i) = i;
+	}
+	
+	CGAL::spatial_sort(remap.begin(), remap.end(), SortTraits( MyPropertyMap(&points) ));
+	
+	//now write the points and edges to storage
+	bio.write<uint32_t>(points.size());
+	bio.write<uint32_t>(edges.size());
+	for(const auto & x : points) {
+		bio.write<Point3>(x.first);
+	}
+	for(const auto & e : edges) {
+		uint32_t src = remap.at(e.first);
+		uint32_t tgt = remap.at(e.second);
+		
+		bio.write<Point3>(points.at(src).first);
+		bio.write<Point3>(points.at(tgt).first);
+	}
+	io.output().flush();
+}
+
 
 void Data::readNodesEdges(InputOutput & io, const Config & cfg) {
 	std::istream & is = io.input();
@@ -1392,7 +1577,7 @@ void Data::create(InputOutput& io, const Config& cfg) {
 	if (cfg.tio == TIO_NODES_EDGES) {
 		tc->create(points, edges, io, true);
 	}
-	else {
+	else if (cfg.tio == TIO_EDGES) {
 		if (cfg.progress) {
 			io.info() << '\n' << std::flush;
 		}
@@ -1413,6 +1598,28 @@ void Data::create(InputOutput& io, const Config& cfg) {
 		
 		if (cfg.progress) {
 			io.info() << std::endl;
+		}
+	}
+	else if (cfg.tio == TIO_NODES_EDGES_BINARY) {
+		InputOutput myio;
+		BinaryIo bio;
+		
+		if (cfg.git == GIT_NODES_EDGES_BINARY) {
+			bio.setIo(&io);
+		}
+		else {
+			myio.setInput( cfg.rewriteFileName );
+			bio.setIo(&io);
+		}
+		
+		uint32_t nc = bio.get<uint32_t>();
+		uint32_t ec = bio.get<uint32_t>();
+		
+		for(uint32_t i(0); i < nc; ++i) {
+			tc->add(bio.get<Point3>());
+		}
+		for(uint32_t i(0); i < ec; ++i) {
+			tc->add(bio.get<Point3>(), bio.get<Point3>());
 		}
 	}
 	points.clear();
