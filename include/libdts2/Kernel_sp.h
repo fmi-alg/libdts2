@@ -44,11 +44,14 @@ public:
 			!p.is_auxiliary() && !q.is_auxiliary() && !r.is_auxiliary() && !t.is_auxiliary()
 		)
 		{
+		
 			//points have up to 30 Bits
 			int64_t px(p.num0()), py(p.num1());
 			int64_t qx(q.num0()), qy(p.num1());
 			int64_t rx(r.num0()), ry(p.num1());
 			int64_t tx(t.num0()), ty(t.num1());
+			//now up to 30 Bits
+			
 			int64_t qpx = qx-px;
 			int64_t qpy = qy-py;
 			int64_t rpx = rx-px;
@@ -68,20 +71,62 @@ public:
 			int128 a1001 = a10*a01;
 			//now up to ((30+1)*2+1)*2 = 126 Bits
 			
-			int128 det = a0011 - a1001;
+			a1001 = -a1001;
 			
-			if (det < 0) {
+			//TODO: get rid of the following branch cascade
+			//Simply do a0011 - a1001 and check if a signed overflow occured
+			
+			if (a0011 < 0 && a1001 < 0) {
 				return CGAL::NEGATIVE;
 			}
-			else if (det == 0) {
-				return CGAL::ZERO;
-			}
-			else {
+			else if (a0011 > 0 && a1001 > 0) {
 				return CGAL::POSITIVE;
+			}
+			else if (a0011 == 0) {
+				return sign(a1001);
+			}
+			else if (a1001 == 0) {
+				return sign(a0011);
+			}
+			else if (a0011 < 0) { // && a1001 > 0
+				a0011 = -a0011;
+				if (a0011 > a1001) {
+					return CGAL::NEGATIVE;
+				}
+				else if (a0011 == a1001) {
+					return CGAL::NEGATIVE;
+				}
+				else {
+					return CGAL::POSITIVE;
+				}
+			}
+			else { // a0011 > 0 && a1001 < 0
+				a1001 = -a1001;
+				if (a1001 > a0011) {
+					return CGAL::NEGATIVE;
+				}
+				else if (a0011 == a1001) {
+					return CGAL::ZERO;
+				}
+				else { //a1001 < a0011
+					return CGAL::POSITIVE;
+				}
 			}
 		}
 		else { //use base predicate
 			return m_bp(p.point3(), q.point3(), r.point3(), t.point3());
+		}
+	}
+private:
+	CGAL::Sign sign(int128 v) const {
+		if (v < 0) {
+			return CGAL::NEGATIVE;
+		}
+		else if (v == 0) {
+			return CGAL::ZERO;
+		}
+		else {
+			return CGAL::POSITIVE;
 		}
 	}
 public:
