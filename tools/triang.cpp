@@ -254,7 +254,9 @@ BinaryIo::write(T const & v) {
 
 CGAL::ExtendedInt64q<CGAL::Gmpq>::PQ
 BinaryIo::get(CGAL::ExtendedInt64q<CGAL::Gmpq>::PQ* = 0) {
-	return CGAL::ExtendedInt64q<CGAL::Gmpq>::PQ(this->get<int64_t>(), this->get<int64_t>());
+	int64_t num = this->get<int64_t>();
+	int64_t den = this->get<int64_t>();
+	return CGAL::ExtendedInt64q<CGAL::Gmpq>::PQ(num, den);
 }
 
 CGAL::ExtendedInt64q<CGAL::Gmpq>
@@ -265,10 +267,13 @@ BinaryIo::get(CGAL::ExtendedInt64q<CGAL::Gmpq>* = 0) {
 Point3
 BinaryIo::get(Point3* = 0) {
 	using FT = CGAL::ExtendedInt64q<CGAL::Gmpq>;
+	auto x = this->get<FT>();
+	auto y = this->get<FT>();
+	auto z = this->get<FT>();
 	return Point3(
-		ratss::convert<Point3::FT>( this->get<FT>() ),
-		ratss::convert<Point3::FT>( this->get<FT>() ),
-		ratss::convert<Point3::FT>( this->get<FT>() )
+		ratss::convert<Point3::FT>( x ),
+		ratss::convert<Point3::FT>( y ),
+		ratss::convert<Point3::FT>( z )
 	);
 }
 
@@ -791,12 +796,12 @@ public:
 	}
 
 	virtual void add(const Point3 & p) override {
-		m_lastAddFh = m_tr.insert((Point_3) p, m_lastAddFh)->face();
+		m_lastAddVh = m_tr.insert((Point_3) p, (m_lastAddVh != Vertex_handle() ? m_lastAddVh->face() : Face_handle()), false);
 	}
 	
 	virtual void add(const Point3 & p1, const Point3 & p2) override {
-		m_tr.insert((Point_3) p1, m_lastAddFh);
-		m_lastAddFh = m_tr.insert((Point_3) p2, m_lastAddFh)->face();
+		add(p1);
+		add(p2);
 	}
 
 	virtual void write(InputOutput & io) override {
@@ -805,7 +810,7 @@ public:
 	}
 private:
 	Tr m_tr;
-	Face_handle m_lastAddFh;
+	Vertex_handle m_lastAddVh;
 };
 
 template<typename T_VERTEX_INFO, typename T_FACE_INFO>
@@ -890,14 +895,16 @@ public:
 	}
 	
 	virtual void add(const Point3 & p) override {
-		m_lastAddFh = insert(p, m_lastAddFh)->face();
+		m_lastAddVh = insert(p, (m_lastAddVh != Vertex_handle() ? m_lastAddVh->face() : Face_handle()));
 	}
 	
 	virtual void add(const Point3 & p1, const Point3 & p2) override {
-		Vertex_handle vh1 = insert(p1, m_lastAddFh);
-		Vertex_handle vh2 = insert(p2, m_lastAddFh);
-		insert_constraint(p1, p2);
-		m_lastAddFh = vh1->face();
+		add(p1);
+		Vertex_handle vh1 = m_lastAddVh;
+		add(p2);
+		Vertex_handle vh2 = m_lastAddVh;
+		insert_constraint(vh1, vh2);
+		m_lastAddVh = vh1;
 	}
 	
 	virtual void write(InputOutput & io) override  {
@@ -914,17 +921,19 @@ private:
 		m_tr.insert(MyIterator(begin, tf), MyIterator(end, tf), false);
 	}
 	Vertex_handle insert(const Point3 & p, const Face_handle & fh) {
-		return m_tr.insert((Point) p, fh);
+		return m_tr.insert((Point) p, fh, false);
 	}
 	void insert_constraint(const Point3 & p1, const Point3 & p2) {
 		m_tr.insert((Point) p1, (Point) p2);
 	}
-	void insert(const Vertex_handle & vh1, const Vertex_handle & vh2) {
-		m_tr.insert(vh1, vh2);
+	void insert_constraint(const Vertex_handle & vh1, const Vertex_handle & vh2) {
+		if (vh1 != vh2) {
+			m_tr.insert(vh1, vh2);
+		}
 	}
 private:
 	Tr m_tr;
-	Face_handle m_lastAddFh;
+	Vertex_handle m_lastAddVh;
 };
 
 using TriangulationCreatorNoIntersectionsConstrainedDelaunay =
@@ -1074,6 +1083,8 @@ int main(int argc, char ** argv) {
 		tm.end();
 		io.info() << "Memory usage: " << mem << std::endl;
 		io.info() << "Rewriting the graph took " << tm << std::endl;
+		data.points = decltype(data.points)();
+		data.edges = decltype(data.edges)();
 	}
 	
 	{
@@ -1428,12 +1439,12 @@ void Data::rewrite(InputOutput& io, const Config& cfg) {
 	using SortTraits = CGAL::Spatial_sort_traits_adapter_3<MyPropertyMap::BaseTrait, MyPropertyMap>;
 	
 	InputOutput myio;
-	myio.setOutput(cfg.rewriteFileName);
+	myio.setOutput(cfg.rewriteFileName, std::ios_base::out | std::ios_base::binary);
 	
 	BinaryIo bio;
 	bio.setIo(&myio);
 	
-	std::vector<MyPropertyMap::key_type> remap(points.size(), 0);
+	std::vector<MyPropertyMap::key_type> remap(points.size(), 0); //maps new order to old order
 	for(MyPropertyMap::key_type i(0), s(points.size()); i < s; ++i) {
 		remap.at(i) = i;
 	}
@@ -1443,15 +1454,25 @@ void Data::rewrite(InputOutput& io, const Config& cfg) {
 	//now write the points and edges to storage
 	bio.write<uint32_t>(points.size());
 	bio.write<uint32_t>(edges.size());
-	for(const auto & x : points) {
-		bio.write<Point3>(x.first);
+	for(uint32_t i(0), s(remap.size()); i < s; ++i) {
+		bio.write<Point3>(points.at(remap.at(i)).first);
 	}
+	
+	//we now need the inverse of remap
+	std::vector<uint32_t> remap_inverse(remap.size(), 0); //maps old order to new order
+	for(uint32_t i(0), s(remap.size()); i < s; ++i) {
+		remap_inverse.at(remap.at(i)) = i;
+	}
+	
+	std::sort(edges.begin(), edges.end(),
+		[&remap_inverse](const std::pair<int, int> & a, const std::pair<int, int> & b) {
+			return remap_inverse.at(a.first) < remap_inverse.at(b.first);
+		}
+	);
+	
 	for(const auto & e : edges) {
-		uint32_t src = remap.at(e.first);
-		uint32_t tgt = remap.at(e.second);
-		
-		bio.write<Point3>(points.at(src).first);
-		bio.write<Point3>(points.at(tgt).first);
+		bio.write<Point3>(points.at(e.first).first);
+		bio.write<Point3>(points.at(e.second).first);
 	}
 	io.output().flush();
 }
@@ -1605,22 +1626,30 @@ void Data::create(InputOutput& io, const Config& cfg) {
 		BinaryIo bio;
 		
 		if (cfg.git == GIT_NODES_EDGES_BINARY) {
-			bio.setIo(&io);
+			io.input();
+			assert(false);
 		}
 		else {
-			myio.setInput( cfg.rewriteFileName );
-			bio.setIo(&io);
+			myio.setInput(cfg.rewriteFileName, std::ios_base::in | std::ios_base::binary);
+			bio.setIo(&myio);
 		}
 		
 		uint32_t nc = bio.get<uint32_t>();
 		uint32_t ec = bio.get<uint32_t>();
 		
+		io.info() << "Inserting points..." << std::flush;
 		for(uint32_t i(0); i < nc; ++i) {
-			tc->add(bio.get<Point3>());
+			Point3 p = bio.get<Point3>();
+			tc->add(p);
 		}
+		io.info() << "done" << std::endl;
+		io.info() << "Inserting constraints..." << std::flush;
 		for(uint32_t i(0); i < ec; ++i) {
-			tc->add(bio.get<Point3>(), bio.get<Point3>());
+			auto p1 = bio.get<Point3>();
+			auto p2 = bio.get<Point3>();
+			tc->add(p1, p2);
 		}
+		io.info() << "done" << std::endl;
 	}
 	points.clear();
 	edges.clear();
