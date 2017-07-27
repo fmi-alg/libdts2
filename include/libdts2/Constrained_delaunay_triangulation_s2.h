@@ -92,7 +92,7 @@ public:
 public: //insertion
 	using MyBaseClass::insert;
 	void insert(const Vertex_handle & a, const Vertex_handle & b);
-	void insert(const Point & a, const Point & b);
+	void insert(const Point & a, const Point & b, bool snap = false);
 	void insert(const GeoCoord & a, const GeoCoord & b);
 	void insert(const SphericalCoord & a, const SphericalCoord & b);
 
@@ -242,10 +242,15 @@ TMPL_CLS::insert(const Vertex_handle & a, const Vertex_handle & b) {
 
 TMPL_HDR
 void
-TMPL_CLS::insert(const Point & a, const Point & b) {
-	Point_3 sa = MyBaseClass::proj()(a);
-	Point_3 sb = MyBaseClass::proj()(b);
-	MyBaseClass::trs().insert(sa, sb);
+TMPL_CLS::insert(const Point & a, const Point & b, bool snap) {
+	if (snap) {
+		Point_3 sa = MyBaseClass::proj()(a);
+		Point_3 sb = MyBaseClass::proj()(b);
+		MyBaseClass::trs().insert(sa, sb);
+	}
+	else {
+		MyBaseClass::trs().insert(a, b);
+	}
 }
 
 TMPL_HDR

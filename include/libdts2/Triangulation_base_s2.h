@@ -75,7 +75,7 @@ public:
 	Triangulation_base_s2(const Triangulation_base_s2& other) = delete;
 	Triangulation_base_s2 & operator=(Triangulation_base_s2 && other);
 public: //insertion
-	Vertex_handle insert(const Point & p, const Face_handle & fh = Face_handle());
+	Vertex_handle insert(const Point & p, const Face_handle & fh = Face_handle(), bool snap = true);
 	Vertex_handle insert(double lat, double lon, const Face_handle & fh = Face_handle());
 	Vertex_handle insert(const std::pair<double, double> & p, const Face_handle & fh = Face_handle());
 	Vertex_handle insert(const SphericalCoord & p, const Face_handle & fh = Face_handle());
@@ -261,12 +261,13 @@ TMPL_CLS::operator=(TMPL_CLS && other) {
 
 TMPL_HDR
 typename TMPL_CLS::Vertex_handle
-TMPL_CLS::insert(const Point & p, const Face_handle & fh) {
-	if (p.x() * p.x() + p.y()*p.y() + p.z() * p.z() == 1) {
-		return trs().insert(p, fh);
+TMPL_CLS::insert(const Point & p, const Face_handle & fh, bool snap) {
+	if (snap) {
+		return trs().insert(project(p), fh);
 	}
 	else {
-		return trs().insert(project(p), fh);
+		assert(p.x() * p.x() + p.y()*p.y() + p.z() * p.z() == 1);
+		return trs().insert(p, fh);
 	}
 }
 
