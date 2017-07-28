@@ -1218,8 +1218,8 @@ void Config::parse_completed() {
 		snapType = ratss::ProjectSN::ST_PLANE | ratss::ProjectSN::ST_FX | ratss::ProjectSN::ST_NORMALIZE;
 		
 	}
-	if (TT_CONVEX_HULL_64 || TT_CONVEX_HULL || TT_CONVEX_HULL_INEXACT) {
-		if (tio != TIO_NODES_EDGES && tio != TIO_NODES_EDGES_BINARY) {
+	if (triangType == TT_CONVEX_HULL_64 || triangType == TT_CONVEX_HULL || triangType == TT_CONVEX_HULL_INEXACT) {
+		if (tio != TIO_NODES_EDGES && tio != TIO_NODES_EDGES_BY_POINTS_BINARY) {
 			tio = TIO_NODES_EDGES;
 		}
 	}
