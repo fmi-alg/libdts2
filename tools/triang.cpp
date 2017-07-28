@@ -304,8 +304,8 @@ BinaryIo::write(const Point3 & v) {
 
 typedef enum {TT_DELAUNAY, TT_DELAUNAY_64, TT_CONVEX_HULL_INEXACT, TT_CONVEX_HULL, TT_CONVEX_HULL_64, TT_CONSTRAINED, TT_CONSTRAINED_INEXACT, TT_CONSTRAINED_INEXACT_64, TT_CONSTRAINED_EXACT, TT_CONSTRAINED_EXACT_SPHERICAL} TriangulationType;
 typedef enum {GOT_INVALID, GOT_NONE, GOT_WITHOUT_SPECIAL, GOT_WITHOUT_SPECIAL_HASH_MAP, GOT_SIMPLEST_GRAPH_RENDERING, GOT_SIMPLEST_GRAPH_RENDERING_ANDRE} GraphOutputType;
-typedef enum {GIT_INVALID, GIT_NODES_EDGES, GIT_EDGES, GIT_NODES_EDGES_BINARY} GraphInputType;
-typedef enum {TIO_INVALID, TIO_NODES_EDGES, TIO_EDGES, TIO_NODES_EDGES_BINARY} TriangulationInputOrder;
+typedef enum {GIT_INVALID, GIT_NODES_EDGES, GIT_EDGES, GIT_NODES_EDGES_BY_POINTS_BINARY} GraphInputType;
+typedef enum {TIO_INVALID, TIO_NODES_EDGES, TIO_EDGES, TIO_NODES_EDGES_BY_POINTS_BINARY} TriangulationInputOrder;
 
 struct VertexInfo {
 	VertexInfo() : id(def_instance_counter) { --def_instance_counter;}
@@ -1076,7 +1076,7 @@ int main(int argc, char ** argv) {
 		io.info() << "Reading the graph took " << tm << std::endl;
 	}
 	
-	if (cfg.git != GIT_NODES_EDGES_BINARY && cfg.tio == TIO_NODES_EDGES_BINARY) {
+	if (cfg.git != GIT_NODES_EDGES_BY_POINTS_BINARY && cfg.tio == TIO_NODES_EDGES_BY_POINTS_BINARY) {
 		io.info() << "Rewriting the graph..." << std::endl;
 		tm.begin();
 		data.rewrite(io, cfg);
@@ -1191,7 +1191,7 @@ bool Config::parse(const std::string & token,int & i, int argc, char ** argv) {
 			tio = TIO_EDGES;
 		}
 		else if (type == "nei" || type == "nodes-edges-iterative") {
-			tio = TIO_NODES_EDGES_BINARY;
+			tio = TIO_NODES_EDGES_BY_POINTS_BINARY;
 		}
 		else {
 			throw ratss::BasicCmdLineOptions::ParseError("Unknown graph input type: " + type);
@@ -1223,11 +1223,10 @@ void Config::parse_completed() {
 			tio = TIO_NODES_EDGES;
 		}
 	}
-	if (tio == TIO_NODES_EDGES_BINARY && rewriteFileName.empty()) {
+	if (tio == TIO_NODES_EDGES_BY_POINTS_BINARY && rewriteFileName.empty()) {
 		rewriteFileName = inFileName + ".triang.temp";
 	}
 }
-
 
 void Config::help(std::ostream & out) const {
 	out << "triang OPTIONS:\n"
@@ -1331,7 +1330,7 @@ void Config::print(std::ostream & out) const {
 	case TIO_EDGES:
 		out << "edges";
 		break;
-	case TIO_NODES_EDGES_BINARY:
+	case TIO_NODES_EDGES_BY_POINTS_BINARY:
 		out << "nodes then edges iterative";
 		break;
 	default:
@@ -1400,7 +1399,7 @@ void Data::read(InputOutput & io, const Config & cfg) {
 		break;
 	case GIT_EDGES:
 		readEdges(io, cfg);
-	case GIT_NODES_EDGES_BINARY:
+	case GIT_NODES_EDGES_BY_POINTS_BINARY:
 		break;
 	default:
 		throw std::runtime_error("Invalid graph input format");
@@ -1434,7 +1433,7 @@ MyPropertyMap::value_type get(MyPropertyMap * p, MyPropertyMap::key_type k) {
 }
 
 void Data::rewrite(InputOutput& io, const Config& cfg) {
-	assert(cfg.tio == TIO_NODES_EDGES_BINARY);
+	assert(cfg.tio == TIO_NODES_EDGES_BY_POINTS_BINARY);
 
 	using SortTraits = CGAL::Spatial_sort_traits_adapter_3<MyPropertyMap::BaseTrait, MyPropertyMap>;
 	
@@ -1621,11 +1620,11 @@ void Data::create(InputOutput& io, const Config& cfg) {
 			io.info() << std::endl;
 		}
 	}
-	else if (cfg.tio == TIO_NODES_EDGES_BINARY) {
+	else if (cfg.tio == TIO_NODES_EDGES_BY_POINTS_BINARY) {
 		InputOutput myio;
 		BinaryIo bio;
 		
-		if (cfg.git == GIT_NODES_EDGES_BINARY) {
+		if (cfg.git == GIT_NODES_EDGES_BY_POINTS_BINARY) {
 			io.input();
 			assert(false);
 		}
@@ -1637,19 +1636,21 @@ void Data::create(InputOutput& io, const Config& cfg) {
 		uint32_t nc = bio.get<uint32_t>();
 		uint32_t ec = bio.get<uint32_t>();
 		
-		io.info() << "Inserting points..." << std::flush;
-		for(uint32_t i(0); i < nc; ++i) {
-			Point3 p = bio.get<Point3>();
-			tc->add(p);
+		if (cfg.tio == TIO_NODES_EDGES_BY_POINTS_BINARY) {
+			io.info() << "Inserting points..." << std::flush;
+			for(uint32_t i(0); i < nc; ++i) {
+				Point3 p = bio.get<Point3>();
+				tc->add(p);
+			}
+			io.info() << "done" << std::endl;
+			io.info() << "Inserting constraints..." << std::flush;
+			for(uint32_t i(0); i < ec; ++i) {
+				auto p1 = bio.get<Point3>();
+				auto p2 = bio.get<Point3>();
+				tc->add(p1, p2);
+			}
+			io.info() << "done" << std::endl;
 		}
-		io.info() << "done" << std::endl;
-		io.info() << "Inserting constraints..." << std::flush;
-		for(uint32_t i(0); i < ec; ++i) {
-			auto p1 = bio.get<Point3>();
-			auto p2 = bio.get<Point3>();
-			tc->add(p1, p2);
-		}
-		io.info() << "done" << std::endl;
 	}
 	points.clear();
 	edges.clear();
