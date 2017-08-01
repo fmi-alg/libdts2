@@ -25,8 +25,8 @@ public:
 	using Segment = Segment_2;
 	
 	using Point_3 = MyLinearCDTKernel::Point_3;
-	using Point_2 = MyLinearCDTKernel::Point_2;
-	using Point = MyLinearCDTKernel::Point;
+	using Point_2 = MyKernel::Circular_arc_point_3;
+	using Point = MyKernel::Circular_arc_point_3;
 	
 	using Compare_distance_2 = MyLinearCDTKernel::Compare_distance_2;
 	
