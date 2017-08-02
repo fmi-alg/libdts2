@@ -26,80 +26,28 @@ public:
 			!p.is_auxiliary() && !q.is_auxiliary() && !r.is_auxiliary() && !t.is_auxiliary()
 		)
 		{
-		
-			//points have up to 30 Bits
-			int64_t px(p.num0()), py(p.num1());
-			int64_t qx(q.num0()), qy(p.num1());
-			int64_t rx(r.num0()), ry(p.num1());
-			int64_t tx(t.num0()), ty(t.num1());
-			//now up to 30 Bits
-			
-			int64_t qpx = qx-px;
-			int64_t qpy = qy-py;
-			int64_t rpx = rx-px;
-			int64_t rpy = ry-py;
-			int64_t tpx = tx-px;
-			int64_t tpy = ty-py;
-			//now up to 30+1 Bits
-			
-			int128 a00 = int128(int64(qpx)*int64(tpy)) - int128(int64(qpy)*int64(tpx));
-			int128 a01 = int128(int64(tpx)*int64(tx-qx)) + int128(int64(tpy)*int64(ty-qy));
-			int128 a10 = int128(int64(qpx)*int64(rpy)) - int128(int64(qpy)*int64(rpx));
-			int128 a11 = int128(int64(rpx)*int64(rx-qx)) + int128(int64(rpy)*int64(ry-qy));
-			//now up to (30+1)*2+1 = 63 Bits
-			
-			//determinant is a00*a11 - a10*a01
-			int128 a0011 = a00*a11;
-			int128 a1001 = a10*a01;
-			//now up to ((30+1)*2+1)*2 = 126 Bits
-			
-			a1001 = -a1001;
-			
-			//TODO: get rid of the following branch cascade
-			//Simply do a0011 - a1001 and check if a signed overflow occured
-			
-			if (a0011 < 0 && a1001 < 0) {
-				return CGAL::NEGATIVE;
-			}
-			else if (a0011 > 0 && a1001 > 0) {
-				return CGAL::POSITIVE;
-			}
-			else if (a0011 == 0) {
-				return sign(a1001);
-			}
-			else if (a1001 == 0) {
-				return sign(a0011);
-			}
-			else if (a0011 < 0) { // && a1001 > 0
-				a0011 = -a0011;
-				if (a0011 > a1001) {
-					return CGAL::NEGATIVE;
-				}
-				else if (a0011 == a1001) {
-					return CGAL::NEGATIVE;
-				}
-				else {
-					return CGAL::POSITIVE;
-				}
-			}
-			else { // a0011 > 0 && a1001 < 0
-				a1001 = -a1001;
-				if (a1001 > a0011) {
-					return CGAL::NEGATIVE;
-				}
-				else if (a0011 == a1001) {
-					return CGAL::ZERO;
-				}
-				else { //a1001 < a0011
-					return CGAL::POSITIVE;
-				}
-			}
+			return calc<30>();
 		}
 		else { //use base predicate
 			return (*this)(p.point3(), q.point3(), r.point3(), t.point3());
 		}
 	}
 public:
+	template<int T_START_BITS>
+	CGAL::Sign calc(const T_STAGE0 & p_num0, const T_STAGE0 & p_num1,
+					const T_STAGE0 & q_num0, const T_STAGE0 & q_num1,
+					const T_STAGE0 & r_num0, const T_STAGE0 & r_num1,
+					const T_STAGE0 & t_num0, const T_STAGE0 & t_num1
+	)
+	{
+		calc<
+			boost_int<T_START_BITS>,
+			boost_int<T_START_BITS>,
+			boost_int<T_START_BITS>,
+			boost_int<T_START_BITS>,
+			boost_int<T_START_BITS>
+		>();
+	}
 	//T_STAGE0: n Bits
 	//T_STAGE1: n+1 Bits
 	//T_STAGE2: 2n+2 Bits
@@ -185,6 +133,16 @@ public:
 		return m_bp(p, q, r, t);
 	}
 private:
+	template<int T_V>
+	struct Align64 {
+		static constexpr const int result = (T_V/64 + (T_V%64 == 0 ? 0 : 1))*64; 
+	};
+	template<int T_BITS>
+	using boost_int = boost::multiprecision::number<boost::multiprecision::cpp_int_backend<
+		Align64<T_BITS>::result, Align64<T_BITS>::result, signed_magnitude, unchecked, void> >;
+	using int64 = int64_t;
+	using int128 = __int128;
+private:
 	CGAL::Sign sign(int128 v) const {
 		if (v < 0) {
 			return CGAL::NEGATIVE;
@@ -249,16 +207,6 @@ public:
 		}
 	}
 private:
-	template<int T_V>
-	struct Align64 {
-		static constexpr const int result = (T_V/64 + (T_V%64 == 0 ? 0 : 1))*64; 
-	};
-	template<int T_BITS>
-	using boost_int = boost::multiprecision::number<boost::multiprecision::cpp_int_backend<
-		Align64<T_BITS>::result, Align64<T_BITS>::result, signed_magnitude, unchecked, void> >;
-	using int64 = int64_t;
-	using int128 = __int128;
-private:
 	CGAL::Sign operator()(const Point_3 & p, const Point_3 & q, const Point_3 & r) {
 		return m_ot2(p, q, r);
 	}
@@ -273,7 +221,79 @@ private:
 
 
 template<typename T_BASE_TRAIT>
-class Kernel_sp: 
+class Kernel_sp {
+public:
+	static constexpr int snap_bits = 30;
+public:
+	using Self = Kernel_sp<T_BASE_TRAIT>;
+	using BaseTraits = T_BASE_TRAIT;
+	using LinearKernel = typename BaseTraits::LinearKernel;
+	using FT = typename BaseTraits::FT;
+	using Projector = typename BaseTraits::Projector;
+public:
+	using Segment_2 
+public:
+	using dummy = int;
+	using Side_of_oriented_circle_2 = dummy;
+	using Orientation_2 = dummy;
+	using Collinear_are_ordered_along_line_2 = dummy;
+public:
+	using Compare_distance_2 = dummy;
+	using Compare_x_2 = dummy;
+	using Compare_y_2 = dummy;
+	using Less_x_2 = dummy;
+	using Less_y_2 = dummy;
+	using Less_x_3 = dummy;
+	using Less_y_3 = dummy;
+	using Less_z_3 = dummy;
+public:
+	using Construct_segment_2 = dummy;
+	using Construct_line_2 = dummy;
+	using Intersect_2 = dummy;
+	using Compute_squared_distance_2 = dummy;
+	using Project_on_sphere = dummy;
+public: //accessor functions
+	const FT & epsilon() const;
+public:
+	Kernel_sp();
+	Kernel_sp(const FT & _epsilon) :
+	m_traits(_epsilon, snap_bits)
+	{}
+	Kernel_sp(const Kernel_sp & other) :
+	m_traits(other.m_traits)
+	{}
+	~Kernel_sp() {}
+	const BaseTraits & baseTraits() const { return m_traits; }
+public:
+	int significands() const { return baseTraits().significands(); }
+	int intersectSignificands() const { return significands(); }
+	const FT & epsZ() const { return baseTraits().epsZ(); }
+	const Projector & projector() const { return baseTraits().projector(); }
+public: //objects
+	Side_of_oriented_circle_2 side_of_oriented_circle_2_object () const;
+	Orientation_2 orientation_2_object () const;
+	Collinear_are_ordered_along_line_2 collinear_are_ordered_along_line_2_object() const;
+	
+	Compare_distance_2 compare_distance_2_object () const;
+	Compare_x_2 compare_x_2_object() const ;
+	Compare_y_2 compare_y_2_object() const;
+	
+	Less_x_2 less_x_2_object() const;
+	Less_y_2 less_y_2_object() const;
+	Less_x_3 less_x_3_object() const;
+	Less_y_3 less_y_3_object() const;
+	Less_z_3 less_z_3_object() const;
+
+	Construct_segment_2 construct_segment_2_object() const;
+	Intersect_2 intersect_2_object() const;
+	Construct_line_2 construct_line_2_object() const;
+
+	Compute_squared_distance_2 compute_squared_distance_2_object() const;
+	Project_on_sphere project_on_sphere_object() const;
+	Project_on_sphere project_on_sphere_object(int _significands) const;
+private:
+	BaseTraits m_traits;
+};
 
 }//end namespace
 

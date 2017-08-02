@@ -16,6 +16,7 @@ public:
 	using base_type = int32_t;
 	using BFT = MyBaseTrait::FT;
 	using Point_3 = typename MyBaseTrait::Point_3;
+	static constexpr int snap_bits = 30;
 public:
 	Point_sp();
 	Point_sp(const Point_sp & other);
