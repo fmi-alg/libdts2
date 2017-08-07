@@ -2,10 +2,13 @@
 #define LIB_DTS2_KERNEL_SP_BASE_H
 #pragma once
 
+#include <CGAL/Simple_cartesian.h>
+#include <libdts2/Kernel_sp/Point_sp.h>
+
 namespace CGAL {
 
 template < typename K_, typename FT_>
-struct Cartesian_base
+struct Kernel_sp_base
 {
     typedef K_                                          Kernel;
     typedef FT_                                         FT;
@@ -47,7 +50,7 @@ struct Cartesian_base
       typedef typename T::Feature_dimension type;
     };
 
-    typedef PointC2<Kernel>                             Point_2;
+    typedef Point_sp<Kernel>                            Point_2;
     typedef VectorC2<Kernel>                            Vector_2;
     typedef DirectionC2<Kernel>                         Direction_2;
     typedef SegmentC2<Kernel>                           Segment_2;
