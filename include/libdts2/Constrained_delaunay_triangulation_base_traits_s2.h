@@ -45,6 +45,7 @@ protected: //we only want to expose typedefs that are really needed by the trian
 	
 	//stuff for intersection support
 	using Construct_segment_3 = typename MyBaseTrait::Construct_segment_3;
+	using Construct_point_3 = typename MyBaseTrait::Construct_point_3;
 	using Intersect_3 = typename MyBaseTrait::Intersect_3;
 	using Do_intersect_3 = typename MyBaseTrait::Do_intersect_3;
 	using Plane_3 = typename MyBaseTrait::Plane_3;
@@ -88,6 +89,7 @@ public:
 	using Less_y_2 = Less_y_3;
 	
 	using Construct_segment_2 = Construct_segment_3;
+	using Construct_point_2 = Construct_point_3;
 public:
 	using Projector = LIB_RATSS_NAMESPACE::ProjectS2;
 public: //own implementations
@@ -356,6 +358,10 @@ public: //object functions
 	//stuff to support intersections
 	Construct_segment_2 construct_segment_2_object() const {
 		return construct_segment_3_object();
+	}
+
+	Construct_point_2 construct_point_2_object() const {
+		return construct_point_3_object();
 	}
 	
 	Less_x_2 less_x_2_object() const {
