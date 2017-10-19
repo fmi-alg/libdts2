@@ -265,6 +265,10 @@ protected:
 	Construct_segment_3 construct_segment_3_object() const {
 		return baseTraits().construct_segment_3_object();
 	}
+
+	Construct_point_3 construct_point_3_object() const {
+		return baseTraits().construct_point_3_object();
+	}
 	
 	Intersect_3 intersect_3_object() const {
 		return baseTraits().intersect_3_object();
