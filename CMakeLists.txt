@@ -27,8 +27,6 @@ set(MY_C_FLAGS "-std=c99 -Wall -Wextra -Wstrict-overflow=3")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MY_CXX_FLAGS}")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${MY_C_FLAGS}")
 
-include(add_buildtype_lto)
-
 find_package(CGAL REQUIRED Core)
 add_subdirectory(vendor/libratss libratss)
 
