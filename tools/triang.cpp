@@ -15,7 +15,6 @@
 #include <sys/time.h>
 #include <fstream>
 #include <string>
-#include <malloc.h>
 #include <libdts2/Constrained_delaunay_triangulation_s2.h>
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Polyhedron_3.h>
@@ -30,6 +29,11 @@
 #include <libratss/util/InputOutput.h>
 #include <libratss/Conversion.h>
 #include <libratss/debug.h>
+#ifndef __APPLE__
+	#include <malloc.h>
+#else
+	void malloc_trim(int) {}
+#endif
 
 // using K = CGAL::Exact_predicates_exact_constructions_kernel;
 // using Point3 = K::Point_3;
@@ -958,7 +962,10 @@ template<>
 TriangulationCreatorInExactIntersectionsConstrainedDelaunay::TriangulationCreatorConstrainedDelaunay(int significands, int intersectionSignificands) :
 m_tr(
 	TriangulationCreatorInExactIntersectionsConstrainedDelaunay::Tr::Geom_traits(
-		LIB_RATSS_NAMESPACE::Conversion<TriangulationCreatorInExactIntersectionsConstrainedDelaunay::Tr::Geom_traits::FT>::moveFrom(mpq_class(std::numeric_limits<uint64_t>::max()-1, std::numeric_limits<uint64_t>::max())),
+		LIB_RATSS_NAMESPACE::Conversion<TriangulationCreatorInExactIntersectionsConstrainedDelaunay::Tr::Geom_traits::FT>::moveFrom(
+			LIB_RATSS_NAMESPACE::Conversion<uint64_t>::toMpq(std::numeric_limits<uint64_t>::max()-1)/
+			LIB_RATSS_NAMESPACE::Conversion<uint64_t>::toMpq(std::numeric_limits<uint64_t>::max())
+		),
 		significands,
 		intersectionSignificands
 	)
@@ -971,7 +978,10 @@ template<>
 TriangulationCreatorInExactIntersectionsConstrainedDelaunay64::TriangulationCreatorConstrainedDelaunay(int significands, int intersectionSignificands) :
 m_tr(
 	TriangulationCreatorInExactIntersectionsConstrainedDelaunay64::Tr::Geom_traits(
-		LIB_RATSS_NAMESPACE::Conversion<TriangulationCreatorInExactIntersectionsConstrainedDelaunay64::Tr::Geom_traits::FT>::moveFrom(mpq_class(std::numeric_limits<uint64_t>::max()-1, std::numeric_limits<uint64_t>::max())),
+		LIB_RATSS_NAMESPACE::Conversion<TriangulationCreatorInExactIntersectionsConstrainedDelaunay64::Tr::Geom_traits::FT>::moveFrom(
+			LIB_RATSS_NAMESPACE::Conversion<uint64_t>::toMpq(std::numeric_limits<uint64_t>::max()-1)/
+			LIB_RATSS_NAMESPACE::Conversion<uint64_t>::toMpq(std::numeric_limits<uint64_t>::max())
+		),
 		significands,
 		intersectionSignificands
 	)
