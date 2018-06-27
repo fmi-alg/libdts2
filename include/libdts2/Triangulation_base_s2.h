@@ -224,7 +224,10 @@ TMPL_HDR
 TMPL_CLS::Triangulation_base_s2(int _significands) :
 Triangulation_base_s2(
 	Geom_traits(
-		LIB_RATSS_NAMESPACE::Conversion<FT>::moveFrom(mpq_class(std::numeric_limits<uint64_t>::max()-1, std::numeric_limits<uint64_t>::max())),
+		LIB_RATSS_NAMESPACE::Conversion<FT>::moveFrom(
+			LIB_RATSS_NAMESPACE::Conversion<FT>::toMpq(std::numeric_limits<uint64_t>::max()-1)/
+			LIB_RATSS_NAMESPACE::Conversion<FT>::toMpq(std::numeric_limits<uint64_t>::max())
+		),
 		_significands
 	)
 )
