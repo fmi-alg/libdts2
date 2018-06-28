@@ -13,7 +13,7 @@
 # target_link_libraries(${PROJECT_NAME} ${LIBDTS2_LIBRARIES})
 # add_dependencies(${PROJECT_NAME} dts2)
 
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.5)
 project(dts2)
 
 set(CMAKE_MODULE_PATH
