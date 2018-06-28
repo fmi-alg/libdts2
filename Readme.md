@@ -73,7 +73,7 @@ Currently input points can be any of:
 
 ```C++
 //This file has predefined typedefs for various triangulations.
-#include <libdts/Constrained_delaunay_triangulation_s2.h>
+#include <libdts2/Constrained_delaunay_triangulation_s2.h>
 
 //The following triangulation supports in-exact intersections and can store information in its vertices and faces:
 
