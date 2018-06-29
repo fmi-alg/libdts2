@@ -21,8 +21,8 @@ set(CMAKE_MODULE_PATH
 	"${CMAKE_CURRENT_SOURCE_DIR}/vendor/libratss/cmake"
 )
 
-set(MY_CXX_FLAGS "-std=gnu++14 -Wall -Wextra -Wstrict-overflow=3")
-set(MY_C_FLAGS "-std=c99 -Wall -Wextra -Wstrict-overflow=3")
+set(MY_CXX_FLAGS "-Wall -Wextra -Wstrict-overflow=3")
+set(MY_C_FLAGS "-Wall -Wextra -Wstrict-overflow=3")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MY_CXX_FLAGS}")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${MY_C_FLAGS}")
@@ -56,11 +56,18 @@ set(LIBDTS2_COMPILE_DEFINITIONS
 	FORCE
 )
 
+set(LIBDTS2_COMPILE_OPTIONS
+	${LIBRATSS_COMPILE_OPTIONS}
+	CACHE STRING "libdts2 compile options"
+	FORCE
+)
+
 mark_as_advanced(
 	LIBDTS2_INCLUDE_DIR
 	LIBDTS2_LIBRARIES
 	LIBDTS2_LINK_LIBRARIES
 	LIBDTS2_COMPILE_DEFINITIONS
+	LIBDTS2_COMPILE_OPTIONS
 )
 
 include_directories(
@@ -76,6 +83,8 @@ add_library(${PROJECT_NAME} STATIC
 )
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC ${LIBDTS2_COMPILE_DEFINITIONS})
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_14)
+
 add_dependencies(${PROJECT_NAME} ratss)
 
 add_subdirectory(common ${PROJECT_NAME}common EXCLUDE_FROM_ALL)
