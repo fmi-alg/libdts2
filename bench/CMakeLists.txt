@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.9)
 project(dts2bench)
 
 include_directories(
@@ -11,7 +11,7 @@ include_directories(
 set(LINK_LIBS
 	dts2common
 	ratsscommon
-	${LIBDTS2_LINK_LIBRARIES}
+	dts2
 	${CPPUNIT_LIBRARY}
 )
 

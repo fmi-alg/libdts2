@@ -1,20 +1,15 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.9)
 project(dts2tools)
-
-include_directories(
-	${LIBDTS2_INCLUDE_DIR}
-)
 
 set(TOOLS_LIB_SOURCES_CPP
 	types.cpp
 )
 
-add_library(${PROJECT_NAME} STATIC ${TOOLS_LIB_SOURCES_CPP})
-add_dependencies(${PROJECT_NAME} ratss ratsscommon)
-
 set(LINK_LIBS
-	${LIBRATSS_LINK_LIBRARIES}
+	dts2
 )
+
+add_library(${PROJECT_NAME} STATIC ${TOOLS_LIB_SOURCES_CPP})
 
 MACRO(ADD_TOOLS_TARGET _name _sourcefiles)
 	add_executable("${PROJECT_NAME}_${_name}" "${_sourcefiles}")

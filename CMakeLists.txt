@@ -27,52 +27,12 @@ set(MY_C_FLAGS "-Wall -Wextra -Wstrict-overflow=3")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MY_CXX_FLAGS}")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${MY_C_FLAGS}")
 
+set(MY_INCLUDE_DIRS
+	"${CMAKE_CURRENT_SOURCE_DIR}/include"
+)
+
 find_package(CGAL REQUIRED Core)
 add_subdirectory(vendor/libratss libratss)
-
-set(LIBDTS2_INCLUDE_DIR
-	"${CMAKE_CURRENT_SOURCE_DIR}/include"
-	${LIBRATSS_INCLUDE_DIR}
-	CACHE STRING "libdts2 include directories"
-	FORCE
-)
-
-set(LIBDTS2_LIBRARIES
-	${PROJECT_NAME}
-	CACHE STRING "libdts2 libraries"
-	FORCE
-)
-
-set(LIBDTS2_LINK_LIBRARIES
-	${PROJECT_NAME}
-	${LIBRATSS_LINK_LIBRARIES}
-	CACHE STRING "libdts2 link libraries"
-	FORCE
-)
-
-set(LIBDTS2_COMPILE_DEFINITIONS
-	${LIBRATSS_COMPILE_DEFINITIONS}
-	CACHE STRING "libdts2 compile definitions"
-	FORCE
-)
-
-set(LIBDTS2_COMPILE_OPTIONS
-	${LIBRATSS_COMPILE_OPTIONS}
-	CACHE STRING "libdts2 compile options"
-	FORCE
-)
-
-mark_as_advanced(
-	LIBDTS2_INCLUDE_DIR
-	LIBDTS2_LIBRARIES
-	LIBDTS2_LINK_LIBRARIES
-	LIBDTS2_COMPILE_DEFINITIONS
-	LIBDTS2_COMPILE_OPTIONS
-)
-
-include_directories(
-	${LIBDTS2_INCLUDE_DIR}
-)
 
 set(LIB_SOURCES_CPP
 	src/Constrained_delaunay_triangulation_s2.cpp
@@ -81,11 +41,10 @@ set(LIB_SOURCES_CPP
 add_library(${PROJECT_NAME} STATIC
 	${LIB_SOURCES_CPP}
 )
-
-target_compile_definitions(${PROJECT_NAME} PUBLIC ${LIBDTS2_COMPILE_DEFINITIONS})
+target_link_libraries(${PROJECT_NAME} ratss)
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_14)
+target_include_directories(${PROJECT_NAME} PUBLIC ${MY_INCLUDE_DIRS})
 
-add_dependencies(${PROJECT_NAME} ratss)
 
 add_subdirectory(common ${PROJECT_NAME}common EXCLUDE_FROM_ALL)
 add_subdirectory(bench ${PROJECT_NAME}bench EXCLUDE_FROM_ALL)
