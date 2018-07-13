@@ -15,6 +15,7 @@
 #include <type_traits>
 #include <iterator>
 #include <assert.h>
+#include <vector>
 
 //BUG: check if z-coordinate is out of range after projection!
 
