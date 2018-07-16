@@ -201,7 +201,7 @@ protected:
 		>::type * /*dummy*/);
 protected:
 	void selfCheck();
-protected:
+public:
 	Triangulation & trs();
 	Tds & tds();
 	const Project_on_sphere & proj() const;
