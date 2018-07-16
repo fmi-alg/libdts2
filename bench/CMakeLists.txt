@@ -1,24 +1,7 @@
 cmake_minimum_required(VERSION 3.9)
 project(dts2bench)
 
-include_directories(
-	${PROJECT_GLOBAL_SOURCE_DIR}
-	${CMAKE_CURRENT_BINARY_DIR}
-	${CMAKE_CURRENT_SOURCE_DIR}
-	${CMAKE_SOURCE_DIR}
-)
-
-set(LINK_LIBS
-	dts2common
-	ratsscommon
-	dts2
-	${CPPUNIT_LIBRARY}
-)
-
-# add_dependencies(${PROJECT_NAME} dts2 common)
-
 MACRO(ADD_BENCH_TARGET _name _sourcefiles)
 	add_executable("${_name}" "${_sourcefiles}")
-	target_link_libraries("${_name}" ${LINK_LIBS})
-	add_dependencies("${_name}" dts2 common)
+	target_link_libraries("${_name}" dts2 dts2common ratsscommon)
 ENDMACRO(ADD_BENCH_TARGET)
