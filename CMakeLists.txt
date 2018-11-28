@@ -1,17 +1,6 @@
 # This is the build file to build libdts2
 # It can be build as a stand-alone project as well as a sub-project
-# This build file exports the following variables into its parent scope:
-# LIBDTS2_INCLUDE_DIR - The include directory
-# LIBDTS2_LIBRARIES - libraries that need to be linker in order for libdts2 to work
-# LIBDTS2_COMPILE_DEFINITIONS
-# 
 # You may simply do the following:
-# 
-# include_directories(${LIBDTS2_INCLUDE_DIR})
-# 
-# add_executable(${PROJECT_NAME} ${SOURCES_CPP}
-# target_link_libraries(${PROJECT_NAME} ${LIBDTS2_LIBRARIES})
-# add_dependencies(${PROJECT_NAME} dts2)
 
 cmake_minimum_required(VERSION 3.9)
 project(dts2)
