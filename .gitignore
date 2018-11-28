@@ -3,3 +3,4 @@ build_*/*
 *.kdev*/*
 *.kdev4
 *.kdev
+builds/*
