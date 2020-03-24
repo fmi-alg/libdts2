@@ -30,7 +30,7 @@ set(LIB_SOURCES_CPP
 add_library(${PROJECT_NAME} STATIC
 	${LIB_SOURCES_CPP}
 )
-target_link_libraries(${PROJECT_NAME} ratss)
+target_link_libraries(${PROJECT_NAME} ratss CGAL::CGAL CGAL::CGAL_Core)
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_14)
 target_include_directories(${PROJECT_NAME} PUBLIC ${MY_INCLUDE_DIRS})
 
