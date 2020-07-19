@@ -1225,7 +1225,7 @@ void Config::parse_completed() {
 	if (triangType == TT_CONSTRAINED_INEXACT_64 || triangType == TT_CONVEX_HULL_64 || triangType == TT_DELAUNAY_64) {
 		significands = 31;
 		intersectSignificands = 31;
-		snapType = ratss::ProjectSN::ST_PLANE | ratss::ProjectSN::ST_FX | ratss::ProjectSN::ST_NORMALIZE;
+		snapType = ratss::ST_PLANE | ratss::ST_FX | ratss::ST_NORMALIZE;
 		
 	}
 	if (triangType == TT_CONVEX_HULL_64 || triangType == TT_CONVEX_HULL || triangType == TT_CONVEX_HULL_INEXACT) {
@@ -1583,7 +1583,7 @@ Point3 Data::readPoint(std::istream& is, const Config& cfg) {
 		ip.assign(is, cfg.inFormat, cfg.precision, 3);
 	}
 	if (opFromIp) {
-		if (cfg.normalize) {
+		if (cfg.snapType & ratss::ST_NORMALIZE) {
 			ip.normalize();
 		}
 		ip.setPrecision(cfg.precision);

@@ -112,7 +112,7 @@ public:
 			zf /= lenF;
 			
 			mpq_class xq, yq, zq;
-			MyBaseClass::projector().snap(xf, yf, zf, xq, yq, zq, MyBaseClass::significands(), MyBaseTrait::Projector::ST_FX | MyBaseTrait::Projector::ST_PLANE);
+			MyBaseClass::projector().snap(xf, yf, zf, xq, yq, zq, MyBaseClass::significands(), LIB_RATSS_NAMESPACE::ST_FX | LIB_RATSS_NAMESPACE::ST_PLANE);
 			return Point_3( Conversion<FT>::moveFrom(xq),
 							Conversion<FT>::moveFrom(yq),
 							Conversion<FT>::moveFrom(zq)
