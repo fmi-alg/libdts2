@@ -29,6 +29,7 @@ public:
 	BFT x() const;
 	BFT y() const;
 	BFT z() const;
+	Point_3 point3() const;
 	operator Point_3() const;
 public:
 	base_type numerator0() const;
