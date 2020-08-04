@@ -170,6 +170,9 @@ public:
 	using Epecksqrt = CGAL::Exact_predicates_exact_constructions_kernel_with_sqrt;
 	using EpecksqrtPoint = Epecksqrt::Point_3;
 public:
+	using Epecsk = CGAL::Exact_spherical_kernel_3;
+	using EpecskPoint = Epecsk::Point_3;
+public:
 // 	using FT = mpq_class;
 	using K = Sceik;
 	using FT = K::FT;
@@ -208,6 +211,7 @@ public:
 	explicit operator Fsce1024ikPoint() const { return convert_to_p<Fsce1024ik>(); }
 	explicit operator Flce1024ikPoint() const { return convert_to_p<Flce1024ik>(); }
 	explicit operator EpecksqrtPoint() const { return convert_to_p<Epecksqrt>(); }
+	explicit operator EpecskPoint() const { return convert_to_p<Epecsk>();}
 private:
 	FT m_x;
 	FT m_y;
@@ -949,10 +953,12 @@ using TriangulationCreatorInExactIntersectionsConstrainedDelaunay64 =
 using TriangulationCreatorExactIntersectionsConstrainedDelaunay = 
 	TriangulationCreatorConstrainedDelaunay<dts2::Constrained_Delaunay_triangulation_with_exact_intersections_with_info_s2>;
 
-//TODO: use correct type here
-using TriangulationCreatorExactIntersectionsSphericalConstrainedDelaunay =
-	TriangulationCreatorInExactIntersectionsConstrainedDelaunay;
+// using TriangulationCreatorExactIntersectionsSphericalConstrainedDelaunay =
+// 	TriangulationCreatorConstrainedDelaunay<dts2::Constrained_Delaunay_triangulation_with_exact_intersections_spherical_with_info_s2>;
 
+using TriangulationCreatorExactIntersectionsSphericalConstrainedDelaunay =
+	TriangulationCreatorExactIntersectionsConstrainedDelaunay;
+	
 template<>
 TriangulationCreatorNoIntersectionsConstrainedDelaunay::TriangulationCreatorConstrainedDelaunay(int significands, int /*intersectionSignificands*/) :
 TriangulationCreatorConstrainedDelaunay(significands)
