@@ -325,7 +325,6 @@ public:
 	public:
 		Project_on_sphere(int _significands, const Projector & p) : m_significands(_significands), m_proj(p) {}
 	public:
-		//TODO:mark deprecated
 		Point_3 operator()(const std::pair<double, double> & geoCoord) const {
 			return this->operator()( LIB_RATSS_NAMESPACE::GeoCoord(geoCoord) );
 		}
