@@ -1,6 +1,6 @@
+#pragma once
 #ifndef LIB_DTS2_KERNEL_SP_H
 #define LIB_DTS2_KERNEL_SP_H
-#pragma once
 
 #include <libdts2/constants.h>
 #include <libdts2/Point_sp.h>

@@ -1,6 +1,6 @@
+#pragma once
 #ifndef LIB_DTS2_KERNEL_SP_BASE_H
 #define LIB_DTS2_KERNEL_SP_BASE_H
-#pragma once
 
 #include <CGAL/Simple_cartesian.h>
 #include <libdts2/Kernel_sp/Point_sp.h>

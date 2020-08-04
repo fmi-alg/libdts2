@@ -1,6 +1,6 @@
+#pragma once
 #ifndef LIB_DTS2_POINT_SP_H
 #define LIB_DTS2_POINT_SP_H
-#pragma once
 
 #include <libdts2/constants.h>
 #include <libratss/CGAL/ExtendedInt64q.h>

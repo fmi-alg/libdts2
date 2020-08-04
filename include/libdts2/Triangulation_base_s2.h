@@ -1,6 +1,6 @@
+#pragma once
 #ifndef LIB_DTS2_TRIANGULATION_BASE_S2_H
 #define LIB_DTS2_TRIANGULATION_BASE_S2_H
-#pragma once
 
 #include <libdts2/constants.h>
 #include <libratss/GeoCoord.h>

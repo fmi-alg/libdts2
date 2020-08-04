@@ -1,6 +1,6 @@
+#pragma once
 #ifndef LIB_DTS2_CONSTRAINED_DELAUNAY_TRIANGULATION_WITH_INTERSECTIONS_BASE_TRAITS_S2_H
 #define LIB_DTS2_CONSTRAINED_DELAUNAY_TRIANGULATION_WITH_INTERSECTIONS_BASE_TRAITS_S2_H
-#pragma once
 
 #include <libdts2/constants.h>
 #include <libdts2/Constrained_delaunay_triangulation_base_traits_s2.h>
