@@ -98,6 +98,21 @@ public:
 				return v;
 			}
 			mpq_class sqLenQ( Conversion<FT>::toMpq(sqLen) );
+			
+			{
+				mpz_class tmp = sqrt(sqLenQ.get_num());
+				if (tmp*tmp == sqLenQ.get_num()) {
+					mpz_class tmp2 = sqrt(sqLenQ.get_den());
+					if (tmp2*tmp2 == sqLenQ.get_den()) {
+						FT len = Conversion<FT>::moveFrom(mpq_class(tmp)/mpq_class(tmp2));
+						return Point_3( v.x()/len,
+										v.y()/len,
+										v.z()/len
+						);
+					}
+				}
+			}
+			
 			int calcPrec = std::max<std::size_t>(MyBaseClass::projector().calc().maxBitCount(sqLenQ), MyBaseClass::significands()*2);
 			
 			mpfr::mpreal sqLenF(Conversion<mpq_class>::toMpreal(sqLenQ, calcPrec));
