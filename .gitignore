@@ -4,3 +4,4 @@ build_*/*
 *.kdev4
 *.kdev
 builds/*
+cmake-build*
