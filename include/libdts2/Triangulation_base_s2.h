@@ -17,8 +17,6 @@
 #include <assert.h>
 #include <vector>
 
-//BUG: check if z-coordinate is out of range after projection!
-
 namespace LIB_DTS2_NAMESPACE {
 namespace internal {
 namespace Triangulation_base_s2 {
@@ -70,8 +68,8 @@ public: //triangulation types
 public:
 	using Project_on_sphere = typename Geom_traits::Project_on_sphere;
 public:
-	Triangulation_base_s2(int significands);
 	Triangulation_base_s2(const Geom_traits & traits);
+	Triangulation_base_s2(int significands);
 	Triangulation_base_s2(Triangulation_base_s2 && other);
 	Triangulation_base_s2(const Triangulation_base_s2& other) = delete;
 	Triangulation_base_s2 & operator=(Triangulation_base_s2 && other);
@@ -142,6 +140,10 @@ public:
 	const Geom_traits & geom_traits() const;
 	const Triangulation & trs() const;
 	const Tds & tds() const;
+public:
+	Triangulation & trs();
+	Tds & tds();
+	const Project_on_sphere & proj() const;
 protected:
 
 	template<typename T_ITERATOR, typename T_ITERATOR_VALUE_TYPE, bool T_SNAP>
@@ -201,10 +203,6 @@ protected:
 		>::type * /*dummy*/);
 protected:
 	void selfCheck();
-public:
-	Triangulation & trs();
-	Tds & tds();
-	const Project_on_sphere & proj() const;
 private:
 	void setAuxiliaryPoints(Point_3 const & u1, Point_3 const & u2, Point_3 const & u3, Point_3 const & l);
 	void addAuxiliaryPoints();
