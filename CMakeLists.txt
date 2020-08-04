@@ -27,8 +27,27 @@ set(LIB_SOURCES_CPP
 	src/Constrained_delaunay_triangulation_s2.cpp
 )
 
+set(LIB_SOURCES_H
+	include/libdts2/constants.h
+	include/libdts2/Constrained_delaunay_triangulation_with_exact_intersections_traits_s2.h
+	include/libdts2/Constrained_Triangulation_base_s2.h
+	include/libdts2/Constrained_delaunay_triangulation_with_intersections_base_traits_s2.h
+	include/libdts2/Delaunay_triangulation_traits_s2.h
+	include/libdts2/Delaunay_triangulation_s2.h
+	include/libdts2/Constrained_delaunay_triangulation_s2.h
+	include/libdts2/Kernel_sp/Kernel_sp.h
+	include/libdts2/Kernel_sp/Kernel_sp_base.h
+	include/libdts2/Kernel_sp/Point_sp.h
+	include/libdts2/Constrained_delaunay_triangulation_base_traits_s2.h
+	include/libdts2/Constrained_delaunay_triangulation_traits_s2.h
+	include/libdts2/Triangulation_base_s2.h
+	include/libdts2/Constrained_delaunay_triangulation_with_exact_intersections_spherical_traits_s2.h
+	include/libdts2/Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2.h
+)
+
 add_library(${PROJECT_NAME} STATIC
 	${LIB_SOURCES_CPP}
+	${LIB_SOURCES_H}
 )
 target_link_libraries(${PROJECT_NAME} ratss CGAL::CGAL CGAL::CGAL_Core)
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_14)
