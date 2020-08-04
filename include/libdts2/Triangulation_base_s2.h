@@ -123,6 +123,8 @@ public: //information stuff
 	bool is_special(const Vertex_handle & vh) const;
 	std::size_t degree(const Vertex_handle & vh) const;
 	bool is_valid();
+	//Check whether the given point is inside the auxiliary triangle or not
+	bool is_valid(Point_3 const & p) const;
 public: //helpers
 	int ccw(int v) const;
 	int cw(int v) const;
@@ -140,8 +142,6 @@ public:
 	const Geom_traits & geom_traits() const;
 	const Triangulation & trs() const;
 	const Tds & tds() const;
-	//the z-coordinate of points that are invalid since they are within the aux-triangle
-	const FT & epsZ() const;
 protected:
 
 	template<typename T_ITERATOR, typename T_ITERATOR_VALUE_TYPE, bool T_SNAP>
@@ -206,6 +206,7 @@ public:
 	Tds & tds();
 	const Project_on_sphere & proj() const;
 private:
+	void setAuxiliaryPoints(Point_3 const & u1, Point_3 const & u2, Point_3 const & u3, Point_3 const & l);
 	void addAuxiliaryPoints();
 	Point_3 generateAuxPoint(FT xp, FT yp) const;
 private:
@@ -239,9 +240,6 @@ TMPL_CLS::Triangulation_base_s2(const Geom_traits & traits) :
 MyBaseClass(traits),
 m_p( this->geom_traits().project_on_sphere_object() )
 {
-	if (! (epsZ() > 0 && epsZ() < 1) ) {
-		throw std::runtime_error("libdts2::Triangulation_base_s2: epsZ musst be smaller than 1 and larger than 0");
-	}
 	addAuxiliaryPoints();
 	selfCheck();
 }
@@ -429,8 +427,7 @@ TMPL_CLS::is_infinite(const Vertex_handle & vh) const {
 TMPL_HDR
 bool
 TMPL_CLS::is_auxiliary(const Vertex_handle & vh) const {
-	const auto & zc = vh->point().z();
-	return zc == -1 || zc >= epsZ();
+	return geom_traits().is_auxiliary_point_object()(vh->point());
 }
 
 TMPL_HDR
@@ -450,6 +447,13 @@ bool
 TMPL_CLS::is_valid() {
 	return trs().is_valid();
 }
+
+TMPL_HDR
+bool
+TMPL_CLS::is_valid(Point_3 const & p) const {
+	return geom_traits().is_valid_point_on_sphere_object()(p);
+}
+
 //END query functions
 //BEGIN helpers
 
@@ -545,12 +549,6 @@ TMPL_HDR
 const typename TMPL_CLS::Tds & 
 TMPL_CLS::tds() const {
 	return trs().tds();
-}
-
-TMPL_HDR
-const typename TMPL_CLS::FT & 
-TMPL_CLS::epsZ() const {
-	return geom_traits().epsZ();
 }
 
 //END member variable access
@@ -749,23 +747,18 @@ TMPL_CLS::proj() const {
 TMPL_HDR
 void 
 TMPL_CLS::addAuxiliaryPoints() {
-	
-	//start value for generateAuxPoint
-	FT epsilon(LIB_RATSS_NAMESPACE::Conversion<FT>::moveFrom(mpq_class(1, std::numeric_limits<uint16_t>::max())));
-	auto p_1 = generateAuxPoint(0, epsilon);
-	auto p_2 = generateAuxPoint(-epsilon, -epsilon/2);
-	auto p_3 = generateAuxPoint(epsilon, -epsilon/2);
-	
-	if (p_1.z() < epsZ() || p_1.z() >= 1) {
-		throw std::runtime_error("Construction of auxiliary points failed. z-value=" + Geom_traits::ratString(p_1.z()));
-	}
-	if (p_2.z() < epsZ() || p_2.z() >= 1) {
-		throw std::runtime_error("Construction of auxiliary points failed. z-value=" + Geom_traits::ratString(p_2.z()));
-	}
-	if (p_3.z() < epsZ() || p_3.z() >= 1) {
-		throw std::runtime_error("Construction of auxiliary points failed. z-value=" + Geom_traits::ratString(p_3.z()));
-	}
-	
+	auto gap = geom_traits().generate_auxiliary_point_object();
+	setAuxiliaryPoints(
+						gap(AuxPointSelector::UPPER_0),
+						gap(AuxPointSelector::UPPER_1),
+						gap(AuxPointSelector::UPPER_2),
+						gap(AuxPointSelector::LOWER)
+	);
+}
+
+TMPL_HDR
+void 
+TMPL_CLS::setAuxiliaryPoints(Point_3 const & u1, Point_3 const & u2, Point_3 const & u3, Point_3 const & l) {
 	tds().remove_first (trs().infinite_vertex());
 
 	// Insert initial vertices and faces.
@@ -783,13 +776,13 @@ TMPL_CLS::addAuxiliaryPoints() {
 	auto fh_inf_i12 = tds().create_face ();
 	auto fh_inf_i23 = tds().create_face ();
 
-	vh_triangle_1->set_point ( p_1 );
-	vh_triangle_2->set_point ( p_2 );
-	vh_triangle_3->set_point ( p_3 );
+	vh_triangle_1->set_point ( u1 );
+	vh_triangle_2->set_point ( u2 );
+	vh_triangle_3->set_point ( u3 );
 	
-	vh_south_pole->set_point ( Point(0, 0, -1) );
+	vh_south_pole->set_point ( l );
 	
-	//put the infinte vertex outside of the triangulation (which is the north-pole)
+	//put the infinte vertex outside of the triangulation which is inside 
 	vh_inf->set_point ( Point(0, 0, 1) );
 	
 	vh_triangle_1->set_face (fh_pyramid_13s);
@@ -823,41 +816,6 @@ TMPL_CLS::addAuxiliaryPoints() {
 	assert( is_valid() );
 }
 
-TMPL_HDR
-typename TMPL_CLS::Point_3 
-TMPL_CLS::generateAuxPoint(FT xp, FT yp) const {
-	FT dummy(0);
-	FT xs, ys, zs, zs_prev;
-	m_p.projector().plane2Sphere(xp, yp, dummy, LIB_RATSS_NAMESPACE::SP_UPPER, xs, ys, zs);
-	zs_prev = zs;
-// 	std::cout << "zs=" << zs << std::endl;
-// 	std::cout << "m_epsZ=" << m_epsZ << std::endl;
-	
-	uint32_t count = 0;
-	while(zs < epsZ()) {
-		xp /= 2;
-		yp /= 2;
-		zs_prev = zs;
-		m_p.projector().plane2Sphere(xp, yp, dummy, LIB_RATSS_NAMESPACE::SP_UPPER, xs, ys, zs);
-// 		std::cout << "(" << Geom_traits::ratString(xp) << "," << Geom_traits::ratString(yp) << ") -> " <<  Geom_traits::ratString(zs) << std::endl;
-		assert(zs_prev < zs);
-		assert(zs < 1);
-		++count;
-	}
-// 	std::cout << "Generating an aux point ";
-// 	std::cout << "(" << Geom_traits::ratString(xp) << "," << Geom_traits::ratString(yp) << ") -> " <<  Geom_traits::ratString(zs);
-// 	std::cout <<" took " << count << " rounds" << std::endl;
-	
-	Point_3 p(xs, ys, zs);
-	
-	FT tmp = zs;
-// 	auto tmp2 =  ratss::convert< CGAL::ExtendedInt64q<CGAL::Gmpq> >( tmp );
-// 	std::cout << "tmp=" << Geom_traits::ratString(tmp) << ";" << std::flush;
-// 	std::cout << "zs=" << Geom_traits::ratString(zs) << ";" << std::flush;
-// 	std::cout << "p.z=" << Geom_traits::ratString(p.z()) << std::endl;
-	
-	return p;
-}
 //END private inital construction functions
 
 #undef TMPL_CLS

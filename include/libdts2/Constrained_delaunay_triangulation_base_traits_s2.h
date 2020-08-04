@@ -15,6 +15,105 @@
 #include <assert.h>
 
 namespace LIB_DTS2_NAMESPACE {
+namespace detail {
+	
+template<typename T_LINEAR_KERNEL>
+class EpsBasedAuxPoints {
+public:
+	using BaseTraits = T_LINEAR_KERNEL;
+	using Point_3 = typename BaseTraits::Point_3;
+	using FT = typename BaseTraits::FT;
+public:
+	class Generate_auxiliary_point final {
+	public:
+		Generate_auxiliary_point(FT const & _epsZ) : m_epsZ(_epsZ) {}
+	public:
+		inline Point_3 operator()(AuxPointSelector s) const {
+			if (s == AuxPointSelector::LOWER) {
+				return Point_3(0, 0, -1);
+			}
+			FT epsilon(LIB_RATSS_NAMESPACE::Conversion<FT>::moveFrom(mpq_class(1, std::numeric_limits<uint16_t>::max())));
+			switch(s) {
+			case AuxPointSelector::UPPER_0:
+				return generateAuxPoint(0, epsilon);
+			case AuxPointSelector::UPPER_1:
+				return generateAuxPoint(-epsilon, -epsilon/2);
+			case AuxPointSelector::UPPER_2:
+				return generateAuxPoint(epsilon, -epsilon/2);
+			default:
+				throw std::runtime_error("Invalid AuxPointSelector value");
+			};
+		};
+	protected:
+		Point_3 generateAuxPoint(FT xp, FT yp) const {
+			FT dummy(0);
+			FT xs, ys, zs, zs_prev;
+			m_p.plane2Sphere(xp, yp, dummy, LIB_RATSS_NAMESPACE::SP_UPPER, xs, ys, zs);
+			zs_prev = zs;
+			while(zs < m_epsZ) {
+				xp /= 2;
+				yp /= 2;
+				zs_prev = zs;
+				m_p.plane2Sphere(xp, yp, dummy, LIB_RATSS_NAMESPACE::SP_UPPER, xs, ys, zs);
+				assert(zs_prev < zs);
+				assert(zs < 1);
+			}
+			return Point_3(xs, ys, zs);
+		}
+	private:
+		LIB_RATSS_NAMESPACE::ProjectS2 m_p;
+		FT m_epsZ;
+	};
+	
+	class Is_auxiliary_point final {
+	public:
+		Is_auxiliary_point(FT const & _epsZ) : m_epsZ(_epsZ) {}
+	public:
+		inline bool operator()(Point_3 const & p) const {
+			return p.z() == FT(-1) || p.z() >= m_epsZ;
+		};
+	private:
+		FT m_epsZ;
+	};
+	
+	//Is true if the given point is on the sphere and outside of the auxiliary triangle
+	class Is_valid_point_on_sphere final {
+	public:
+		Is_valid_point_on_sphere(Is_auxiliary_point const & iap) : m_iap(iap) {}
+	public:
+		bool operator()(Point_3 const & p) const {
+			return (p.x()*p.x()+p.y()*p.y()+p.z()*p.z()) == 1 && !m_iap(p);
+		}
+	private:
+		Is_auxiliary_point m_iap;
+	};
+public:
+	EpsBasedAuxPoints() :
+		m_epsZ(FT(1)-FT(std::numeric_limits<double>::epsilon()))
+	{}
+	EpsBasedAuxPoints(FT const & _epsZ) :
+		m_epsZ(_epsZ)
+	{}
+	virtual ~EpsBasedAuxPoints() {}
+public:
+	Is_auxiliary_point is_auxiliary_point_object() const {
+		return Is_auxiliary_point(epsZ());
+	}
+	
+	Is_valid_point_on_sphere is_valid_point_on_sphere_object() const {
+		return Is_valid_point_on_sphere(is_auxiliary_point_object());
+	}
+	
+	Generate_auxiliary_point generate_auxiliary_point_object() const {
+		return Generate_auxiliary_point(epsZ());
+	}
+public:
+	FT const & epsZ() const { return m_epsZ; }
+private:
+	FT m_epsZ;
+};
+
+} //end namespace detail
 
 #ifndef NDEBUG
 	#define DEBUG_OUT(__STR) {std::cout <<  __STR << std::endl;}
@@ -23,13 +122,14 @@ namespace LIB_DTS2_NAMESPACE {
 #endif
 #define LIB_DTS2_ORIGIN Point_3(0, 0, 0)
 
-template<typename T_LINEAR_KERNEL>
+template<typename T_LINEAR_KERNEL, typename T_AUX_POINT_GENERATOR=detail::EpsBasedAuxPoints<T_LINEAR_KERNEL>>
 class Constrained_delaunay_triangulation_base_traits_s2 {
 public:
 	using LinearKernel = T_LINEAR_KERNEL;
 	using MyBaseTrait = T_LINEAR_KERNEL;
 	using MyKernel = T_LINEAR_KERNEL;
 	using MySelf = Constrained_delaunay_triangulation_base_traits_s2<MyBaseTrait>;
+	using AuxiliaryPointsGenerator = T_AUX_POINT_GENERATOR;
 protected: //we only want to expose typedefs that are really needed by the triangulation
 	using Segment_3 = typename MyBaseTrait::Segment_3;
 	using Orientation_3 = typename MyBaseTrait::Orientation_3;
@@ -93,6 +193,10 @@ public:
 	using Construct_point_2 = Construct_point_3;
 public:
 	using Projector = LIB_RATSS_NAMESPACE::ProjectS2;
+public:
+	using Is_auxiliary_point = typename AuxiliaryPointsGenerator::Is_auxiliary_point;
+	using Is_valid_point_on_sphere = typename AuxiliaryPointsGenerator::Is_valid_point_on_sphere;
+	using Generate_auxiliary_point = typename AuxiliaryPointsGenerator::Generate_auxiliary_point;
 public: //own implementations
 
 	class Triangle_2: private Triangle_3 {
@@ -110,23 +214,23 @@ public: //own implementations
 	class Orientation_2
 	{
 	public:
-		Orientation_2(const Orientation_3 & _ot3, const FT & _epsZ) : ot3(_ot3), m_epsZ(_epsZ) {}
+		Orientation_2(Orientation_3 const & _ot3, Is_auxiliary_point const & _iap) : ot3(_ot3), m_iap(_iap) {}
 		Orientation operator()(const Point_3 & p, const Point_3 & q, const Point_3 & r) const
 		{
-			assert(p.z() < 1 && q.z() < 1 && r.z() < 1);
+			assert(p.z() <= 1 && q.z() <= 1 && r.z() <= 1);
 			assert(p != q);
 			
 			Orientation oriented_side = ot3(p, q, LIB_DTS2_ORIGIN, r);
 			
-			if (oriented_side != Orientation::COLLINEAR && p.z() >= m_epsZ && q.z() >= m_epsZ) {
-				//the point always has to be on the opposite site of the infinite vertex
+			if (oriented_side != Orientation::COLLINEAR && m_iap(p) && m_iap(q)) {
+				//the point always has to be on the opposite side of the infinite vertex
 				oriented_side = - ot3(p, q, LIB_DTS2_ORIGIN, Point(0, 0, 1));
 			}
 			return oriented_side;
 		}
 	private:
 		Orientation_3 ot3;
-		FT m_epsZ;
+		Is_auxiliary_point m_iap;
 	};
 	
 	class Side_of_oriented_circle_2 {
@@ -254,7 +358,6 @@ public:
 		int m_significands;
 		Projector m_proj;
 	};
-	
 protected:
 	
 	Orientation_3 orientation_3_object() const {
@@ -306,12 +409,15 @@ public:
 	}
 public: //object functions
 	///This does not correctly initialize this trait!
-	Constrained_delaunay_triangulation_base_traits_s2() :
-	m_epsZ(FT(1)-FT(std::numeric_limits<double>::epsilon()))
-	{}
+	Constrained_delaunay_triangulation_base_traits_s2() {}
+	Constrained_delaunay_triangulation_base_traits_s2(int _significands) :
+	m_significands(_significands)
+	{
+		assert(m_significands > 2);
+	}
 	///@param epsilon set the value of the z-coordinate above which no points should exist
-	Constrained_delaunay_triangulation_base_traits_s2(const FT & _epsilon, int _significands) :
-	m_epsZ(_epsilon),
+	Constrained_delaunay_triangulation_base_traits_s2(AuxiliaryPointsGenerator const & _apg, int _significands) :
+	m_apg(_apg),
 	m_significands(_significands)
 	{
 		assert(m_significands > 2);
@@ -319,7 +425,7 @@ public: //object functions
 	
 	Constrained_delaunay_triangulation_base_traits_s2(const Constrained_delaunay_triangulation_base_traits_s2 & other) :
 	m_traits(other.m_traits),
-	m_epsZ(other.m_epsZ),
+	m_apg(other.m_apg),
 	m_proj(other.m_proj),
 	m_significands(other.m_significands)
 	{
@@ -337,7 +443,7 @@ public: //object functions
 	}
 	
 	Orientation_2 orientation_2_object () const {
-		return Orientation_2( orientation_3_object(), m_epsZ);
+		return Orientation_2( orientation_3_object(), is_auxiliary_point_object());
 	}
 	
 	Compare_x_2 compare_x_2_object() const {
@@ -385,16 +491,27 @@ public: //object functions
 		return Project_on_sphere(_significands, projector());
 	}
 	
+	Is_auxiliary_point is_auxiliary_point_object() const {
+		return auxiliaryPointsGenerator().is_auxiliary_point_object();
+	}
+	
+	Is_valid_point_on_sphere is_valid_point_on_sphere_object() const {
+		return auxiliaryPointsGenerator().is_valid_point_on_sphere_object();
+	}
+	
+	Generate_auxiliary_point generate_auxiliary_point_object() const {
+		return auxiliaryPointsGenerator().generate_auxiliary_point_object();
+	}
 public:
 	int significands() const { return m_significands; }
-	const FT & epsZ() const { return m_epsZ; }
 	const MyBaseTrait & baseTraits() const { return m_traits; }
+	AuxiliaryPointsGenerator const & auxiliaryPointsGenerator() const { return m_apg; }
 	const Projector & projector() const { return m_proj; }
 protected:
-	MyBaseTrait & baseTraits() { return m_traits; } 
+	MyBaseTrait & baseTraits() { return m_traits; }
 private:
 	MyBaseTrait m_traits;
-	FT m_epsZ;
+	AuxiliaryPointsGenerator m_apg;
 	Projector m_proj;
 	int m_significands;
 };
