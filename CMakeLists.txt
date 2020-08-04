@@ -25,6 +25,7 @@ add_subdirectory(vendor/libratss libratss)
 
 set(LIB_SOURCES_CPP
 	src/Constrained_delaunay_triangulation_s2.cpp
+	src/Kernel_sp/Point_sp.cpp
 )
 
 set(LIB_SOURCES_H

@@ -1,72 +1,84 @@
 #pragma once
+
 #ifndef LIB_DTS2_POINT_SP_H
 #define LIB_DTS2_POINT_SP_H
 
 #include <libdts2/constants.h>
-#include <libratss/CGAL/ExtendedInt64q.h>
 #include <libratss/ProjectS2.h>
 
+#include <array>
+#include <stdint.h>
+#include <string.h>
+#include <assert.h>
+
 namespace LIB_DTS2_NAMESPACE {
+namespace detail {
 
-
-template<typename T_BASE_TRAITS>
-class Point_sp {
+class Point_sp_base {
 public:
-	using MyBaseTrait = T_BASE_TRAITS;
-	using base_type = int32_t;
-	using BFT = MyBaseTrait::FT;
-	using Point_3 = typename MyBaseTrait::Point_3;
-	static constexpr int snap_bits = 30;
+	using base_type = int64_t;
+	using unsigned_base_type = uint64_t;
+	//TODO: extend this to 42 bits for numerators
+	struct BitSizes {
+		static constexpr int NUMERATOR0=32;
+		static constexpr int NUMERATOR1=32;
+		static constexpr int DENOMINATOR=7;
+		static constexpr int POS=3;
+	};
 public:
-	Point_sp();
-	Point_sp(const Point_sp & other);
-	template<typename T_POINT_3>
-	Point_sp(const T_POINT_3 & p);
-	Point_sp(base_type num0, base_type num1, base_type denominator, base_type pos);
+	Point_sp_base();
+	Point_sp_base(base_type _num0, base_type _num1, unsigned_base_type _den, base_type _pos);
+	virtual ~Point_sp_base();
 public:
-	Point_sp & operator=(const Point_sp & other);
-public:
-	BFT x() const;
-	BFT y() const;
-	BFT z() const;
-	Point_3 point3() const;
-	operator Point_3() const;
+	void set_numerator0(base_type v);
+	void set_numerator1(base_type v);
+	void set_denominator(unsigned_base_type v);
+	void set_exponent(uint8_t v);
+	void set_pos(int v);
+	void set_numerator0(mpz_class v);
+	void set_numerator1(mpz_class v);
+	void set_denominator(mpz_class v);
 public:
 	base_type numerator0() const;
 	base_type numerator1() const;
-	///if this is an auxiliary point, then this will overflow
-	base_type denominator() const;
+	unsigned_base_type denominator() const;
 	///@return position on Sphere
-	int32_t pos() const;
-	int32_t exponent() const;
-	bool is_auxiliary() const;
+	LIB_RATSS_NAMESPACE::PositionOnSphere pos() const;
+	uint8_t exponent() const;
+private:
+	//Coordinates in the plane are of the form
+	//x = num/2^s with s < 128
+	//Thus we use 7 Bits to encode s
+	//Additionally we need 3 Bits to encode the 6 position on the sphere
+	//The remaining 84 Bits are used for the coordinates
+	std::array<char, 12> m_d;
+};
+	
+}
+
+template<typename T_BASE_TRAITS>
+class Point_sp: detail::Point_sp_base {
 public:
-	static Point_sp make_auxiliary();
-private:
-	struct Nums {
-		int32_t nums[2];
-		int32_t dummy;
-		Nums(base_type num0, base_type num1) : nums({num0, num1}), dummy(0) {}
-	};
-	struct Meta {
-		int32_t dummy[2];
-		int32_t pos:4; //position on sphere, can be any of ratss::PositionOnSphere
-		int32_t e:16;  //denominator exponent denom = 1 << m_e
-		int32_t reserved:12;
-	};
-	struct Raw {
-		int32_t d[3];
-		Raw() : d({0,0,0}) {}
-	};
-	union Data {
-		Nums nums;
-		Meta meta;
-		Raw raw;
-		Data() : raw() {}
-		Data(base_type num0, base_type num1) : nums(num0, num1) {}
-	};
-private:
-	Data m_d;
+	using MyParent = detail::Point_sp_base;
+	using MyBaseTrait = T_BASE_TRAITS;
+	using FT = typename MyBaseTrait::FT;
+	using Point_3 = typename MyBaseTrait::Point_3;
+public:
+	Point_sp();
+	Point_sp(MyParent const & v);
+	Point_sp(base_type _num0, base_type _num1, unsigned_base_type _den, base_type _pos);
+	Point_sp(Point_3 const & v);
+	Point_sp(Point_sp const & other);
+public:
+	Point_sp & operator=(Point_sp const & other) = default;
+public:
+	Point_3 point3() const;
+public:
+	FT x() const { point3().x(); }
+	FT y() const { point3().y(); }
+	FT z() const { point3().z(); }
+public:
+	operator Point_3() const { return point3(); }
 };
 
 }//end namespace
@@ -79,37 +91,90 @@ namespace LIB_DTS2_NAMESPACE {
 #define PTSP_CLS_NAME Point_sp<T_BASE_TRAITS>
 
 PTSP_TMP_PRMS
-PTSP_CLS_NAME::Point_sp() :
-m_d()
-{}
-
+PTSP_CLS_NAME::Point_sp() {}
 
 PTSP_TMP_PRMS
 PTSP_CLS_NAME::Point_sp(const Point_sp & other) :
-m_d(other.m_d)
+MyParent(other)
 {}
 
-
 PTSP_TMP_PRMS
-template<typename T_POINT_3>
-PTSP_CLS_NAME::Point_sp(const T_POINT_3 & p) {
-	using FT = T_POINT_3::FT;
-	
-	
+PTSP_CLS_NAME::Point_sp(Point_3 const & p) {
 	LIB_RATSS_NAMESPACE::ProjectS2 proj;
-	proj.sphere2Plane();
+	using LIB_RATSS_NAMESPACE::convert;
+	std::array<mpq_class, 3> pp;
+	int _pos = proj.sphere2Plane(
+								 convert<mpq_class>(p.x()),
+								 convert<mpq_class>(p.y()),
+								 convert<mpq_class>(p.z()),
+								 pp[0], pp[1], pp[2]
+								);
+	this->setPos(_pos);
+	//get maximumum of all denominators
+	using std::max;
+	mpz_class mden = max(pp[0].get_den(), max(pp[1].get_den(), pp[2].get_den()));
+	
+	set_denominator(mden);
+	
+	switch(abs(_pos)) {
+	case 1:
+		set_numerator0(pp[1].get_num()*(mden/pp[1].get_den()));
+		set_numerator1(pp[2].get_num()*(mden/pp[2].get_den()));
+		break;
+	case 2:
+		set_numerator0(pp[0].get_num()*(mden/pp[0].get_den()));
+		set_numerator1(pp[2].get_num()*(mden/pp[2].get_den()));
+		break;
+	case 3:
+		set_numerator0(pp[0].get_num()*(mden/pp[0].get_den()));
+		set_numerator1(pp[1].get_num()*(mden/pp[1].get_den()));
+		break;
+	default:
+		throw std::runtime_error("Point_sp: Position is out of bounds");
+	}
 }
 
 PTSP_TMP_PRMS
-PTSP_CLS_NAME::Point_sp(base_type num0, base_type num1, base_type denominator, base_type pos) :
-m_d(num0, num1)
-{
-	using std::abs;
-	//based on https://stackoverflow.com/a/108360
-	assert(denominator > 0 && unsigned_base_type(denominator) && (denominator & (denominator-1)) == 0);
-	assert(abs(num0) <= denominator && abs(num1) <= denominator);
-	m_d.meta.pos = pos;
-	m_d.meta.e = 31-__builtin_clz(denominator);
+PTSP_CLS_NAME::Point_sp(base_type _num0, base_type _num1, unsigned_base_type _den, base_type _pos) :
+MyParent(_num0, _num1, _den, _pos)
+{}
+
+PTSP_TMP_PRMS
+PTSP_CLS_NAME::Point_sp(MyParent const & v) :
+MyParent(v)
+{}
+
+PTSP_TMP_PRMS
+typename PTSP_CLS_NAME::Point_3
+PTSP_CLS_NAME::point3() const {
+	LIB_RATSS_NAMESPACE::ProjectS2 proj;
+	mpq_class xp, yp, zp;
+	mpq_class xs, ys, zs;
+	mpq_class den = denominator();
+	
+	switch (std::abs(this->pos())) {
+	case 1:
+		xp = 0;
+		yp = mpq_class(numerator0())/den;
+		zp = mpq_class(numerator1())/den;
+		break;
+	case 2:
+		xp = mpq_class(numerator0())/den;
+		yp = 0;
+		zp = mpq_class(numerator1())/den;
+		break;
+	case 3:
+		xp = mpq_class(numerator0())/den;
+		yp = mpq_class(numerator1())/den;
+		zp = 0;
+		break;
+	default:
+		throw std::runtime_error("Point_sp: Position is out of bounds");
+	};
+	proj.plane2Sphere(xp, yp, zp, pos(), xs, ys, zs);
+	
+	using LIB_RATSS_NAMESPACE::convert;
+	return Point_3( convert<FT>(xs), convert<FT>(ys), convert<FT>(zs) );
 }
 
 #undef PTSP_TMP_PRMS
