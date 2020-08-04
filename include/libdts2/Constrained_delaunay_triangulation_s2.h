@@ -83,8 +83,8 @@ public:
 	using Project_on_sphere = typename MyBaseClass::Project_on_sphere;
 
 public:
-	Constrained_delaunay_triangulation_s2(int precision);
 	Constrained_delaunay_triangulation_s2(const Geom_traits & traits);
+	Constrained_delaunay_triangulation_s2(int precision);
 	Constrained_delaunay_triangulation_s2(Constrained_delaunay_triangulation_s2 && other);
 	Constrained_delaunay_triangulation_s2(const Constrained_delaunay_triangulation_s2 & other) = delete;
 	Constrained_delaunay_triangulation_s2 & operator=(Constrained_delaunay_triangulation_s2 && other);
@@ -207,13 +207,13 @@ namespace LIB_DTS2_NAMESPACE {
 #define TMPL_CLS Constrained_delaunay_triangulation_s2<T_GEOM_TRAITS, T_TDS, T_ITAG>
 
 TMPL_HDR
-TMPL_CLS::Constrained_delaunay_triangulation_s2(int _precision) :
-MyBaseClass(_precision)
-{}
-
-TMPL_HDR
 TMPL_CLS::Constrained_delaunay_triangulation_s2(const Geom_traits & traits) :
 MyBaseClass(traits)
+{}
+	
+TMPL_HDR
+TMPL_CLS::Constrained_delaunay_triangulation_s2(int _precision) :
+MyBaseClass(_precision)
 {}
 
 TMPL_HDR
