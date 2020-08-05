@@ -200,7 +200,6 @@ private:
 #else
 	#define DEBUG_OUT(__) {}
 #endif
-#define LIB_DTS2_ORIGIN Point_3(0, 0, 0)
 
 template<
 	typename T_LINEAR_KERNEL,
@@ -600,7 +599,6 @@ private:
 };
 
 #undef DEBUG_OUT
-#undef LIB_DTS2_ORIGIN
 
 }//end namespace LIB_DTS2_NAMESPACE
 

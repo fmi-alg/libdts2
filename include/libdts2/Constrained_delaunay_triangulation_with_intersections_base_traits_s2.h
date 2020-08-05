@@ -6,8 +6,6 @@
 #include <libdts2/Constrained_delaunay_triangulation_base_traits_s2.h>
 #include <CGAL/intersections.h>
 
-#define LIB_DTS2_ORIGIN Point_3(0, 0, 0)
-
 namespace LIB_DTS2_NAMESPACE {
 
 template<
@@ -277,7 +275,5 @@ public:
 };
 
 }//end LIB_DTS2_NAMESPACE
-
-#undef LIB_DTS2_ORIGIN
 
 #endif
