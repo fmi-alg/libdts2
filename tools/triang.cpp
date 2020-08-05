@@ -728,6 +728,7 @@ public:
 	virtual void create(Points & points, Edges & edges, InputOutput & io, bool clear) = 0;
 	virtual void add(const Point3 & p) = 0;
 	virtual void add(const Point3 & p1, const Point3 & p2) = 0;
+	virtual void info(InputOutput &) = 0;
 	virtual void write(InputOutput & io) = 0;
 };
 
@@ -769,6 +770,11 @@ public:
 			throw std::runtime_error("Convex hull based triangulation does not support writing of triangulation");
 		}
 	}
+	
+	virtual void info(InputOutput & io) override {
+		io.info() << "Convex hull has " << m_tr.size_of_vertices() << " vertices and " << m_tr.size_of_facets() << " facets" << std::endl;
+	}
+	
 private:
 	Tr m_tr;
 };
@@ -814,6 +820,10 @@ public:
 	virtual void add(const Point3 & p1, const Point3 & p2) override {
 		add(p1);
 		add(p2);
+	}
+	
+	virtual void info(InputOutput & io) override {
+		io.info() << "Triangulation has " << m_tr.number_of_vertices() << " vertices and " << m_tr.number_of_faces() << " faces" << std::endl;
 	}
 
 	virtual void write(InputOutput & io) override {
@@ -917,6 +927,10 @@ public:
 		Vertex_handle vh2 = m_lastAddVh;
 		insert_constraint(vh1, vh2);
 		m_lastAddVh = vh1;
+	}
+	
+	virtual void info(InputOutput & io) override {
+		io.info() << "Triangulation has " << m_tr.number_of_vertices() << " vertices and " << m_tr.number_of_faces() << " faces" << std::endl;
 	}
 	
 	virtual void write(InputOutput & io) override  {
@@ -1067,6 +1081,8 @@ struct Data {
 	void create(InputOutput& io, const Config& cfg);
 	void write(InputOutput& io, const Config& cfg);
 	
+	void info(InputOutput& io);
+	
 	void readNodesEdges(InputOutput& io, const Config& cfg);
 	void readEdges(InputOutput& io, const Config& cfg);
 	Point3 readPoint(std::istream& is, const Config& cfg);
@@ -1130,6 +1146,7 @@ int main(int argc, char ** argv) {
 		tm.end();
 		::malloc_trim(0);
 		mem.update();
+		data.info(io);
 		io.info() << "Memory usage: " << mem << std::endl;
 		io.info() << "Time: " << tm << std::endl;
 	}
@@ -1699,6 +1716,10 @@ void Data::create(InputOutput& io, const Config& cfg) {
 	}
 	points.clear();
 	edges.clear();
+}
+
+void Data::info(InputOutput& io) {
+	tc->info(io);
 }
 
 void Data::write(InputOutput & io, const Config & cfg) {
