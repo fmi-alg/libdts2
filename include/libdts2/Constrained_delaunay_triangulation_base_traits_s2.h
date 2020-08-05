@@ -32,7 +32,7 @@ public:
 			if (s == AuxPointSelector::LOWER) {
 				return Point_3(0, 0, -1);
 			}
-			FT epsilon(LIB_RATSS_NAMESPACE::Conversion<FT>::moveFrom(mpq_class(1, std::numeric_limits<uint16_t>::max())));
+			FT epsilon(LIB_RATSS_NAMESPACE::Conversion<FT>::moveFrom(mpq_class(1, 0x8000)));
 			switch(s) {
 			case AuxPointSelector::UPPER_0:
 				return generateAuxPoint(0, epsilon);
