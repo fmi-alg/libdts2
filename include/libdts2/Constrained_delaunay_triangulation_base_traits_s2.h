@@ -113,6 +113,86 @@ private:
 	FT m_epsZ;
 };
 
+//User defines 3 Points as the upper aux points and one point as the lower aux point
+//Let ot=Orientation_3(u0, u1, u2, l) be the orientation of the lower point with respect to the upper points
+//Then all points p with with Orientation_3(u0, u1, u2, p) != ot are within in the auxiliary triangle and
+//thus outside of the resulting triangulation
+template<typename T_LINEAR_KERNEL>
+class UserDefinedAuxPoints {
+public:
+	using BaseTraits = T_LINEAR_KERNEL;
+	using Point_3 = typename BaseTraits::Point_3;
+	using FT = typename BaseTraits::FT;
+private:
+	struct Data {
+		std::array<Point_3, 4> ap;
+	};
+public:
+	class Generate_auxiliary_point final {
+	public:
+		Generate_auxiliary_point(std::shared_ptr<Data> _d) : m_d(_d) {}
+	public:
+		inline Point_3 operator()(AuxPointSelector s) const {
+			return m_d->ap.at(static_cast<int>(s));
+		};
+	private:
+		std::shared_ptr<Data> m_d;
+	};
+	
+	class Is_auxiliary_point final {
+	public:
+		Is_auxiliary_point(std::shared_ptr<Data> _d) : m_d(_d) {}
+	public:
+		inline bool operator()(Point_3 const & p) const {
+			auto otp = m_ot3(m_d->ap[0], m_d->ap[1], m_d->ap[2], p);
+			if (otp == CGAL::COLLINEAR) {
+				return true;
+			}
+			return otp != m_ot3(m_d->ap[0], m_d->ap[1], m_d->ap[2], m_d->ap[3]);
+		};
+	private:
+		typename BaseTraits::Orientation_3 m_ot3;
+		std::shared_ptr<Data> m_d;
+	};
+	
+	//Is true if the given point is on the sphere and outside of the auxiliary triangle
+	class Is_valid_point_on_sphere final {
+	public:
+		Is_valid_point_on_sphere(Is_auxiliary_point const & iap) : m_iap(iap) {}
+	public:
+		bool operator()(Point_3 const & p) const {
+			return (p.x()*p.x()+p.y()*p.y()+p.z()*p.z()) == 1 && !m_iap(p);
+		}
+	private:
+		Is_auxiliary_point m_iap;
+	};
+public:
+	UserDefinedAuxPoints() {}
+	UserDefinedAuxPoints(Point_3 const & u0, Point_3 const & u1, Point_3 const & u2, Point_3 const & l) :
+	m_d(std::make_shared<Data>())
+	{
+		m_d->ap[0] = u0;
+		m_d->ap[1] = u1;
+		m_d->ap[2] = u2;
+		m_d->ap[3] = l;
+	}
+	virtual ~UserDefinedAuxPoints() {}
+public:
+	Is_auxiliary_point is_auxiliary_point_object() const {
+		return Is_auxiliary_point(m_d);
+	}
+	
+	Is_valid_point_on_sphere is_valid_point_on_sphere_object() const {
+		return Is_valid_point_on_sphere(is_auxiliary_point_object());
+	}
+	
+	Generate_auxiliary_point generate_auxiliary_point_object() const {
+		return Generate_auxiliary_point(m_d);
+	}
+private:
+	std::shared_ptr<Data> m_d;
+};
+
 } //end namespace detail
 
 #ifndef NDEBUG
