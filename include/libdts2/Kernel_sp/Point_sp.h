@@ -27,8 +27,10 @@ public:
 	};
 public:
 	Point_sp_base();
+	Point_sp_base(Point_sp_base const &) = default;
 	Point_sp_base(base_type _num0, base_type _num1, unsigned_base_type _den, base_type _pos);
 	virtual ~Point_sp_base();
+	Point_sp_base & operator=(Point_sp_base const &) = default;
 public:
 	void set_numerator0(base_type v);
 	void set_numerator1(base_type v);
@@ -45,6 +47,9 @@ public:
 	///@return position on Sphere
 	LIB_RATSS_NAMESPACE::PositionOnSphere pos() const;
 	uint8_t exponent() const;
+public:
+	bool operator!=(Point_sp_base const & other) const;
+	bool operator==(Point_sp_base const & other) const;
 private:
 	//Coordinates in the plane are of the form
 	//x = num/2^s with s < 128
@@ -54,10 +59,10 @@ private:
 	std::array<char, 12> m_d;
 };
 	
-}
+} //end namespace detail
 
 template<typename T_BASE_TRAITS>
-class Point_sp: detail::Point_sp_base {
+class Point_sp: public detail::Point_sp_base {
 public:
 	using MyParent = detail::Point_sp_base;
 	using MyBaseTrait = T_BASE_TRAITS;
@@ -67,6 +72,7 @@ public:
 	Point_sp();
 	Point_sp(MyParent const & v);
 	Point_sp(base_type _num0, base_type _num1, unsigned_base_type _den, base_type _pos);
+	Point_sp(FT const & x, FT const & y, FT const & z);
 	Point_sp(Point_3 const & v);
 	Point_sp(Point_sp const & other);
 public:
@@ -74,12 +80,22 @@ public:
 public:
 	Point_3 point3() const;
 public:
-	FT x() const { point3().x(); }
-	FT y() const { point3().y(); }
-	FT z() const { point3().z(); }
+	FT x() const { return point3().x(); }
+	FT y() const { return point3().y(); }
+	FT z() const { return point3().z(); }
 public:
 	operator Point_3() const { return point3(); }
 };
+
+template<typename K1, typename K2>
+bool operator==(Point_sp<K1> const & a, Point_sp<K2> const & b) {
+	return static_cast<detail::Point_sp_base const &>(a) == static_cast<detail::Point_sp_base const &>(b);
+}
+
+template<typename K1, typename K2>
+bool operator!=(Point_sp<K1> const & a, Point_sp<K2> const & b) {
+	return static_cast<detail::Point_sp_base const &>(a) != static_cast<detail::Point_sp_base const &>(b);
+}
 
 }//end namespace
 
@@ -99,17 +115,22 @@ MyParent(other)
 {}
 
 PTSP_TMP_PRMS
-PTSP_CLS_NAME::Point_sp(Point_3 const & p) {
+PTSP_CLS_NAME::Point_sp(Point_3 const & p) :
+Point_sp(p.x(), p.y(), p.z())
+{}
+
+PTSP_TMP_PRMS
+PTSP_CLS_NAME::Point_sp(FT const & x, FT const & y, FT const & z) {
 	LIB_RATSS_NAMESPACE::ProjectS2 proj;
 	using LIB_RATSS_NAMESPACE::convert;
 	std::array<mpq_class, 3> pp;
 	int _pos = proj.sphere2Plane(
-								 convert<mpq_class>(p.x()),
-								 convert<mpq_class>(p.y()),
-								 convert<mpq_class>(p.z()),
+								 convert<mpq_class>(x),
+								 convert<mpq_class>(y),
+								 convert<mpq_class>(z),
 								 pp[0], pp[1], pp[2]
 								);
-	this->setPos(_pos);
+	this->set_pos(_pos);
 	//get maximumum of all denominators
 	using std::max;
 	mpz_class mden = max(pp[0].get_den(), max(pp[1].get_den(), pp[2].get_den()));
