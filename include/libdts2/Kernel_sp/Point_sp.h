@@ -121,6 +121,11 @@ Point_sp(p.x(), p.y(), p.z())
 
 PTSP_TMP_PRMS
 PTSP_CLS_NAME::Point_sp(FT const & x, FT const & y, FT const & z) {
+	if (x == LIB_DTS2_ORIGIN_X && y == LIB_DTS2_ORIGIN_Y && z == LIB_DTS2_ORIGIN_Z) { //Hack for LIB_DTS2_ORIGIN 
+		set_pos(0);
+		return;
+	}
+	assert(x*x + y*y + z*z == FT(1));
 	LIB_RATSS_NAMESPACE::ProjectS2 proj;
 	using LIB_RATSS_NAMESPACE::convert;
 	std::array<mpq_class, 3> pp;
@@ -168,6 +173,10 @@ MyParent(v)
 PTSP_TMP_PRMS
 typename PTSP_CLS_NAME::Point_3
 PTSP_CLS_NAME::point3() const {
+	if (pos() == 0) {  //Hack for LIB_DTS2_ORIGIN 
+		return LIB_DTS2_ORIGIN;
+	}
+	
 	LIB_RATSS_NAMESPACE::ProjectS2 proj;
 	mpq_class xp, yp, zp;
 	mpq_class xs, ys, zs;
