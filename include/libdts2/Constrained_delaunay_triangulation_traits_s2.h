@@ -9,7 +9,11 @@
 
 namespace LIB_DTS2_NAMESPACE {
 
-template<typename T_LINEAR_KERNEL>
+template<
+	typename T_LINEAR_KERNEL,
+	typename T_AUX_POINT_GENERATOR,
+	typename T_POINT
+>
 class Constrained_delaunay_triangulation_traits_s2;
 
 } //end namespace LIB_DTS2_NAMESPACE
@@ -20,10 +24,10 @@ namespace internal {
 	//this one is needed since Constrained_delaunay_triangulation_traits_s2 sets Point_2 = Point_3
 	//and then we get a conflict of this function in the original code
 	
-    template <class RandomAccessIterator, class Policy, typename T_LINEAR_KERNEL>
+    template <class RandomAccessIterator, class Policy, typename T_LINEAR_KERNEL, typename T_AUX_POINT_GENERATOR, typename T_POINT>
     void spatial_sort (
                        RandomAccessIterator begin, RandomAccessIterator end,
-                       const LIB_DTS2_NAMESPACE::Constrained_delaunay_triangulation_traits_s2<T_LINEAR_KERNEL> & k, 
+                       const LIB_DTS2_NAMESPACE::Constrained_delaunay_triangulation_traits_s2<T_LINEAR_KERNEL, T_AUX_POINT_GENERATOR, T_POINT> & k, 
 		       Policy /*policy*/,
 		       std::ptrdiff_t threshold_hilbert,
 		       std::ptrdiff_t threshold_multiscale,
@@ -34,12 +38,16 @@ namespace internal {
 
 namespace LIB_DTS2_NAMESPACE {
 
-template<typename T_LINEAR_KERNEL = CGAL::Exact_predicates_exact_constructions_kernel>
+template<
+	typename T_LINEAR_KERNEL,
+	typename T_AUX_POINT_GENERATOR=detail::EpsBasedAuxPoints<T_LINEAR_KERNEL>,
+	typename T_POINT = typename T_LINEAR_KERNEL::Point_3
+>
 class Constrained_delaunay_triangulation_traits_s2:
-	public Constrained_delaunay_triangulation_base_traits_s2<T_LINEAR_KERNEL>
+	public Constrained_delaunay_triangulation_base_traits_s2<T_LINEAR_KERNEL, T_AUX_POINT_GENERATOR, T_POINT>
 {
 public:
-	using MyBaseTrait = Constrained_delaunay_triangulation_base_traits_s2<T_LINEAR_KERNEL>;
+	using MyBaseTrait = Constrained_delaunay_triangulation_base_traits_s2<T_LINEAR_KERNEL, T_AUX_POINT_GENERATOR, T_POINT>;
 public:
 	using FT = typename MyBaseTrait::FT;
 	using Oriented_side = typename MyBaseTrait::Oriented_side;
@@ -129,12 +137,13 @@ public:
 namespace CGAL {
 namespace internal {
 
-    template <class RandomAccessIterator, class Policy, typename T_LINEAR_KERNEL>
+    template <class RandomAccessIterator, class Policy, typename T_LINEAR_KERNEL, typename T_AUX_POINT_GENERATOR, typename T_POINT>
     void spatial_sort (RandomAccessIterator begin, RandomAccessIterator end,
-						const LIB_DTS2_NAMESPACE::Constrained_delaunay_triangulation_traits_s2<T_LINEAR_KERNEL>& k,
+						const LIB_DTS2_NAMESPACE::Constrained_delaunay_triangulation_traits_s2<T_LINEAR_KERNEL, T_AUX_POINT_GENERATOR, T_POINT>& k,
 						Policy, std::ptrdiff_t threshold_hilbert, std::ptrdiff_t threshold_multiscale, double ratio)
     {
-      typedef Hilbert_sort_3<LIB_DTS2_NAMESPACE::Constrained_delaunay_triangulation_traits_s2<T_LINEAR_KERNEL>, Policy> Sort;
+		using MyTraits = LIB_DTS2_NAMESPACE::Constrained_delaunay_triangulation_traits_s2<T_LINEAR_KERNEL, T_AUX_POINT_GENERATOR, T_POINT>;
+		using Sort = Hilbert_sort_3<MyTraits, Policy>;
         boost::rand48 random;
         boost::random_number_generator<boost::rand48> rng(random);
 #if defined(CGAL_HILBERT_SORT_WITH_MEDIAN_POLICY_CROSS_PLATFORM_BEHAVIOR)

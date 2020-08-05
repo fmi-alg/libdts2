@@ -10,12 +10,16 @@
 
 namespace LIB_DTS2_NAMESPACE {
 
-template<typename T_KERNEL>
+template<
+	typename T_LINEAR_KERNEL,
+	typename T_AUX_POINT_GENERATOR=detail::EpsBasedAuxPoints<T_LINEAR_KERNEL>,
+	typename T_POINT = typename T_LINEAR_KERNEL::Point_3
+>
 class Constrained_delaunay_triangulation_with_intersections_base_traits_s2:
-	public Constrained_delaunay_triangulation_base_traits_s2<T_KERNEL>
+	public Constrained_delaunay_triangulation_base_traits_s2<T_LINEAR_KERNEL, T_AUX_POINT_GENERATOR, T_POINT>
 {
 public:
-	using MyBaseTrait = Constrained_delaunay_triangulation_base_traits_s2<T_KERNEL>;
+	using MyBaseTrait = Constrained_delaunay_triangulation_base_traits_s2<T_LINEAR_KERNEL, T_AUX_POINT_GENERATOR, T_POINT>;
 	using MyKernel = typename MyBaseTrait::MyKernel;
 protected:
 	using Segment_3 = typename MyBaseTrait::Segment_3;
@@ -111,7 +115,7 @@ protected: //own implementations not support by the base traits
 	class Intersect_2: private T_BASE {
 	private:
 		using MyBaseClass = T_BASE;
-		using MyParent = Constrained_delaunay_triangulation_with_intersections_base_traits_s2<T_KERNEL>;
+		using MyParent = Constrained_delaunay_triangulation_with_intersections_base_traits_s2<T_LINEAR_KERNEL, T_AUX_POINT_GENERATOR, T_POINT>;
 		using Conversion = LIB_RATSS_NAMESPACE::Conversion<FT>;
 	public:
 		Intersect_2(const Do_intersect_3 & dit3, const Intersect_3 & it3, const Orientation_3 & ot3) :

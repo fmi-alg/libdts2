@@ -7,8 +7,12 @@
 
 namespace LIB_DTS2_NAMESPACE {
 
-template<typename T_LINEAR_KERNEL = CGAL::Exact_predicates_exact_constructions_kernel>
-using Delaunay_triangulation_traits_s2 = Constrained_delaunay_triangulation_traits_s2<T_LINEAR_KERNEL>;
+template<
+	typename T_LINEAR_KERNEL,
+	typename T_AUX_POINT_GENERATOR=detail::EpsBasedAuxPoints<T_LINEAR_KERNEL>,
+	typename T_POINT = typename T_LINEAR_KERNEL::Point_3
+>
+using Delaunay_triangulation_traits_s2 = Constrained_delaunay_triangulation_traits_s2<T_LINEAR_KERNEL, T_AUX_POINT_GENERATOR, T_POINT>;
 
 }//end namespace LIB_DTS2_NAMESPACE
 
