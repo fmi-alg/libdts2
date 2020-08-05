@@ -34,7 +34,12 @@ Point_sp_base::set_numerator1(base_type v) {
 
 void
 Point_sp_base::set_denominator(unsigned_base_type v) {
-	assert(v > 0 && (v & (v-1)) == 0);
+	if (v <= 0) {
+		throw std::runtime_error("Point_sp_base::set_denominator: denominator has to be greater than 0");
+	}
+	if ((v & (v-1)) != 0) {
+		throw std::runtime_error("Point_sp_base::set_denominator: denominator has to be a power of 2");
+	}
 	set_exponent((std::numeric_limits<unsigned_base_type>::digits-1)-__builtin_clz(v));
 }
 
