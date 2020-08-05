@@ -202,7 +202,11 @@ private:
 #endif
 #define LIB_DTS2_ORIGIN Point_3(0, 0, 0)
 
-template<typename T_LINEAR_KERNEL, typename T_AUX_POINT_GENERATOR=detail::EpsBasedAuxPoints<T_LINEAR_KERNEL>>
+template<
+	typename T_LINEAR_KERNEL,
+	typename T_AUX_POINT_GENERATOR=detail::EpsBasedAuxPoints<T_LINEAR_KERNEL>,
+	typename T_POINT = typename T_LINEAR_KERNEL::Point_3
+>
 class Constrained_delaunay_triangulation_base_traits_s2 {
 public:
 	using LinearKernel = T_LINEAR_KERNEL;
@@ -250,7 +254,7 @@ public:
 	
 	//we want our triangulation to live in cartesian 3D-space
 	//the CDT lives in 2D euclidean space so we have to redefine Point_2;
-	using Point_3 = typename MyBaseTrait::Point_3;
+	using Point_3 = T_POINT;
 	using Point_2 = Point_3;
 	using Point = Point_2;
 	
