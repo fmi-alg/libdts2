@@ -117,7 +117,9 @@ MyParent(other)
 PTSP_TMP_PRMS
 PTSP_CLS_NAME::Point_sp(Point_3 const & p) :
 Point_sp(p.x(), p.y(), p.z())
-{}
+{
+	assert(point3() == p);
+}
 
 PTSP_TMP_PRMS
 PTSP_CLS_NAME::Point_sp(FT const & x, FT const & y, FT const & z) {
@@ -158,6 +160,7 @@ PTSP_CLS_NAME::Point_sp(FT const & x, FT const & y, FT const & z) {
 	default:
 		throw std::runtime_error("Point_sp: Position is out of bounds");
 	}
+	assert(Point_3(x,y,z) == point3());
 }
 
 PTSP_TMP_PRMS
