@@ -4,9 +4,11 @@
 
 #include <libdts2/constants.h>
 #include <libdts2/Constrained_delaunay_triangulation_with_intersections_base_traits_s2.h>
+#include <libdts2/Kernel_sp/Point_sp.h>
 
 #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
 #include <libratss/CGAL/ExtendedInt64Cartesian.h>
+
 
 namespace LIB_DTS2_NAMESPACE {
 
@@ -216,7 +218,13 @@ using Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2_64
 // 	Constrained_delaunay_triangulation_with_inexact_intersections_base_traits_s2<CGAL::Filtered_lazy_cartesian_extended_1024_integer_kernel>;
 // 	Constrained_delaunay_triangulation_with_inexact_intersections_base_traits_s2<CGAL::Simple_cartesian_extended_1024_integer_kernel>;
 // 	Constrained_delaunay_triangulation_with_inexact_intersections_base_traits_s2<CGAL::Exact_predicates_exact_constructions_extended_integer_kernel>;
-
+	
+using Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2_sp =
+	Constrained_delaunay_triangulation_with_inexact_intersections_base_traits_s2<
+		CGAL::Filtered_simple_cartesian_extended_integer_kernel,
+		detail::EpsBasedAuxPoints<CGAL::Filtered_simple_cartesian_extended_integer_kernel>,
+		Point_sp<CGAL::Filtered_simple_cartesian_extended_integer_kernel>
+	>;
 
 }//end LIB_DTS2_NAMESPACE
 
