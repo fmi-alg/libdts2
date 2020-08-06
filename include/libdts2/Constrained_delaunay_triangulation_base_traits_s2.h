@@ -76,6 +76,17 @@ public:
 		FT m_epsZ;
 	};
 	
+	class Is_in_auxiliary_triangle final {
+	public:
+		Is_in_auxiliary_triangle(FT const & _epsZ) : m_epsZ(_epsZ) {}
+	public:
+		inline bool operator()(Point_3 const & p) const {
+			return p.z() >= m_epsZ;
+		};
+	private:
+		FT m_epsZ;
+	};
+	
 	//Is true if the given point is on the sphere and outside of the auxiliary triangle
 	class Is_valid_point_on_sphere final {
 	public:
@@ -98,6 +109,10 @@ public:
 public:
 	Is_auxiliary_point is_auxiliary_point_object() const {
 		return Is_auxiliary_point(epsZ());
+	}
+	
+	Is_in_auxiliary_triangle is_in_auxiliary_triangle_object() const {
+		return Is_in_auxiliary_triangle(epsZ());
 	}
 	
 	Is_valid_point_on_sphere is_valid_point_on_sphere_object() const {
@@ -144,6 +159,23 @@ public:
 		Is_auxiliary_point(std::shared_ptr<Data> _d) : m_d(_d) {}
 	public:
 		inline bool operator()(Point_3 const & p) const {
+			for(auto const & x : m_d->ap) {
+				if (x == p) {
+					return true;
+				}
+			}
+			return false;
+		};
+	private:
+		typename BaseTraits::Orientation_3 m_ot3;
+		std::shared_ptr<Data> m_d;
+	};
+	
+	class Is_in_auxiliary_triangle final {
+	public:
+		Is_in_auxiliary_triangle(std::shared_ptr<Data> _d) : m_d(_d) {}
+	public:
+		inline bool operator()(Point_3 const & p) const {
 			auto otp = m_ot3(m_d->ap[0], m_d->ap[1], m_d->ap[2], p);
 			if (otp == CGAL::COLLINEAR) {
 				return true;
@@ -180,6 +212,10 @@ public:
 public:
 	Is_auxiliary_point is_auxiliary_point_object() const {
 		return Is_auxiliary_point(m_d);
+	}
+	
+	Is_in_auxiliary_triangle is_in_auxiliary_triangle_object() const {
+		return Is_in_auxiliary_triangle(m_d);
 	}
 	
 	Is_valid_point_on_sphere is_valid_point_on_sphere_object() const {
@@ -278,6 +314,7 @@ public:
 	using Projector = LIB_RATSS_NAMESPACE::ProjectS2;
 public:
 	using Is_auxiliary_point = typename AuxiliaryPointsGenerator::Is_auxiliary_point;
+	using Is_in_auxiliary_triangle = typename AuxiliaryPointsGenerator::Is_in_auxiliary_triangle;
 	using Is_valid_point_on_sphere = typename AuxiliaryPointsGenerator::Is_valid_point_on_sphere;
 	using Generate_auxiliary_point = typename AuxiliaryPointsGenerator::Generate_auxiliary_point;
 public: //own implementations
@@ -297,7 +334,7 @@ public: //own implementations
 	class Orientation_2
 	{
 	public:
-		Orientation_2(Orientation_3 const & _ot3, Is_auxiliary_point const & _iap) : ot3(_ot3), m_iap(_iap) {}
+		Orientation_2(Orientation_3 const & _ot3, Is_in_auxiliary_triangle const & _iat) : ot3(_ot3), m_iat(_iat) {}
 		Orientation operator()(const Point_3 & p, const Point_3 & q, const Point_3 & r) const
 		{
 			assert(p.z() <= 1 && q.z() <= 1 && r.z() <= 1);
@@ -305,7 +342,7 @@ public: //own implementations
 			
 			Orientation oriented_side = ot3(p, q, LIB_DTS2_ORIGIN, r);
 			
-			if (oriented_side != Orientation::COLLINEAR && m_iap(p) && m_iap(q)) {
+			if (oriented_side != Orientation::COLLINEAR && m_iat(p) && m_iat(q)) {
 				//the point always has to be on the opposite side of the infinite vertex
 				oriented_side = - ot3(p, q, LIB_DTS2_ORIGIN, Point(0, 0, 1));
 			}
@@ -313,7 +350,7 @@ public: //own implementations
 		}
 	private:
 		Orientation_3 ot3;
-		Is_auxiliary_point m_iap;
+		Is_in_auxiliary_triangle m_iat;
 	};
 	
 	class Side_of_oriented_circle_2 {
@@ -525,7 +562,7 @@ public: //object functions
 	}
 	
 	Orientation_2 orientation_2_object () const {
-		return Orientation_2( orientation_3_object(), is_auxiliary_point_object());
+		return Orientation_2( orientation_3_object(), is_in_auxiliary_triangle_object());
 	}
 	
 	Compare_x_2 compare_x_2_object() const {
@@ -575,6 +612,10 @@ public: //object functions
 	
 	Is_auxiliary_point is_auxiliary_point_object() const {
 		return auxiliaryPointsGenerator().is_auxiliary_point_object();
+	}
+	
+	Is_in_auxiliary_triangle is_in_auxiliary_triangle_object() const {
+		return auxiliaryPointsGenerator().is_in_auxiliary_triangle_object();
 	}
 	
 	Is_valid_point_on_sphere is_valid_point_on_sphere_object() const {
