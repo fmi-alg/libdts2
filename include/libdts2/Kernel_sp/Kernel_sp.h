@@ -3,68 +3,109 @@
 #define LIB_DTS2_KERNEL_SP_H
 
 #include <libdts2/constants.h>
-#include <libdts2/Point_sp.h>
+#include <libdts2/Kernel_sp/Point_sp.h>
 #include <libdts2/Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2.h>
 #include <boost/multiprecision/cpp_int.hpp>
 
 namespace LIB_DTS2_NAMESPACE {
-namespace internal {
-namespace Kernel_sp {
+namespace detail::Kernel_sp {
+
+template<int T_BITS>
+struct IntegerTypeFromBits {
+	using type = boost::multiprecision::number<
+		boost::multiprecision::cpp_int_backend<
+			T_BITS,
+			T_BITS,
+			boost::multiprecision::signed_magnitude,
+			boost::multiprecision::unchecked,
+			void
+		>
+	>;
+};
+
+template<>
+struct IntegerTypeFromBits<32> {
+	using type = int32_t;
+};
+
+template<>
+struct IntegerTypeFromBits<64> {
+	using type = int64_t;
+};
+
+template<>
+struct IntegerTypeFromBits<128> {
+	using type = __int128_t;
+};
+
+template<int T_BITS>
+struct AlignedIntegerTypeFromBits {
+	static constexpr int requested_bits = T_BITS;
+	static constexpr int bits = (requested_bits/64 + (requested_bits%64 == 0 ? 0 : 1))*64;
+	using type = typename IntegerTypeFromBits<bits>::type;
+};
 
 template<typename T_BASE_TRAIT>
-class Oriented_side_of_circle_s2{
+class Side_of_oriented_circle_s2:
+	public T_BASE_TRAIT::Side_of_oriented_circle_2
+{
 public:
-	using BaseTrait = T_BASE_TRAIT;
+	using MyBaseTrait = T_BASE_TRAIT;
+	using MyBaseClass = typename MyBaseTrait::Side_of_oriented_circle_2;
+	using Is_auxiliary_point = typename MyBaseTrait::Is_auxiliary_point;
 	using Point = Point_sp<T_BASE_TRAIT>;
-	using Point_2 = Point_sp<T_BASE_TRAIT>;
-	using Point_3 = Point_sp<T_BASE_TRAIT>;
-	using int128 = __int128_t;
-	using int64 = int64_t;
+	static constexpr int max_exponent = 30;
+public:
+	Side_of_oriented_circle_s2(MyBaseClass const & _base, Is_auxiliary_point const & _iap) :
+	MyBaseClass(_base),
+	m_iap(_iap)
+	{}
 public:
 	CGAL::Sign operator()(Point const & p, Point const & q, Point const & r, Point const & t) {
 		if (p.pos == q.pos() && p.pos() == r.pos() && p.pos() == t.pos() &&
-			!p.is_auxiliary() && !q.is_auxiliary() && !r.is_auxiliary() && !t.is_auxiliary()
+			!m_iap(p) && !m_iap(q) && !m_iap(r) && !m_iap(t) &&
+			p.exponent() < max_exponent && q.exponent() < max_exponent && r.exponent() < max_exponent && t.exponent() < max_exponent
 		)
 		{
-			return calc<30>();
+			//we have to normalize the denominators
+			int64_t max_den = std::max(std::max(p.denominator(), q.denominator()), std::max(r.denominator(), t.denominator()));
+			return calc<30>(
+				p.numerator0()*p.denominator()/max_den, p.numerator1()*p.denominator()/max_den,
+				q.numerator0()*q.denominator()/max_den, q.numerator1()*q.denominator()/max_den,
+				r.numerator0()*r.denominator()/max_den, r.numerator1()*r.denominator()/max_den,
+				t.numerator0()*t.denominator()/max_den, t.numerator1()*t.denominator()/max_den
+			);
 		}
 		else { //use base predicate
-			return (*this)(p.point3(), q.point3(), r.point3(), t.point3());
+			return MyBaseClass::operator()(p, q, r, t);
 		}
 	}
 public:
-	template<int T_START_BITS>
-	CGAL::Sign calc(const T_STAGE0 & p_num0, const T_STAGE0 & p_num1,
-					const T_STAGE0 & q_num0, const T_STAGE0 & q_num1,
-					const T_STAGE0 & r_num0, const T_STAGE0 & r_num1,
-					const T_STAGE0 & t_num0, const T_STAGE0 & t_num1
-	)
-	{
-		calc<
-			boost_int<T_START_BITS>,
-			boost_int<T_START_BITS>,
-			boost_int<T_START_BITS>,
-			boost_int<T_START_BITS>,
-			boost_int<T_START_BITS>
-		>();
-	}
 	//T_STAGE0: n Bits
 	//T_STAGE1: n+1 Bits
 	//T_STAGE2: 2n+2 Bits
 	//T_STAGE3: 2n+3 Bits
 	//T_STAGE4: 4n+6 Bits
-	template<typename T_STAGE0, typename T_STAGE1, typename T_STAGE2, typename T_STAGE3, typename T_STAGE4>
-	CGAL::Sign calc(const T_STAGE0 & p_num0, const T_STAGE0 & p_num1,
+	template<
+		int T_START_BITS,
+		typename T_STAGE0 = typename AlignedIntegerTypeFromBits<T_START_BITS>::type,
+		typename T_STAGE1 = typename AlignedIntegerTypeFromBits<T_START_BITS+1>::type,
+		typename T_STAGE2 = typename AlignedIntegerTypeFromBits<2*T_START_BITS+2>::type,
+		typename T_STAGE3 = typename AlignedIntegerTypeFromBits<2*T_START_BITS+3>::type,
+		typename T_STAGE4 = typename AlignedIntegerTypeFromBits<4*T_START_BITS+6>::type
+	>
+	inline CGAL::Sign calc(
+					const T_STAGE0 & p_num0, const T_STAGE0 & p_num1,
 					const T_STAGE0 & q_num0, const T_STAGE0 & q_num1,
 					const T_STAGE0 & r_num0, const T_STAGE0 & r_num1,
 					const T_STAGE0 & t_num0, const T_STAGE0 & t_num1
 	)
 	{
-		//points have up to T_STAGE0 Bits
+		//points have up to T_STAGE0=n Bits
 		T_STAGE1 px(p_num0), py(p_num1);
 		T_STAGE1 qx(q_num0), qy(q_num1);
 		T_STAGE1 rx(r_num0), ry(r_num1);
-		T_STAGE1 tx(t_num0), ty(t.num1);
+		T_STAGE1 tx(t_num0), ty(t_num1);
 		//now up to n Bits
 		
 		T_STAGE2 qpx = qx-px;
@@ -99,10 +140,10 @@ public:
 			return CGAL::POSITIVE;
 		}
 		else if (a0011 == 0) {
-			return sign(a1001);
+			return a1001 < 0 ? CGAL::NEGATIVE : (a1001 > 0 ? CGAL::POSITIVE : CGAL::ZERO);
 		}
 		else if (a1001 == 0) {
-			return sign(a0011);
+			return a0011 < 0 ? CGAL::NEGATIVE : (a0011 > 0 ? CGAL::POSITIVE : CGAL::ZERO);
 		}
 		else if (a0011 < 0) { // && a1001 > 0
 			a0011 = -a0011;
@@ -129,43 +170,18 @@ public:
 			}
 		}
 	}
-	CGAL::Sign operator()(const Point_3 & p, const Point_3 & q, const Point_3 & r, const Point_3 & t) {
-		return m_bp(p, q, r, t);
-	}
 private:
-	template<int T_V>
-	struct Align64 {
-		static constexpr const int result = (T_V/64 + (T_V%64 == 0 ? 0 : 1))*64; 
-	};
-	template<int T_BITS>
-	using boost_int = boost::multiprecision::number<boost::multiprecision::cpp_int_backend<
-		Align64<T_BITS>::result, Align64<T_BITS>::result, signed_magnitude, unchecked, void> >;
-	using int64 = int64_t;
-	using int128 = __int128;
-private:
-	CGAL::Sign sign(int128 v) const {
-		if (v < 0) {
-			return CGAL::NEGATIVE;
-		}
-		else if (v == 0) {
-			return CGAL::ZERO;
-		}
-		else {
-			return CGAL::POSITIVE;
-		}
-	}
-public:
-	BaseTrait::Oriented_side_of_circle_2 m_bp;
+	Is_auxiliary_point m_iap;
 };
 
 template<typename T_BASE_TRAIT>
-class Orientation_s2 {
+class Orientation_s2: public T_BASE_TRAIT::Orientation_2 {
 public:
-	using BaseTrait = T_BASE_TRAIT;
-	using LinearKernel = typename BaseTrait::LinearKernel;
-	using Point = Point_sp;
-	using Point_2 = Point_sp;
-	using Point_3 = Point_sp;
+	using MyBaseTrait = T_BASE_TRAIT;
+	using MyBaseClass = typename MyBaseTrait::Orientation_2;
+	using Is_auxiliary_point = typename MyBaseTrait::Is_auxiliary_point;
+	using Point = Point_sp<T_BASE_TRAIT>;
+	static constexpr int max_exponent = 30;
 public:
 	CGAL::Sign operator()(Point const & p, Point const & q, Point const & t) {
 		if (p.pos == q.pos() && p.pos() == t.pos()) {
@@ -190,12 +206,7 @@ public:
 			int128 t_num1 = t.numerator1() * r_den;
 			//all points now have less than 92 Bits
 			
-			//T_STAGE0: n Bits; 92
-			//T_STAGE1: n+1 Bits; 93
-			//T_STAGE2: 2n+2 Bits; 186
-			//T_STAGE3: 2n+3 Bits; 187
-			//T_STAGE4: 4n+6 Bits; 374
-			return m_soc.calc<int128, int128, boost_int<186>, boost_int<187>, boost_int<374>>(
+			return m_soc.calc<92>(
 					p_num0, p_num1,
 					q_num0, q_num1,
 					r_num0, r_num1,
@@ -203,96 +214,53 @@ public:
 			);
 		}
 		else { //use base kernel
-			(*this)(p.point3(), q.point3(), t.point3());
+			return MyBaseClass::operator()(p, q, t);
 		}
 	}
 private:
-	CGAL::Sign operator()(const Point_3 & p, const Point_3 & q, const Point_3 & r) {
-		return m_ot2(p, q, r);
-	}
-	
-private:
-	BaseTrait::Orientation_2 m_ot2;
-	Oriented_side_of_circle_s2<BaseTrait> m_soc;
+	Side_of_oriented_circle_s2<BaseTrait> m_soc;
 };
 
 
-}}
+} //end namespace detail::Kernel_sp 
 
 
-template<typename T_BASE_TRAIT>
-class Kernel_sp {
+template<
+	typename T_LINEAR_KERNEL,
+	typename T_AUX_POINT_GENERATOR=detail::EpsBasedAuxPoints<T_LINEAR_KERNEL>
+>
+class Kernel_sp:
+	public Constrained_delaunay_triangulation_with_inexact_intersections_base_traits_s2<
+		T_LINEAR_KERNEL,
+		T_AUX_POINT_GENERATOR,
+		Point_sp<T_LINEAR_KERNEL>
+		>
+{
 public:
-	static constexpr int snap_bits = 30;
+	static constexpr int snap_bits = 31;
 public:
-	using Self = Kernel_sp<T_BASE_TRAIT>;
-	using BaseTraits = T_BASE_TRAIT;
-	using LinearKernel = typename BaseTraits::LinearKernel;
-	using FT = typename BaseTraits::FT;
-	using Projector = typename BaseTraits::Projector;
+	using Self = Kernel_sp<T_LINEAR_KERNEL, T_AUX_POINT_GENERATOR>;
+	using MyBaseTrait = Constrained_delaunay_triangulation_with_inexact_intersections_base_traits_s2<
+		T_LINEAR_KERNEL,
+		T_AUX_POINT_GENERATOR,
+		Point_sp<T_LINEAR_KERNEL>
+	>;
+	using AuxiliaryPointsGenerator = typename MyBaseTrait::AuxiliaryPointsGenerator;
 public:
-	using Segment_2 
-public:
-	using dummy = int;
-	using Side_of_oriented_circle_2 = dummy;
-	using Orientation_2 = dummy;
-	using Collinear_are_ordered_along_line_2 = dummy;
-public:
-	using Compare_distance_2 = dummy;
-	using Compare_x_2 = dummy;
-	using Compare_y_2 = dummy;
-	using Less_x_2 = dummy;
-	using Less_y_2 = dummy;
-	using Less_x_3 = dummy;
-	using Less_y_3 = dummy;
-	using Less_z_3 = dummy;
-public:
-	using Construct_segment_2 = dummy;
-	using Construct_line_2 = dummy;
-	using Intersect_2 = dummy;
-	using Compute_squared_distance_2 = dummy;
-	using Project_on_sphere = dummy;
-public: //accessor functions
-	const FT & epsilon() const;
+	using Side_of_oriented_circle_2 = detail::Kernel_sp::Side_of_oriented_circle_s2<MyBaseTrait>;
+	using Orientation_2 = detail::Kernel_sp::Orientation_s2<MyBaseTrait>;
 public:
 	Kernel_sp();
-	Kernel_sp(const FT & _epsilon) :
-	m_traits(_epsilon, snap_bits)
+	Kernel_sp(AuxiliaryPointsGenerator const & _apg, int _significands) :
+	MyBaseTrait(_apg, _significands)
 	{}
 	Kernel_sp(const Kernel_sp & other) :
-	m_traits(other.m_traits)
+	MyBaseTrait(other)
 	{}
-	~Kernel_sp() {}
-	const BaseTraits & baseTraits() const { return m_traits; }
+	~Kernel_sp() override {}
 public:
-	int significands() const { return baseTraits().significands(); }
-	int intersectSignificands() const { return significands(); }
-	const FT & epsZ() const { return baseTraits().epsZ(); }
-	const Projector & projector() const { return baseTraits().projector(); }
-public: //objects
 	Side_of_oriented_circle_2 side_of_oriented_circle_2_object () const;
 	Orientation_2 orientation_2_object () const;
-	Collinear_are_ordered_along_line_2 collinear_are_ordered_along_line_2_object() const;
-	
-	Compare_distance_2 compare_distance_2_object () const;
-	Compare_x_2 compare_x_2_object() const ;
-	Compare_y_2 compare_y_2_object() const;
-	
-	Less_x_2 less_x_2_object() const;
-	Less_y_2 less_y_2_object() const;
-	Less_x_3 less_x_3_object() const;
-	Less_y_3 less_y_3_object() const;
-	Less_z_3 less_z_3_object() const;
-
-	Construct_segment_2 construct_segment_2_object() const;
-	Intersect_2 intersect_2_object() const;
-	Construct_line_2 construct_line_2_object() const;
-
-	Compute_squared_distance_2 compute_squared_distance_2_object() const;
-	Project_on_sphere project_on_sphere_object() const;
-	Project_on_sphere project_on_sphere_object(int _significands) const;
-private:
-	BaseTraits m_traits;
 };
 
 }//end namespace
