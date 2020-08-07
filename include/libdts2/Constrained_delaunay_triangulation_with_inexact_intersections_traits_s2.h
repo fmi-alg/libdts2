@@ -55,6 +55,7 @@ class Constrained_delaunay_triangulation_with_inexact_intersections_base_traits_
 public:
 	using MyBaseTrait = Constrained_delaunay_triangulation_with_intersections_base_traits_s2<T_LINEAR_KERNEL, T_AUX_POINT_GENERATOR, T_POINT>;
 	using MyKernel = typename MyBaseTrait::MyKernel;
+	using AuxiliaryPointsGenerator = typename MyBaseTrait::AuxiliaryPointsGenerator;
 public:
 	using FT = typename MyBaseTrait::FT;
 	using Oriented_side = typename MyBaseTrait::Oriented_side;
@@ -173,8 +174,8 @@ public:
 	///This does not correctly initialize this trait!
 	Constrained_delaunay_triangulation_with_inexact_intersections_base_traits_s2() : m_intersectSignificands(-1) {}
 	///@param epsilon set the value of the z-coordinate above which no points should exist
-	Constrained_delaunay_triangulation_with_inexact_intersections_base_traits_s2(const FT & _epsilon, int _significands, int _intersectSignificands = -1) :
-	MyBaseTrait(_epsilon, _significands ),
+	Constrained_delaunay_triangulation_with_inexact_intersections_base_traits_s2(AuxiliaryPointsGenerator const & _apg, int _significands, int _intersectSignificands = -1) :
+	MyBaseTrait(_apg, _significands),
 	m_intersectSignificands(_intersectSignificands > 0 ? _intersectSignificands : _significands)
 	{}
 	

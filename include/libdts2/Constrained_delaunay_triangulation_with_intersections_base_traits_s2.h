@@ -19,6 +19,7 @@ class Constrained_delaunay_triangulation_with_intersections_base_traits_s2:
 public:
 	using MyBaseTrait = Constrained_delaunay_triangulation_base_traits_s2<T_LINEAR_KERNEL, T_AUX_POINT_GENERATOR, T_POINT>;
 	using MyKernel = typename MyBaseTrait::MyKernel;
+	using AuxiliaryPointsGenerator = typename MyBaseTrait::AuxiliaryPointsGenerator;
 protected:
 	using Segment_3 = typename MyBaseTrait::Segment_3;
 	using Orientation_3 = typename MyBaseTrait::Orientation_3;
@@ -263,8 +264,8 @@ public:
 	///This does not correctly initialize this trait!
 	Constrained_delaunay_triangulation_with_intersections_base_traits_s2() {}
 	///@param epsilon set the value of the z-coordinate above which no points should exist
-	Constrained_delaunay_triangulation_with_intersections_base_traits_s2(const FT & _epsilon, int _significands) :
-	MyBaseTrait(_epsilon, _significands)
+	Constrained_delaunay_triangulation_with_intersections_base_traits_s2(AuxiliaryPointsGenerator const & _apg, int _significands) :
+	MyBaseTrait(_apg, _significands)
 	{}
 	
 	Constrained_delaunay_triangulation_with_intersections_base_traits_s2(const Constrained_delaunay_triangulation_with_intersections_base_traits_s2 & other) :
