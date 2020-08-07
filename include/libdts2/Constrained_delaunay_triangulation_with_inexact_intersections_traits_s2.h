@@ -103,9 +103,14 @@ public:
 	public:
 		using MyBaseClass::operator();
 		Point_3 operator()(const Point_3 & v) const {
-			FT sqLen(v.x()*v.x() + v.y()*v.y() + v.z()*v.z());
+			return (*this)(v.x(), v.y(), v.z());
+		}
+		
+		//This variant is needed for Point_sp since we can only store points on the sphere
+		Point_3 operator()(FT const & x, FT const & y, FT const & z) const {
+			FT sqLen(x*x + y*y + z*z);
 			if (sqLen == 1) {
-				return v;
+				return Point_3(x, y, z);
 			}
 			mpq_class sqLenQ( Conversion<FT>::toMpq(sqLen) );
 			
@@ -115,9 +120,9 @@ public:
 					mpz_class tmp2 = sqrt(sqLenQ.get_den());
 					if (tmp2*tmp2 == sqLenQ.get_den()) {
 						FT len = Conversion<FT>::moveFrom(mpq_class(tmp)/mpq_class(tmp2));
-						return Point_3( v.x()/len,
-										v.y()/len,
-										v.z()/len
+						return Point_3( x/len,
+										y/len,
+										z/len
 						);
 					}
 				}
@@ -128,9 +133,9 @@ public:
 			mpfr::mpreal sqLenF(Conversion<mpq_class>::toMpreal(sqLenQ, calcPrec));
 			mpfr::mpreal lenF = MyBaseClass::projector().calc().sqrt(sqLenF);
 			
-			mpfr::mpreal xf(Conversion<FT>::toMpreal(v.x(), calcPrec));
-			mpfr::mpreal yf(Conversion<FT>::toMpreal(v.y(), calcPrec));
-			mpfr::mpreal zf(Conversion<FT>::toMpreal(v.z(), calcPrec));
+			mpfr::mpreal xf(Conversion<FT>::toMpreal(x, calcPrec));
+			mpfr::mpreal yf(Conversion<FT>::toMpreal(y, calcPrec));
+			mpfr::mpreal zf(Conversion<FT>::toMpreal(z, calcPrec));
 			
 			xf /= lenF;
 			yf /= lenF;
@@ -153,7 +158,7 @@ protected: //own implementations not support by the base traits
 		~Intersect_base_2() {}
 	protected:
 		inline Point_3 pointOnSphere(const Vector_3 & v) const {
-			return m_pos(Point_3(v.x(), v.y(), v.z()));
+			return m_pos(v.x(), v.y(), v.z());
 		}
 	private:
 		Project_on_sphere m_pos;

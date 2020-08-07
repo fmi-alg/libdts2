@@ -56,18 +56,21 @@ public:
 	public:
 		using MyBaseClass::operator();
 		Point_3 operator()(const Point_3 & v) const {
-			FT sqLen(v.x()*v.x() + v.y()*v.y() + v.z()*v.z());
+			return (*this)(v.x(), v.y(), v.z());
+		}
+		Point_3 operator()(FT const & x, FT const & y, FT const & z) const {
+			FT sqLen(x*x + y*y + z*z);
 			if (sqLen == 1) {
-				return v;
+				return Point_3(x, y, z);
 			}
 			
 			mpq_class sqLenQ( Conversion<FT>::toMpq(sqLen) );
 			std::size_t sqLenPrec = projector().calc().maxBitCount(sqLenQ);
 			mpfr::mpreal sqLenF(Conversion<mpq_class>::toMpreal(sqLenQ, sqLenPrec));
 			mpfr::mpreal lenF = projector().calc().sqrt(sqLenF);
-			mpfr::mpreal xf(Conversion<FT>::toMpreal(v.x(), sqLenPrec));
-			mpfr::mpreal yf(Conversion<FT>::toMpreal(v.y(), sqLenPrec));
-			mpfr::mpreal zf(Conversion<FT>::toMpreal(v.z(), sqLenPrec));
+			mpfr::mpreal xf(Conversion<FT>::toMpreal(x, sqLenPrec));
+			mpfr::mpreal yf(Conversion<FT>::toMpreal(y, sqLenPrec));
+			mpfr::mpreal zf(Conversion<FT>::toMpreal(z, sqLenPrec));
 			mpq_class xq, yq, zq;
 			projector().snap(xf, yf, zf, xq, yq, zq, significands());
 			return Point_3( Conversion<FT>::moveFrom(xq),
