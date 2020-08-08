@@ -69,12 +69,14 @@ public:
 		{
 			//we have to normalize the denominators
 			auto max_den = std::max(std::max(p.denominator(), q.denominator()), std::max(r.denominator(), t.denominator()));
-			return calc<30>(
+			auto result = calc<30>(
 				p.numerator0()*(max_den/p.denominator()), p.numerator1()*(max_den/p.denominator()),
 				q.numerator0()*(max_den/q.denominator()), q.numerator1()*(max_den/q.denominator()),
 				r.numerator0()*(max_den/r.denominator()), r.numerator1()*(max_den/r.denominator()),
 				t.numerator0()*(max_den/t.denominator()), t.numerator1()*(max_den/t.denominator())
 			);
+			assert(result == MyBaseClass::operator()(p, q, r, t));
+			return result;
 		}
 		else { //use base predicate
 			return MyBaseClass::operator()(p, q, r, t);
@@ -198,11 +200,13 @@ public:
 		{
 			//we have to normalize the denominators
 			auto max_den = std::max(std::max(p.denominator(), q.denominator()), std::max(t.denominator(), t.denominator()));
-			return calc<30>(
+			auto result = calc<30>(
 				p.numerator0()*(max_den/p.denominator()), p.numerator1()*(max_den/p.denominator()),
 				q.numerator0()*(max_den/q.denominator()), q.numerator1()*(max_den/q.denominator()),
 				t.numerator0()*(max_den/t.denominator()), t.numerator1()*(max_den/t.denominator())
 			);
+			assert(result == MyBaseClass::operator()(p, q, t));
+			return result;
 		}
 		else { //use base predicate
 			return MyBaseClass::operator()(p, q, t);
