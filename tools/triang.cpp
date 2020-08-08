@@ -1212,7 +1212,7 @@ bool Config::parse(const std::string & token,int & i, int argc, char ** argv) {
 			triangType = TT_CONSTRAINED_INEXACT_SP;
 		}
 		else if (type == "cxspk64" || type == "constrained-intersection-sp") {
-			triangType = TT_CONSTRAINED_INEXACT_SP;
+			triangType = TT_CONSTRAINED_INEXACT_SPK64;
 		}
 		else if (type == "cxe" || type == "constrained-intersection-exact") {
 			triangType = TT_CONSTRAINED_EXACT;
