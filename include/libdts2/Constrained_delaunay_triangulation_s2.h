@@ -10,6 +10,7 @@
 #include <libdts2/Constrained_delaunay_triangulation_with_exact_intersections_spherical_traits_s2.h>
 #include <libdts2/Constrained_delaunay_triangulation_with_exact_intersections_traits_s2.h>
 #include <libdts2/Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2.h>
+#include <libdts2/Kernel_sp/Kernel_sp.h>
 #include <libdts2/Constrained_delaunay_triangulation_traits_s2.h>
 
 #include <CGAL/Constrained_Delaunay_triangulation_2.h>
@@ -25,7 +26,6 @@ namespace internal {
 	public:
 		using type = CGAL::Triangulation_data_structure_2<Vb, CFb>;
 	};
-
 } //end namespace internal
 
 
@@ -186,6 +186,18 @@ using Constrained_Delaunay_triangulation_with_inexact_intersections_with_info_s2
 		Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2_sp,
 		typename internal::ConstrainedTriangulationDataStructureSelector<
 			Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2_sp,
+			T_VERTEX_INFO,
+			T_FACE_INFO
+		>::type,
+		CGAL::Exact_predicates_tag
+	>;
+
+template<typename T_VERTEX_INFO, typename T_FACE_INFO>
+using Constrained_Delaunay_triangulation_with_inexact_intersections_with_info_s2_spk_64 =
+	Constrained_delaunay_triangulation_s2<
+		Kernel_sp_64,
+		typename internal::ConstrainedTriangulationDataStructureSelector<
+			Kernel_sp_64,
 			T_VERTEX_INFO,
 			T_FACE_INFO
 		>::type,

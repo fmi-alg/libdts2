@@ -53,7 +53,7 @@ public:
 	using MyBaseTrait = T_BASE_TRAIT;
 	using MyBaseClass = typename MyBaseTrait::Side_of_oriented_circle_2;
 	using Is_auxiliary_point = typename MyBaseTrait::Is_auxiliary_point;
-	using Point = Point_sp<T_BASE_TRAIT>;
+	using Point = Point_sp<typename MyBaseTrait::LinearKernel>;
 	static constexpr int max_exponent = 30;
 public:
 	Side_of_oriented_circle_s2(MyBaseClass const & _base, Is_auxiliary_point const & _iap) :
@@ -61,19 +61,19 @@ public:
 	m_iap(_iap)
 	{}
 public:
-	CGAL::Sign operator()(Point const & p, Point const & q, Point const & r, Point const & t) {
-		if (p.pos == q.pos() && p.pos() == r.pos() && p.pos() == t.pos() &&
+	CGAL::Sign operator()(Point const & p, Point const & q, Point const & r, Point const & t) const {
+		if (p.pos() == q.pos() && p.pos() == r.pos() && p.pos() == t.pos() &&
 			!m_iap(p) && !m_iap(q) && !m_iap(r) && !m_iap(t) &&
 			p.exponent() < max_exponent && q.exponent() < max_exponent && r.exponent() < max_exponent && t.exponent() < max_exponent
 		)
 		{
 			//we have to normalize the denominators
-			int64_t max_den = std::max(std::max(p.denominator(), q.denominator()), std::max(r.denominator(), t.denominator()));
+			auto max_den = std::max(std::max(p.denominator(), q.denominator()), std::max(r.denominator(), t.denominator()));
 			return calc<30>(
-				p.numerator0()*p.denominator()/max_den, p.numerator1()*p.denominator()/max_den,
-				q.numerator0()*q.denominator()/max_den, q.numerator1()*q.denominator()/max_den,
-				r.numerator0()*r.denominator()/max_den, r.numerator1()*r.denominator()/max_den,
-				t.numerator0()*t.denominator()/max_den, t.numerator1()*t.denominator()/max_den
+				p.numerator0()*(max_den/p.denominator()), p.numerator1()*(max_den/p.denominator()),
+				q.numerator0()*(max_den/q.denominator()), q.numerator1()*(max_den/q.denominator()),
+				r.numerator0()*(max_den/r.denominator()), r.numerator1()*(max_den/r.denominator()),
+				t.numerator0()*(max_den/t.denominator()), t.numerator1()*(max_den/t.denominator())
 			);
 		}
 		else { //use base predicate
@@ -99,7 +99,7 @@ public:
 					const T_STAGE0 & q_num0, const T_STAGE0 & q_num1,
 					const T_STAGE0 & r_num0, const T_STAGE0 & r_num1,
 					const T_STAGE0 & t_num0, const T_STAGE0 & t_num1
-	)
+	) const
 	{
 		//points have up to T_STAGE0=n Bits
 		T_STAGE1 px(p_num0), py(p_num1);
@@ -170,6 +170,8 @@ public:
 			}
 		}
 	}
+public:
+	Is_auxiliary_point const & iap() const { return m_iap; }
 private:
 	Is_auxiliary_point m_iap;
 };
@@ -180,45 +182,55 @@ public:
 	using MyBaseTrait = T_BASE_TRAIT;
 	using MyBaseClass = typename MyBaseTrait::Orientation_2;
 	using Is_auxiliary_point = typename MyBaseTrait::Is_auxiliary_point;
-	using Point = Point_sp<T_BASE_TRAIT>;
+	using Point = Point_sp<typename MyBaseTrait::LinearKernel>;
 	static constexpr int max_exponent = 30;
 public:
-	CGAL::Sign operator()(Point const & p, Point const & q, Point const & t) {
-		if (p.pos == q.pos() && p.pos() == t.pos()) {
-			assert(p.exponent() == q.exponent() && p.exponent() == t.exponent());
-			//calculate a point reflected third point,
-			//scale all points by the common denominator
-			//and use the Oriented_side_of_circle predicate
-			int128 r_num0 = -int64(p.numerator0()) * int64(p.denominator());
-			int128 r_num1 = -int64(p.numerator1()) * int64(p.denominator());
-			int128 r_den = int64(p.numerator0())*int64(p.numerator0()) - int64(p.numerator1())*int64(p.numerator1());
-			
-// 			int128 com_den = r_den * p.denominator();
-
-			//now go to a common denominator and forget about the denominator
-			int128 p_num0 = p.numerator0() * r_den;
-			int128 p_num1 = p.numerator1() * r_den;
-			int128 q_num0 = q.numerator0() * r_den;
-			int128 q_num1 = q.numerator1() * r_den;
-			r_num0 *= p.denominator();
-			r_num1 *= p.denominator();
-			int128 t_num0 = t.numerator0() * r_den;
-			int128 t_num1 = t.numerator1() * r_den;
-			//all points now have less than 92 Bits
-			
-			return m_soc.calc<92>(
-					p_num0, p_num1,
-					q_num0, q_num1,
-					r_num0, r_num1,
-					t_num0, t_num1
+	Orientation_s2(MyBaseClass const & _base, Side_of_oriented_circle_s2<MyBaseTrait> const & _soc) :
+	MyBaseClass(_base),
+	m_soc(_soc)
+	{}
+public:
+	CGAL::Sign operator()(Point const & p, Point const & q, Point const & t) const {
+		if (p.pos() == q.pos() && p.pos() == t.pos() &&
+			!m_soc.iap()(p) && !m_soc.iap()(q) && !m_soc.iap()(t) &&
+			p.exponent() < max_exponent && q.exponent() < max_exponent && t.exponent() < max_exponent
+		)
+		{
+			//we have to normalize the denominators
+			auto max_den = std::max(std::max(p.denominator(), q.denominator()), std::max(t.denominator(), t.denominator()));
+			return calc<30>(
+				p.numerator0()*(max_den/p.denominator()), p.numerator1()*(max_den/p.denominator()),
+				q.numerator0()*(max_den/q.denominator()), q.numerator1()*(max_den/q.denominator()),
+				t.numerator0()*(max_den/t.denominator()), t.numerator1()*(max_den/t.denominator())
 			);
 		}
-		else { //use base kernel
+		else { //use base predicate
 			return MyBaseClass::operator()(p, q, t);
 		}
 	}
+	template<
+		int T_START_BITS,
+		typename T_STAGE0 = typename AlignedIntegerTypeFromBits<T_START_BITS>::type,
+		typename T_STAGE1 = typename AlignedIntegerTypeFromBits<T_START_BITS+1>::type
+	>
+	CGAL::Sign calc(
+					const T_STAGE0 & p_num0, const T_STAGE0 & p_num1,
+					const T_STAGE0 & q_num0, const T_STAGE0 & q_num1,
+					const T_STAGE0 & t_num0, const T_STAGE0 & t_num1
+	) const {
+		//calculate a point reflected third point
+		//and use the Oriented_side_of_circle predicate
+		T_STAGE1 r_num0 = -T_STAGE1(p_num0);
+		T_STAGE1 r_num1 = -T_STAGE1(p_num1);
+		return m_soc.template calc<T_START_BITS+1, T_STAGE1> (
+				p_num0, p_num1,
+				q_num0, q_num1,
+				r_num0, r_num1,
+				t_num0, t_num1
+		);
+	}
 private:
-	Side_of_oriented_circle_s2<BaseTrait> m_soc;
+	Side_of_oriented_circle_s2<MyBaseTrait> m_soc;
 };
 
 
@@ -229,7 +241,7 @@ template<
 	typename T_LINEAR_KERNEL,
 	typename T_AUX_POINT_GENERATOR=detail::EpsBasedAuxPoints<T_LINEAR_KERNEL>
 >
-class Kernel_sp:
+class Kernel_sp_base:
 	public Constrained_delaunay_triangulation_with_inexact_intersections_base_traits_s2<
 		T_LINEAR_KERNEL,
 		T_AUX_POINT_GENERATOR,
@@ -239,7 +251,7 @@ class Kernel_sp:
 public:
 	static constexpr int snap_bits = 31;
 public:
-	using Self = Kernel_sp<T_LINEAR_KERNEL, T_AUX_POINT_GENERATOR>;
+	using Self = Kernel_sp_base<T_LINEAR_KERNEL, T_AUX_POINT_GENERATOR>;
 	using MyBaseTrait = Constrained_delaunay_triangulation_with_inexact_intersections_base_traits_s2<
 		T_LINEAR_KERNEL,
 		T_AUX_POINT_GENERATOR,
@@ -250,18 +262,25 @@ public:
 	using Side_of_oriented_circle_2 = detail::Kernel_sp::Side_of_oriented_circle_s2<MyBaseTrait>;
 	using Orientation_2 = detail::Kernel_sp::Orientation_s2<MyBaseTrait>;
 public:
-	Kernel_sp();
-	Kernel_sp(AuxiliaryPointsGenerator const & _apg, int _significands) :
-	MyBaseTrait(_apg, _significands)
+	Kernel_sp_base();
+	Kernel_sp_base(AuxiliaryPointsGenerator const & _apg, int _significands, int _intersectSignificands = -1) :
+	MyBaseTrait(_apg, _significands, _intersectSignificands)
 	{}
-	Kernel_sp(const Kernel_sp & other) :
+	Kernel_sp_base(const Kernel_sp_base & other) :
 	MyBaseTrait(other)
 	{}
-	~Kernel_sp() override {}
+	~Kernel_sp_base() {}
 public:
-	Side_of_oriented_circle_2 side_of_oriented_circle_2_object () const;
-	Orientation_2 orientation_2_object () const;
+	Side_of_oriented_circle_2 side_of_oriented_circle_2_object () const {
+		return Side_of_oriented_circle_2( MyBaseTrait::side_of_oriented_circle_2_object(), MyBaseTrait::is_auxiliary_point_object() );
+	}
+	Orientation_2 orientation_2_object() const {
+		return Orientation_2( MyBaseTrait::orientation_2_object(), Self::side_of_oriented_circle_2_object() );
+	}
 };
+
+using Kernel_sp = Kernel_sp_base<CGAL::Exact_predicates_exact_constructions_kernel>;
+using Kernel_sp_64 = Kernel_sp_base<CGAL::Filtered_simple_cartesian_extended_integer_kernel>;
 
 }//end namespace
 
