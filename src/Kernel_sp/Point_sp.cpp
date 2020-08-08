@@ -40,7 +40,7 @@ Point_sp_base::set_denominator(unsigned_base_type v) {
 	if ((v & (v-1)) != 0) {
 		throw std::runtime_error("Point_sp_base::set_denominator: denominator has to be a power of 2");
 	}
-	set_exponent((std::numeric_limits<unsigned_base_type>::digits-1)-__builtin_clz(v));
+	set_exponent((std::numeric_limits<unsigned_base_type>::digits-1)-__builtin_clzl(unsigned_base_type(v)));
 }
 
 void 
@@ -88,7 +88,7 @@ Point_sp_base::numerator1() const {
 
 Point_sp_base::unsigned_base_type
 Point_sp_base::denominator() const {
-	return static_cast<uint32_t>(1) << exponent();
+	return static_cast<unsigned_base_type>(1) << exponent();
 }
 
 LIB_RATSS_NAMESPACE::PositionOnSphere
