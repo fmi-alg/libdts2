@@ -9,7 +9,7 @@ Point_sp_base::Point_sp_base() {
 	m_d.fill(0);
 }
 
-Point_sp_base::Point_sp_base(base_type _num0, base_type _num1, unsigned_base_type _den, base_type _pos) {
+Point_sp_base::Point_sp_base(base_type _num0, base_type _num1, base_type _den, base_type _pos) {
 	set_numerator0(_num0);
 	set_numerator1(_num1);
 	set_denominator(_den);
@@ -33,7 +33,7 @@ Point_sp_base::set_numerator1(base_type v) {
 }
 
 void
-Point_sp_base::set_denominator(unsigned_base_type v) {
+Point_sp_base::set_denominator(base_type v) {
 	if (v <= 0) {
 		throw std::runtime_error("Point_sp_base::set_denominator: denominator has to be greater than 0");
 	}
@@ -41,6 +41,7 @@ Point_sp_base::set_denominator(unsigned_base_type v) {
 		throw std::runtime_error("Point_sp_base::set_denominator: denominator has to be a power of 2");
 	}
 	set_exponent((std::numeric_limits<unsigned_base_type>::digits-1)-__builtin_clzl(unsigned_base_type(v)));
+	assert(denominator() == v);
 }
 
 void 
@@ -68,8 +69,8 @@ Point_sp_base::set_numerator1(mpz_class v) {
 
 void
 Point_sp_base::set_denominator(mpz_class v) {
-	assert(v.fits_ulong_p());
-	set_denominator(v.get_ui());
+	assert(v.fits_slong_p());
+	set_denominator(v.get_si());
 }
 
 Point_sp_base::base_type
@@ -86,7 +87,7 @@ Point_sp_base::numerator1() const {
 	return tmp;
 }
 
-Point_sp_base::unsigned_base_type
+Point_sp_base::base_type
 Point_sp_base::denominator() const {
 	return static_cast<unsigned_base_type>(1) << exponent();
 }

@@ -28,13 +28,13 @@ public:
 public:
 	Point_sp_base();
 	Point_sp_base(Point_sp_base const &) = default;
-	Point_sp_base(base_type _num0, base_type _num1, unsigned_base_type _den, base_type _pos);
+	Point_sp_base(base_type _num0, base_type _num1, base_type _den, base_type _pos);
 	virtual ~Point_sp_base();
 	Point_sp_base & operator=(Point_sp_base const &) = default;
 public:
 	void set_numerator0(base_type v);
 	void set_numerator1(base_type v);
-	void set_denominator(unsigned_base_type v);
+	void set_denominator(base_type v);
 	void set_exponent(uint8_t v);
 	void set_pos(int v);
 	void set_numerator0(mpz_class v);
@@ -43,7 +43,7 @@ public:
 public:
 	base_type numerator0() const;
 	base_type numerator1() const;
-	unsigned_base_type denominator() const;
+	base_type denominator() const;
 	///@return position on Sphere
 	LIB_RATSS_NAMESPACE::PositionOnSphere pos() const;
 	uint8_t exponent() const;
@@ -71,7 +71,7 @@ public:
 public:
 	Point_sp();
 	Point_sp(MyParent const & v);
-	Point_sp(base_type _num0, base_type _num1, unsigned_base_type _den, base_type _pos);
+	Point_sp(base_type _num0, base_type _num1, base_type _den, base_type _pos);
 	Point_sp(FT const & x, FT const & y, FT const & z);
 	Point_sp(Point_3 const & v);
 	Point_sp(Point_sp const & other);
@@ -162,14 +162,14 @@ PTSP_CLS_NAME::Point_sp(FT const & x, FT const & y, FT const & z) {
 	default:
 		throw std::runtime_error("Point_sp: Position is out of bounds");
 	}
-	assert(Point_3(x,y,z) == point3());
 	assert(this->x() == x);
 	assert(this->y() == y);
 	assert(this->z() == z);
+	assert(Point_3(x,y,z) == point3());
 }
 
 PTSP_TMP_PRMS
-PTSP_CLS_NAME::Point_sp(base_type _num0, base_type _num1, unsigned_base_type _den, base_type _pos) :
+PTSP_CLS_NAME::Point_sp(base_type _num0, base_type _num1, base_type _den, base_type _pos) :
 MyParent(_num0, _num1, _den, _pos)
 {}
 
@@ -286,7 +286,7 @@ PTSP_CLS_NAME::x() const {
 		result = mpq_class(2*numerator0()*denominator())/mpq_class(den2 + sum_p_i2);
 		break;
 	};
-	assert(result == convert<mpq_class>(point3().x()));
+	assert(result == convert<mpq_class>(point3_slow().x()));
 	return convert<FT>(result);
 }
 
@@ -315,7 +315,7 @@ PTSP_CLS_NAME::y() const {
 		result = mpq_class(2*numerator1()*denominator())/mpq_class(den2 + sum_p_i2);
 		break;
 	};
-	assert(result == convert<mpq_class>(point3().y()));
+	assert(result == convert<mpq_class>(point3_slow().y()));
 	return convert<FT>(result);
 }
 
@@ -342,7 +342,7 @@ PTSP_CLS_NAME::z() const {
 		result = (std::signbit<int>(pos()) ? 1 : -1)*mpq_class(sum_p_i2 - den2)/mpq_class(den2 + sum_p_i2);
 		break;
 	};
-	assert(result == convert<mpq_class>(point3().z()));
+	assert(result == convert<mpq_class>(point3_slow().z()));
 	return convert<FT>(result);
 }
 
