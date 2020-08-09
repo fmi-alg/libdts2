@@ -24,6 +24,7 @@ find_package(CGAL REQUIRED Core)
 add_subdirectory(vendor/libratss libratss)
 
 set(LIB_SOURCES_CPP
+	src/debug.cpp
 	src/Constrained_delaunay_triangulation_s2.cpp
 	src/Kernel_sp/Point_sp.cpp
 	src/Kernel_sp/Kernel_sp.cpp
@@ -31,6 +32,7 @@ set(LIB_SOURCES_CPP
 
 set(LIB_SOURCES_H
 	include/libdts2/constants.h
+	include/libdts2/debug.h
 	include/libdts2/Constrained_delaunay_triangulation_with_exact_intersections_traits_s2.h
 	include/libdts2/Constrained_Triangulation_base_s2.h
 	include/libdts2/Constrained_delaunay_triangulation_with_intersections_base_traits_s2.h
