@@ -23,6 +23,7 @@ if (CPPUNIT_FOUND)
 
 	ADD_TEST_TARGET_SINGLE(dt)
 	ADD_TEST_TARGET_SINGLE(cdt)
+	ADD_TEST_TARGET_SINGLE(kernel_sp)
 else()
 	message(WARNING "Unable to build tests due to missing cppunit")
 endif()
