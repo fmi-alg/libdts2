@@ -266,7 +266,7 @@ public:
 	using Side_of_oriented_circle_2 = detail::Kernel_sp::Side_of_oriented_circle_s2<MyBaseTrait>;
 	using Orientation_2 = detail::Kernel_sp::Orientation_s2<MyBaseTrait>;
 public:
-	Kernel_sp_base();
+	Kernel_sp_base() {}
 	Kernel_sp_base(AuxiliaryPointsGenerator const & _apg, int _significands, int _intersectSignificands = -1) :
 	MyBaseTrait(_apg, _significands, _intersectSignificands)
 	{}
