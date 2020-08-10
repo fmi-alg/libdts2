@@ -147,10 +147,10 @@ void Kernel_sp_Test::special() {
 		auto should_o_cgk = pred_cgk(p_cgk, q_cgk, r_cgk, to_cgk);
 		
 		auto result_i = pred(p, q, r, ti);
-		auto should_i = pred.MyBaseClass::operator()(p.point3(), q.point3(), r.point3(), ti.point3());
+		auto should_i = pred.base()(p, q, r, ti);
 		
 		auto result_o = pred(p, q, r, to);
-		auto should_o = pred.MyBaseClass::operator()(p.point3(), q.point3(), r.point3(), to.point3());
+		auto should_o = pred.base()(p, q, r, to);
 		
 		CPPUNIT_ASSERT_EQUAL_MESSAGE("should_i_cgk", CGAL::ON_POSITIVE_SIDE, should_i_cgk);
 		CPPUNIT_ASSERT_EQUAL_MESSAGE("should_o_cgk", CGAL::ON_NEGATIVE_SIDE, should_o_cgk);

@@ -48,7 +48,7 @@ struct AlignedIntegerTypeFromBits {
 
 template<typename T_BASE_TRAIT>
 class Side_of_oriented_circle_s2:
-	public T_BASE_TRAIT::Side_of_oriented_circle_2
+	protected T_BASE_TRAIT::Side_of_oriented_circle_2
 {
 public:
 	using MyBaseTrait = T_BASE_TRAIT;
@@ -61,6 +61,8 @@ public:
 	MyBaseClass(_base),
 	m_iap(_iap)
 	{}
+	MyBaseClass const & base() const { return *this; }
+	MyBaseClass & base() { return *this; }
 public:
 	CGAL::Sign operator()(Point const & p, Point const & q, Point const & r, Point const & t) const {
 		if (p.pos() == q.pos() && p.pos() == r.pos() && p.pos() == t.pos() &&
