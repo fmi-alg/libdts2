@@ -82,6 +82,8 @@ public:
 	Point_sp(FT const & x, FT const & y, FT const & z);
 	Point_sp(Point_3 const & v);
 	Point_sp(Point_sp const & other);
+	template<typename T_OTHER_TRAITS>
+	Point_sp(Point_sp<T_OTHER_TRAITS> const & other);
 public:
 	Point_sp & operator=(Point_sp const & other) = default;
 public:
@@ -131,7 +133,13 @@ PTSP_TMP_PRMS
 PTSP_CLS_NAME::Point_sp() {}
 
 PTSP_TMP_PRMS
-PTSP_CLS_NAME::Point_sp(const Point_sp & other) :
+PTSP_CLS_NAME::Point_sp(Point_sp const & other) :
+MyParent(other)
+{}
+
+PTSP_TMP_PRMS
+template<typename T_OTHER_TRAITS>
+PTSP_CLS_NAME::Point_sp(Point_sp<T_OTHER_TRAITS> const & other) :
 MyParent(other)
 {}
 
