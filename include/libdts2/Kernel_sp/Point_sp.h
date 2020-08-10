@@ -87,9 +87,14 @@ public:
 public:
 	Point_3 point3() const;
 public:
-	FT x() const;
-	FT y() const;
-	FT z() const;
+	template<typename T_FT = FT>
+	T_FT x() const;
+	
+	template<typename T_FT = FT>
+	T_FT y() const;
+	
+	template<typename T_FT = FT>
+	T_FT z() const;
 public:
 	operator Point_3() const { return point3(); }
 private:
@@ -287,13 +292,14 @@ PTSP_CLS_NAME::point3_slow() const {
 
 
 PTSP_TMP_PRMS
-typename PTSP_CLS_NAME::FT
+template<typename T_FT>
+T_FT
 PTSP_CLS_NAME::x() const {
 	if (pos() == 0) {  //Hack for LIB_DTS2_ORIGIN 
-		return FT(LIB_DTS2_ORIGIN_X);
+		return T_FT(LIB_DTS2_ORIGIN_X);
 	}
 	if (exponent() > 31) {
-		return point3().x();
+		return ratss::convert<T_FT>( point3().x() );
 	}
 	using LIB_RATSS_NAMESPACE::convert;
 	auto sqr = [](int64_t v) { return v*v; };
@@ -309,17 +315,18 @@ PTSP_CLS_NAME::x() const {
 		break;
 	};
 	assert(result == convert<mpq_class>(point3_slow().x()));
-	return convert<FT>(result);
+	return convert<T_FT>(result);
 }
 
 PTSP_TMP_PRMS
-typename PTSP_CLS_NAME::FT
+template<typename T_FT>
+T_FT
 PTSP_CLS_NAME::y() const {
 	if (pos() == 0) {  //Hack for LIB_DTS2_ORIGIN 
-		return FT(LIB_DTS2_ORIGIN_Y);
+		return T_FT(LIB_DTS2_ORIGIN_Y);
 	}
 	if (exponent() > 31) {
-		return point3().y();
+		return ratss::convert<T_FT>( point3().y() );
 	}
 	using LIB_RATSS_NAMESPACE::convert;
 	auto sqr = [](int64_t v) { return v*v; };
@@ -338,17 +345,18 @@ PTSP_CLS_NAME::y() const {
 		break;
 	};
 	assert(result == convert<mpq_class>(point3_slow().y()));
-	return convert<FT>(result);
+	return convert<T_FT>(result);
 }
 
 PTSP_TMP_PRMS
-typename PTSP_CLS_NAME::FT
+template<typename T_FT>
+T_FT
 PTSP_CLS_NAME::z() const {
 	if (pos() == 0) {  //Hack for LIB_DTS2_ORIGIN 
-		return FT(LIB_DTS2_ORIGIN_Z);
+		return T_FT(LIB_DTS2_ORIGIN_Z);
 	}
 	if (exponent() > 31) {
-		return point3().z();
+		return ratss::convert<T_FT>( point3().z() );
 	}
 	using LIB_RATSS_NAMESPACE::convert;
 	auto sqr = [](int64_t v) { return v*v; };
@@ -365,7 +373,7 @@ PTSP_CLS_NAME::z() const {
 		break;
 	};
 	assert(result == convert<mpq_class>(point3_slow().z()));
-	return convert<FT>(result);
+	return convert<T_FT>(result);
 }
 
 #undef PTSP_TMP_PRMS
