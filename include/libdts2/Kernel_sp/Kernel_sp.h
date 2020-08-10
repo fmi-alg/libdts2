@@ -6,6 +6,7 @@
 #include <libdts2/Kernel_sp/Point_sp.h>
 #include <libdts2/Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2.h>
 #include <boost/multiprecision/cpp_int.hpp>
+#include <libratss/Conversion.h>
 
 namespace LIB_DTS2_NAMESPACE {
 namespace detail::Kernel_sp {
@@ -54,7 +55,7 @@ public:
 	using MyBaseClass = typename MyBaseTrait::Side_of_oriented_circle_2;
 	using Is_auxiliary_point = typename MyBaseTrait::Is_auxiliary_point;
 	using Point = Point_sp<typename MyBaseTrait::LinearKernel>;
-	static constexpr int max_exponent = 30;
+	static constexpr int max_exponent = 31;
 public:
 	Side_of_oriented_circle_s2(MyBaseClass const & _base, Is_auxiliary_point const & _iap) :
 	MyBaseClass(_base),
@@ -63,20 +64,64 @@ public:
 public:
 	CGAL::Sign operator()(Point const & p, Point const & q, Point const & r, Point const & t) const {
 		if (p.pos() == q.pos() && p.pos() == r.pos() && p.pos() == t.pos() &&
-			!m_iap(p) && !m_iap(q) && !m_iap(r) && !m_iap(t) &&
-			p.exponent() < max_exponent && q.exponent() < max_exponent && r.exponent() < max_exponent && t.exponent() < max_exponent
+			p.exponent() < max_exponent && q.exponent() < max_exponent && r.exponent() < max_exponent && t.exponent() < max_exponent &&
+			!m_iap(p) && !m_iap(q) && !m_iap(r) && !m_iap(t)
 		)
 		{
 			//we have to normalize the denominators
 			auto max_den = std::max(std::max(p.denominator(), q.denominator()), std::max(r.denominator(), t.denominator()));
-			auto result = calc<30>(
+			int result = calc<max_exponent>(
 				p.numerator0()*(max_den/p.denominator()), p.numerator1()*(max_den/p.denominator()),
 				q.numerator0()*(max_den/q.denominator()), q.numerator1()*(max_den/q.denominator()),
 				r.numerator0()*(max_den/r.denominator()), r.numerator1()*(max_den/r.denominator()),
 				t.numerator0()*(max_den/t.denominator()), t.numerator1()*(max_den/t.denominator())
 			);
-			assert(result == MyBaseClass::operator()(p, q, r, t));
-			return result;
+			switch (std::abs<int>(p.pos())) {
+			case 1:
+			case 3:
+				result *= (p.pos() < 0 ? -1 : 1);
+				break;
+			case 2: 
+				result *=  (p.pos() < 0 ? 1 : -1);
+				break;
+			default:
+				throw std::runtime_error("Invalid position on sphere: " + std::to_string(p.pos()));
+			};
+			#ifndef NDEBUG
+			{
+				using SOC = typename MyBaseTrait::LinearKernel::Side_of_oriented_circle_2;
+				using FTLK = typename MyBaseTrait::LinearKernel::FT;
+				using Point_2LK = typename MyBaseTrait::LinearKernel::Point_2;
+				SOC soc;
+				
+				auto conv = [](mpq_class const & x) -> FTLK { return ratss::convert<FTLK>(x); };
+				
+				#define ASSIGN_POINT(__NAME) Point_2LK __NAME ## lk(conv(__NAME.numerator0())*conv(max_den/__NAME.denominator()), conv(__NAME.numerator1())*conv(max_den/__NAME.denominator()));
+				ASSIGN_POINT(p)
+				ASSIGN_POINT(q)
+				ASSIGN_POINT(r)
+				ASSIGN_POINT(t)
+				#undef ASSIGN_POINT
+				
+				auto should = MyBaseClass::operator()(p, q, r, t);
+				int should_2d;
+				switch (std::abs<int>(p.pos())) {
+				case 1:
+				case 3:
+					should_2d = ((p.pos() < 0 ? -1 : 1) * soc(plk, qlk, rlk, tlk));
+					break;
+				case 2: 
+					should_2d =  ((p.pos() < 0 ? 1 : -1) * soc(plk, qlk, rlk, tlk));
+					break;
+				default:
+					throw std::runtime_error("Invalid position on sphere: " + std::to_string(p.pos()));
+				};
+				assert(should == should_2d);
+				assert(should_2d == result);
+				assert(result == should);
+			}
+			#endif
+			return CGAL::Sign(result);
 		}
 		else { //use base predicate
 			return MyBaseClass::operator()(p, q, r, t);
@@ -193,6 +238,7 @@ public:
 	{}
 public:
 	CGAL::Sign operator()(Point const & p, Point const & q, Point const & t) const {
+		return MyBaseClass::operator()(p, q, t);
 		if (p.pos() == q.pos() && p.pos() == t.pos() &&
 			!m_soc.iap()(p) && !m_soc.iap()(q) && !m_soc.iap()(t) &&
 			p.exponent() < max_exponent && q.exponent() < max_exponent && t.exponent() < max_exponent
@@ -200,12 +246,25 @@ public:
 		{
 			//we have to normalize the denominators
 			auto max_den = std::max(std::max(p.denominator(), q.denominator()), std::max(t.denominator(), t.denominator()));
-			auto result = calc<30>(
+			auto result = (CGAL::Sign) -calc<30>(
 				p.numerator0()*(max_den/p.denominator()), p.numerator1()*(max_den/p.denominator()),
 				q.numerator0()*(max_den/q.denominator()), q.numerator1()*(max_den/q.denominator()),
 				t.numerator0()*(max_den/t.denominator()), t.numerator1()*(max_den/t.denominator())
 			);
-			assert(result == MyBaseClass::operator()(p, q, t));
+			#ifndef NDEBUG
+			{
+				auto should = MyBaseClass::operator()(p, q, t);
+				if (should != result) {
+					should = MyBaseClass::operator()(p, q, t);
+					result = (CGAL::Sign) -calc<30>(
+						p.numerator0()*(max_den/p.denominator()), p.numerator1()*(max_den/p.denominator()),
+						q.numerator0()*(max_den/q.denominator()), q.numerator1()*(max_den/q.denominator()),
+						t.numerator0()*(max_den/t.denominator()), t.numerator1()*(max_den/t.denominator())
+					);
+				}
+				assert(result == should);
+			}
+			#endif
 			return result;
 		}
 		else { //use base predicate
