@@ -58,6 +58,8 @@ private:
 	//The remaining 84 Bits are used for the coordinates
 	std::array<char, 12> m_d;
 };
+
+std::ostream & operator<<(std::ostream & out, Point_sp_base const & v);
 	
 } //end namespace detail
 
@@ -68,6 +70,7 @@ public:
 	using MyBaseTrait = T_BASE_TRAITS;
 	using FT = typename MyBaseTrait::FT;
 	using Point_3 = typename MyBaseTrait::Point_3;
+	using K = MyBaseTrait;
 public:
 	Point_sp();
 	Point_sp(MyParent const & v);
@@ -97,6 +100,13 @@ bool operator==(Point_sp<K1> const & a, Point_sp<K2> const & b) {
 template<typename K1, typename K2>
 bool operator!=(Point_sp<K1> const & a, Point_sp<K2> const & b) {
 	return static_cast<detail::Point_sp_base const &>(a) != static_cast<detail::Point_sp_base const &>(b);
+}
+
+template<typename T_BASE_TRAITS>
+std::ostream & operator<<(std::ostream & out, Point_sp<T_BASE_TRAITS> const & v) {
+	out << static_cast<detail::Point_sp_base const &>(v);
+	out << "=(" << v.x() << ", " << v.y() << ", " << v.z() << ")";
+	return out;
 }
 
 }//end namespace

@@ -113,5 +113,16 @@ Point_sp_base::operator==(Point_sp_base const & other) const {
 	return m_d == other.m_d;
 }
 
+std::ostream & operator<<(std::ostream & out, Point_sp_base const & v) {
+	out << "Point_sp"
+		<< "(num0=" << v.numerator0()
+		<< ", num1=" << v.numerator1()
+		<< ", den=" << v.denominator()
+		<< ", e=" << int(v.exponent())
+		<< ", pos=" << int(v.pos())
+		<< ")";
+	return out;
+}
+
 }//end namesspace detail
 }//end namespace LIB_DTS2_NAMESPACE
