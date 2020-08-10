@@ -60,7 +60,7 @@ private:
 	//The remaining 84 Bits are used for the coordinates
 	//Order is
 	//numerator0, numerator1, pos, exponent
-	std::array<char, 9+(fixed_exponent? 1 : 0)> m_d;
+	std::array<char, 9+(fixed_exponent? 0 : 1)> m_d;
 };
 
 std::ostream & operator<<(std::ostream & out, Point_sp_base const & v);

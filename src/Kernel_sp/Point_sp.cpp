@@ -52,14 +52,14 @@ Point_sp_base::set_exponent(uint8_t v) {
 		}
 	}
 	else {
-		m_d[9] = v;
+		m_d.at(9) = v;
 	}
 }
 
 void 
 Point_sp_base::set_pos(int v) {
 	assert(char(v) == v);
-	m_d[8] = v;
+	m_d.at(8) = v;
 }
 
 void
@@ -101,7 +101,7 @@ Point_sp_base::denominator() const {
 
 LIB_RATSS_NAMESPACE::PositionOnSphere
 Point_sp_base::pos() const {
-	return static_cast<LIB_RATSS_NAMESPACE::PositionOnSphere>(m_d[8]);
+	return static_cast<LIB_RATSS_NAMESPACE::PositionOnSphere>(m_d.at(8));
 }
 
 uint8_t
@@ -110,7 +110,7 @@ Point_sp_base::exponent() const {
 		return fixed_exponent;
 	}
 	else {
-		return m_d[9];
+		return m_d.at(9);
 	}
 }
 
