@@ -319,6 +319,21 @@ LESS_VAR_THREE(z)
 
 #undef LESS_VAR_TREE
 
+template<typename T_BASE_TRAIT>
+class Construct_point_sp: public T_BASE_TRAIT::Construct_point_2 {
+public:
+	using MyBaseTrait = T_BASE_TRAIT;
+	using MyBaseClass = typename MyBaseTrait::Construct_point_2;
+	using FT = typename MyBaseTrait::FT;
+	using Point = Point_sp<typename MyBaseTrait::LinearKernel>;
+public:
+	Construct_point_sp() {}
+	Construct_point_sp(MyBaseClass const & base) : MyBaseClass(base) {}
+public:
+	template<typename ...T>
+	Point operator()(T && ... t) const { return Point(std::forward<T>(t)...); }
+};
+
 } //end namespace detail::Kernel_sp 
 
 
@@ -350,6 +365,8 @@ public:
 	
 	using Less_x_2 = Less_x_3;
 	using Less_y_2 = Less_y_3;
+	
+	using Construct_point_2 = detail::Kernel_sp::Construct_point_sp<MyBaseTrait>;
 public:
 	using Side_of_oriented_circle_2 = detail::Kernel_sp::Side_of_oriented_circle_s2<MyBaseTrait>;
 	using Orientation_2 = detail::Kernel_sp::Orientation_s2<MyBaseTrait>;
@@ -377,6 +394,9 @@ public:
 	LESS_VAR_OBJECT(x_2)
 	LESS_VAR_OBJECT(y_2)
 	#undef LESS_VAR_OBJECT
+	
+	Construct_point_2 construct_point_2_object() const { return Construct_point_2( MyBaseTrait::construct_point_2_object() ); }
+	
 };
 
 using Kernel_sp = Kernel_sp_base<CGAL::Exact_predicates_exact_constructions_kernel>;
