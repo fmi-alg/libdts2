@@ -19,6 +19,8 @@ public:
 	using base_type = int64_t;
 	using unsigned_base_type = uint64_t;
 	//TODO: extend this to 42 bits for numerators
+	static constexpr uint8_t fixed_exponent = 0; //set this to a value greater than 0 to have fixed size denominators
+	static constexpr unsigned_base_type fixed_denominator = (fixed_exponent > 0 ? (static_cast<unsigned_base_type>(1) << (fixed_exponent-1)) : unsigned_base_type(0));
 	struct BitSizes {
 		static constexpr int NUMERATOR0=32;
 		static constexpr int NUMERATOR1=32;
@@ -56,7 +58,9 @@ private:
 	//Thus we use 7 Bits to encode s
 	//Additionally we need 3 Bits to encode the 6 position on the sphere
 	//The remaining 84 Bits are used for the coordinates
-	std::array<char, 12> m_d;
+	//Order is
+	//numerator0, numerator1, pos, exponent
+	std::array<char, 9+(fixed_exponent? 1 : 0)> m_d;
 };
 
 std::ostream & operator<<(std::ostream & out, Point_sp_base const & v);
@@ -154,6 +158,14 @@ PTSP_CLS_NAME::Point_sp(FT const & x, FT const & y, FT const & z) {
 	using std::max;
 	mpz_class mden = max(pp[0].get_den(), max(pp[1].get_den(), pp[2].get_den()));
 	
+	if (MyParent::fixed_exponent) {
+		if (mden > MyParent::fixed_denominator) {
+			throw std::runtime_error("Point_sp: Input coordinate precision too high");
+		}
+		else {
+			mden = MyParent::fixed_denominator;
+		}
+	}
 	set_denominator(mden);
 	
 	switch(abs(_pos)) {
