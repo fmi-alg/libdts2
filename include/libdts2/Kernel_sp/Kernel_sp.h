@@ -296,6 +296,26 @@ private:
 	Side_of_oriented_circle_s2<MyBaseTrait> m_soc;
 };
 
+#define LESS_VAR_THREE(__VAR) template<typename T_BASE_TRAIT> \
+class Less_ ## __VAR ## _3: public T_BASE_TRAIT::Less_ ## __VAR ## _3 { \
+public: \
+	using MyBaseTrait = T_BASE_TRAIT; \
+	using MyParent = typename MyBaseTrait::Less_ ## __VAR ## _3; \
+	using Point = Point_sp<typename MyBaseTrait::LinearKernel>; \
+public: \
+	Less_ ## __VAR ## _3(); \
+	Less_ ## __VAR ## _3(MyParent const & other): MyParent(other) {} \
+public: \
+	inline bool operator()(Point const & a, Point const & b) const { \
+		return a.template __VAR <mpq_class>() < b.template __VAR <mpq_class>(); \
+	} \
+};
+
+LESS_VAR_THREE(x)
+LESS_VAR_THREE(y)
+LESS_VAR_THREE(z)
+
+#undef LESS_VAR_TREE
 
 } //end namespace detail::Kernel_sp 
 
@@ -322,6 +342,13 @@ public:
 	>;
 	using AuxiliaryPointsGenerator = typename MyBaseTrait::AuxiliaryPointsGenerator;
 public:
+	using Less_x_3 = detail::Kernel_sp::Less_x_3<MyBaseTrait>;
+	using Less_y_3 = detail::Kernel_sp::Less_y_3<MyBaseTrait>;
+	using Less_z_3 = detail::Kernel_sp::Less_z_3<MyBaseTrait>;
+	
+	using Less_x_2 = Less_x_3;
+	using Less_y_2 = Less_y_3;
+public:
 	using Side_of_oriented_circle_2 = detail::Kernel_sp::Side_of_oriented_circle_s2<MyBaseTrait>;
 	using Orientation_2 = detail::Kernel_sp::Orientation_s2<MyBaseTrait>;
 public:
@@ -340,6 +367,14 @@ public:
 	Orientation_2 orientation_2_object() const {
 		return Orientation_2( MyBaseTrait::orientation_2_object(), Self::side_of_oriented_circle_2_object() );
 	}
+	
+	#define LESS_VAR_OBJECT(__VAR) Less_ ## __VAR less_ ## __VAR ## _object() const { return Less_ ## __VAR( MyBaseTrait::less_ ## __VAR ## _object() ); }
+	LESS_VAR_OBJECT(x_3)
+	LESS_VAR_OBJECT(y_3)
+	LESS_VAR_OBJECT(z_3)
+	LESS_VAR_OBJECT(x_2)
+	LESS_VAR_OBJECT(y_2)
+	#undef LESS_VAR_OBJECT
 };
 
 using Kernel_sp = Kernel_sp_base<CGAL::Exact_predicates_exact_constructions_kernel>;
