@@ -67,11 +67,11 @@ std::ostream & operator<<(std::ostream & out, Point_sp_base const & v);
 	
 } //end namespace detail
 
-template<typename T_BASE_TRAITS>
+template<typename T_LINEAR_KERNEL>
 class Point_sp: public detail::Point_sp_base {
 public:
 	using MyParent = detail::Point_sp_base;
-	using MyBaseTrait = T_BASE_TRAITS;
+	using MyBaseTrait = T_LINEAR_KERNEL;
 	using FT = typename MyBaseTrait::FT;
 	using Point_3 = typename MyBaseTrait::Point_3;
 	using K = MyBaseTrait;
