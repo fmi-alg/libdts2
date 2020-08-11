@@ -223,25 +223,27 @@ PTSP_CLS_NAME::point3() const {
 		return point3_slow();
 	}
 	using LIB_RATSS_NAMESPACE::convert;
-	mpq_class x, y, z;
+// 	using PQType = mpq_class;
+	using PQType = FT;
+	PQType x, y, z;
 	auto sqr = [](int64_t v) { return v*v; };
 	int64_t den2 = sqr(denominator());
 	int64_t sum_p_i2 = sqr(numerator0()) + sqr(numerator1());
 	switch (abs(pos())) {
 	case 1: //x is the missing coordinate, thus num0 holds y, num1 holds z
-		x = (std::signbit<int>(pos()) ? 1 : -1)*mpq_class(sum_p_i2 - den2)/mpq_class(den2 + sum_p_i2);
-		y = mpq_class(2*numerator0()*denominator())/mpq_class(den2 + sum_p_i2);
-		z = mpq_class(2*numerator1()*denominator())/mpq_class(den2 + sum_p_i2);
+		x = (std::signbit<int>(pos()) ? 1 : -1)*PQType(sum_p_i2 - den2)/PQType(den2 + sum_p_i2);
+		y = PQType(2*numerator0()*denominator())/PQType(den2 + sum_p_i2);
+		z = PQType(2*numerator1()*denominator())/PQType(den2 + sum_p_i2);
 		break;
 	case 2: //y is the missing coordinate, thus num0 holds x, num1 holds z
-		x = mpq_class(2*numerator0()*denominator())/mpq_class(den2 + sum_p_i2);
-		y = (std::signbit<int>(pos()) ? 1 : -1)*mpq_class(sum_p_i2 - den2)/mpq_class(den2 + sum_p_i2);
-		z = mpq_class(2*numerator1()*denominator())/mpq_class(den2 + sum_p_i2);
+		x = PQType(2*numerator0()*denominator())/PQType(den2 + sum_p_i2);
+		y = (std::signbit<int>(pos()) ? 1 : -1)*PQType(sum_p_i2 - den2)/PQType(den2 + sum_p_i2);
+		z = PQType(2*numerator1()*denominator())/PQType(den2 + sum_p_i2);
 		break;
 	case 3: //z is the missing coordinate, thus num0 holds x, num1 holds y
-		x = mpq_class(2*numerator0()*denominator())/mpq_class(den2 + sum_p_i2);
-		y = mpq_class(2*numerator1()*denominator())/mpq_class(den2 + sum_p_i2);
-		z = (std::signbit<int>(pos()) ? 1 : -1)*mpq_class(sum_p_i2 - den2)/mpq_class(den2 + sum_p_i2);
+		x = PQType(2*numerator0()*denominator())/PQType(den2 + sum_p_i2);
+		y = PQType(2*numerator1()*denominator())/PQType(den2 + sum_p_i2);
+		z = (std::signbit<int>(pos()) ? 1 : -1)*PQType(sum_p_i2 - den2)/PQType(den2 + sum_p_i2);
 		break;
 	};
 	Point_3 result(convert<FT>(x), convert<FT>(y), convert<FT>(z));
