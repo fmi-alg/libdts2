@@ -83,7 +83,7 @@ public:
 			case 3:
 				result *= (p.pos() < 0 ? -1 : 1);
 				break;
-			case 2: 
+			case 2: //This due to the fact that we store num0/num1 such that handedness of the coordinate system changes if we project through the y-axis
 				result *=  (p.pos() < 0 ? 1 : -1);
 				break;
 			default:
