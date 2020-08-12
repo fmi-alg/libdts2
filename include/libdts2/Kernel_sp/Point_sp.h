@@ -4,6 +4,7 @@
 #define LIB_DTS2_POINT_SP_H
 
 #include <libdts2/constants.h>
+#include <libdts2/Kernel_sp/internal.h>
 #include <libratss/ProjectS2.h>
 
 #include <array>
@@ -75,6 +76,14 @@ public:
 	using FT = typename MyBaseTrait::FT;
 	using Point_3 = typename MyBaseTrait::Point_3;
 	using K = MyBaseTrait;
+	using Numerators_3 = detail::Kernel_sp::Numerators_3<
+		typename detail::Kernel_sp::AlignedIntegerTypeFromBits<
+			2*std::max<int>(
+				fixed_exponent+1,
+				MyParent::BitSizes::NUMERATOR0
+			)
+		>::type
+	>;
 public:
 	Point_sp();
 	Point_sp(MyParent const & v);
@@ -88,6 +97,7 @@ public:
 	Point_sp & operator=(Point_sp const & other) = default;
 public:
 	Point_3 point3() const;
+	Numerators_3 numerators3() const;
 public:
 	template<typename T_FT = FT>
 	T_FT x() const;
@@ -251,6 +261,40 @@ PTSP_CLS_NAME::point3() const {
 	return result;
 }
 
+PTSP_TMP_PRMS
+typename PTSP_CLS_NAME::Numerators_3
+PTSP_CLS_NAME::numerators3() const {
+	if (pos() == 0) {  //Hack for LIB_DTS2_ORIGIN 
+		return Numerators_3(LIB_DTS2_ORIGIN_X, LIB_DTS2_ORIGIN_Y, LIB_DTS2_ORIGIN_Z);
+	}
+	using RT = typename Numerators_3::RT;
+	if (exponent() > std::numeric_limits<RT>::digits-1) {
+		throw std::runtime_error("Point_sp::numerators3: exponent is too large");
+	}
+	using LIB_RATSS_NAMESPACE::convert;
+	Numerators_3 r;
+	auto sqr = [](int64_t v) { return v*v; };
+	int64_t den2 = sqr(denominator());
+	int64_t sum_p_i2 = sqr(numerator0()) + sqr(numerator1());
+	switch (abs(pos())) {
+	case 1: //x is the missing coordinate, thus num0 holds y, num1 holds z
+		r.x = (std::signbit<int>(pos()) ? 1 : -1)*RT(sum_p_i2 - den2);
+		r.y = RT(2*numerator0()*denominator());
+		r.z = RT(2*numerator1()*denominator());
+		break;
+	case 2: //y is the missing coordinate, thus num0 holds x, num1 holds z
+		r.x = RT(2*numerator0()*denominator());
+		r.y = (std::signbit<int>(pos()) ? 1 : -1)*RT(sum_p_i2 - den2);
+		r.z = RT(2*numerator1()*denominator());
+		break;
+	case 3: //z is the missing coordinate, thus num0 holds x, num1 holds y
+		r.x = RT(2*numerator0()*denominator());
+		r.y = RT(2*numerator1()*denominator());
+		r.z = (std::signbit<int>(pos()) ? 1 : -1)*RT(sum_p_i2 - den2);
+		break;
+	};
+	return r;
+}
 
 PTSP_TMP_PRMS
 typename PTSP_CLS_NAME::Point_3
