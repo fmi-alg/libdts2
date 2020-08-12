@@ -26,6 +26,7 @@ public:
 		static constexpr int NUMERATOR0=32;
 		static constexpr int NUMERATOR1=32;
 		static constexpr int DENOMINATOR=7;
+		static constexpr int EXPONENT=DENOMINATOR;
 		static constexpr int POS=3;
 	};
 public:
