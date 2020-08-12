@@ -198,7 +198,7 @@ public:
 	using MyBaseClass = typename MyBaseTrait::Orientation_2;
 	using Is_in_auxiliary_triangle = typename MyBaseTrait::Is_in_auxiliary_triangle;
 	using Point = Point_sp<typename MyBaseTrait::LinearKernel>;
-	static constexpr int max_exponent = 30;
+	static constexpr int max_exponent = 32;
 	template<int N>
 	using AINT = typename AlignedIntegerTypeFromBits<N+1>::type; //Plus 1 for the sign
 private:
@@ -210,17 +210,18 @@ public:
 	{}
 public:
 	CGAL::Sign operator()(Point const & p, Point const & q, Point const & t) const {
-		if (p.exponent() < max_exponent && q.exponent() < max_exponent && t.exponent() < max_exponent) {
+		auto max_exp = std::max({p.exponent(), q.exponent(), t.exponent()});
+		if (max_exp < max_exponent) {
 			Numerators_3 p3 = p.numerators3();
 			Numerators_3 q3 = q.numerators3();
 			Numerators_3 origin(LIB_DTS2_ORIGIN_X, LIB_DTS2_ORIGIN_Y, LIB_DTS2_ORIGIN_Z);
 			Numerators_3 t3 = t.numerators3();
 			
-			CGAL::Sign oriented_side = ot3(p3, q3, origin, t3);
+			CGAL::Sign oriented_side = ot3(p3, q3, origin, t3, max_exp);
 			
 			if (oriented_side != CGAL::Sign::COLLINEAR && m_iat(p) && m_iat(q)) {
 				//the point always has to be on the opposite side of the infinite vertex
-				oriented_side = - ot3(p3, q3, origin, Numerators_3(0, 0, 1));
+				oriented_side = - ot3(p3, q3, origin, Numerators_3(0, 0, 1), max_exp);
 			}
 			assert(oriented_side == MyBaseClass::operator()(p, q, t));
 			return oriented_side;
@@ -230,8 +231,12 @@ public:
 		}
 	}
 private:
+	CGAL::Sign ot3(Numerators_3 const & p, Numerators_3 const & q, Numerators_3 const & r, Numerators_3 const & s, uint32_t /*max_exp*/) const {
+		return ot3<max_exponent>(p, q, r, s);
+	}
+	template<int N>
 	CGAL::Sign ot3(Numerators_3 const & p, Numerators_3 const & q, Numerators_3 const & r, Numerators_3 const & s) const {
-		return ot3<2*max_exponent+1>(p.x, p.y, p.z,
+		return ot3<2*N+1>(p.x, p.y, p.z,
 				   q.x, q.y, q.z,
 				   r.x, r.y, r.z,
 				   s.x, s.y, s.z
