@@ -54,8 +54,11 @@ struct Numerator_Denominator_1_3 {
 	Numerator_Denominator_1_3 & operator=(Numerator_Denominator_1_3 const &) = default;
 	Numerator_Denominator_1_3 & operator=(Numerator_Denominator_1_3 &&) = default;
 };
+
+template<typename T_RT, int T_MAX_BITS = std::numeric_limits<T_RT>::digits>
 struct Numerators_3 {
 	using RT = T_RT;
+	static constexpr int max_bits = T_MAX_BITS;
 	RT x;
 	RT y;
 	RT z;
@@ -63,6 +66,8 @@ struct Numerators_3 {
 	Numerators_3(RT const & x, RT const & y, RT const & z) : x(x), y(y), z(z) {}
 	Numerators_3(Numerators_3 const &) = default;
 	Numerators_3(Numerators_3 &&) = default;
+	Numerators_3 & operator=(Numerators_3 const &) = default;
+	Numerators_3 & operator=(Numerators_3 &&) = default;
 };
 
 } // LIB_DTS2_NAMESPACE::detail::Kernel_sp
