@@ -327,12 +327,19 @@ public:
 	Point operator()(T && ... t) const { return Point(std::forward<T>(t)...); }
 };
 
+template<typename T_LINEAR_KERNEL>
+struct EpsBasedAuxPointsTraits {
+	using LinearKernel = T_LINEAR_KERNEL;
+	using FT = typename LinearKernel::FT;
+	using Point_3 = Point_sp<T_LINEAR_KERNEL>;
+};
+
 } //end namespace detail::Kernel_sp 
 
 
 template<
 	typename T_LINEAR_KERNEL,
-	typename T_AUX_POINT_GENERATOR=detail::EpsBasedAuxPoints<T_LINEAR_KERNEL>
+	typename T_AUX_POINT_GENERATOR=detail::EpsBasedAuxPoints<detail::Kernel_sp::EpsBasedAuxPointsTraits<T_LINEAR_KERNEL>>
 >
 class Kernel_sp_base:
 	public Constrained_delaunay_triangulation_with_inexact_intersections_base_traits_s2<
