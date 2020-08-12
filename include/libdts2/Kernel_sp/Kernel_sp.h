@@ -19,7 +19,7 @@ public:
 	using MyBaseClass = typename MyBaseTrait::Side_of_oriented_circle_2;
 	using Is_auxiliary_point = typename MyBaseTrait::Is_auxiliary_point;
 	using Point = Point_sp<typename MyBaseTrait::LinearKernel>;
-	static constexpr int max_exponent = 31;
+	static constexpr int max_exponent = 32;
 	//Signed integer which can represent an unsigned number with up to N bits
 	template<int N>
 	using AINT = typename AlignedIntegerTypeFromBits<N+1>::type; //Plus one for the sign
