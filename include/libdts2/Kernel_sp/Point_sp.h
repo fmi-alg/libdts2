@@ -85,6 +85,7 @@ public:
 			)
 		>::type
 	>;
+	using Numerator_Denominator_1_3 = detail::Kernel_sp::Numerator_Denominator_1_3<typename Numerators_3::RT>;
 public:
 	Point_sp();
 	Point_sp(MyParent const & v);
@@ -99,6 +100,9 @@ public:
 public:
 	Point_3 point3() const;
 	Numerators_3 numerators3() const;
+	Numerator_Denominator_1_3 num_den_x_3() const;
+	Numerator_Denominator_1_3 num_den_y_3() const;
+	Numerator_Denominator_1_3 num_den_z_3() const;
 public:
 	template<typename T_FT = FT>
 	T_FT x() const;
@@ -295,6 +299,88 @@ PTSP_CLS_NAME::numerators3() const {
 		break;
 	};
 	return r;
+}
+
+PTSP_TMP_PRMS
+typename PTSP_CLS_NAME::Numerator_Denominator_1_3
+PTSP_CLS_NAME::num_den_x_3() const {
+	if (pos() == 0) {  //Hack for LIB_DTS2_ORIGIN 
+		return Numerator_Denominator_1_3(LIB_DTS2_ORIGIN_X, 1);
+	}
+	using RT = typename Numerator_Denominator_1_3::RT;
+	if (2*exponent()+1 > std::numeric_limits<RT>::digits) {
+		throw std::runtime_error("Point_sp::num_den_x_3: exponent is too large");
+	}
+	auto sqr = [](int64_t v) { return v*v; };
+	int64_t den2 = sqr(denominator());
+	int64_t sum_p_i2 = sqr(numerator0()) + sqr(numerator1());
+	Numerator_Denominator_1_3 result;
+	switch (abs(pos())) {
+	case 1: //x is the missing coordinate
+		result = Numerator_Denominator_1_3((std::signbit<int>(pos()) ? 1 : -1)*RT(sum_p_i2 - den2), RT(den2 + sum_p_i2));
+		break;
+	default: //in any case num0 holds x
+		result = Numerator_Denominator_1_3(RT(2*numerator0()*denominator()), RT(den2 + sum_p_i2));
+		break;
+	};
+	assert(mpq_class(result.num)/mpq_class(result.den) == x<mpq_class>());
+	return result;
+}
+
+PTSP_TMP_PRMS
+typename PTSP_CLS_NAME::Numerator_Denominator_1_3
+PTSP_CLS_NAME::num_den_y_3() const {
+	if (pos() == 0) {  //Hack for LIB_DTS2_ORIGIN 
+		return Numerator_Denominator_1_3(LIB_DTS2_ORIGIN_Y, 1);
+	}
+	using RT = typename Numerator_Denominator_1_3::RT;
+	if (2*exponent()+1 > std::numeric_limits<RT>::digits) {
+		throw std::runtime_error("Point_sp::num_den_y_3: exponent is too large");
+	}
+	auto sqr = [](int64_t v) { return v*v; };
+	int64_t den2 = sqr(denominator());
+	int64_t sum_p_i2 = sqr(numerator0()) + sqr(numerator1());
+	Numerator_Denominator_1_3 result;
+	switch (abs(pos())) {
+	case 1: //x is the missing coordinate, thus num0 holds y
+		result = Numerator_Denominator_1_3(RT(2*numerator0()*denominator()), RT(den2 + sum_p_i2));
+		break;
+	case 2: //y is the missing coordinate
+		result = Numerator_Denominator_1_3((std::signbit<int>(pos()) ? 1 : -1)*RT(sum_p_i2 - den2), RT(den2 + sum_p_i2));
+		break;
+	case 3: //z is the missing coordinate, thus num1 holds y
+		result = Numerator_Denominator_1_3(RT(2*numerator1()*denominator()), RT(den2 + sum_p_i2));
+		break;
+	};
+	assert(mpq_class(result.num)/mpq_class(result.den) == y<mpq_class>());
+	return result;
+}
+
+PTSP_TMP_PRMS
+typename PTSP_CLS_NAME::Numerator_Denominator_1_3
+PTSP_CLS_NAME::num_den_z_3() const {
+	if (pos() == 0) {  //Hack for LIB_DTS2_ORIGIN 
+		return Numerator_Denominator_1_3(LIB_DTS2_ORIGIN_Z, 1);
+	}
+	using RT = typename Numerator_Denominator_1_3::RT;
+	if (2*exponent()+1 > std::numeric_limits<RT>::digits) {
+		throw std::runtime_error("Point_sp::num_den_z_3: exponent is too large");
+	}
+	auto sqr = [](int64_t v) { return v*v; };
+	int64_t den2 = sqr(denominator());
+	int64_t sum_p_i2 = sqr(numerator0()) + sqr(numerator1());
+	Numerator_Denominator_1_3 result;
+	switch (abs(pos())) {
+	case 1: //x,y are the missing coordinate, thus num1 holds z
+	case 2:
+		result = Numerator_Denominator_1_3(RT(2*numerator1()*denominator()), RT(den2 + sum_p_i2));
+		break;
+	case 3: //z is the missing coordinate, thus num1 holds y
+		result = Numerator_Denominator_1_3((std::signbit<int>(pos()) ? 1 : -1)*RT(sum_p_i2 - den2), RT(den2 + sum_p_i2));
+		break;
+	};
+	assert(mpq_class(result.num)/mpq_class(result.den) == z<mpq_class>());
+	return result;
 }
 
 PTSP_TMP_PRMS

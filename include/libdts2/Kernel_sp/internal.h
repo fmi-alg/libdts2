@@ -41,7 +41,19 @@ struct AlignedIntegerTypeFromBits {
 	using type = typename IntegerTypeFromBits<bits>::type;
 };
 
-template<typename T_RT>
+template<typename T_RT, int T_MAX_BITS = std::numeric_limits<T_RT>::digits>
+struct Numerator_Denominator_1_3 {
+	using RT = T_RT;
+	static constexpr int max_bits = T_MAX_BITS;
+	RT num;
+	RT den;
+	Numerator_Denominator_1_3() {}
+	Numerator_Denominator_1_3(RT const & num, RT const & den) : num(num), den(den) {}
+	Numerator_Denominator_1_3(Numerator_Denominator_1_3 const &) = default;
+	Numerator_Denominator_1_3(Numerator_Denominator_1_3 &&) = default;
+	Numerator_Denominator_1_3 & operator=(Numerator_Denominator_1_3 const &) = default;
+	Numerator_Denominator_1_3 & operator=(Numerator_Denominator_1_3 &&) = default;
+};
 struct Numerators_3 {
 	using RT = T_RT;
 	RT x;
