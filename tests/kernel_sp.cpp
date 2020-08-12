@@ -12,7 +12,9 @@ namespace tests {
 
 class Kernel_sp_Test: public TestBase {
 CPPUNIT_TEST_SUITE( Kernel_sp_Test );
-CPPUNIT_TEST( special );
+// CPPUNIT_TEST( special );
+// CPPUNIT_TEST( special2 );
+CPPUNIT_TEST( special3 );
 CPPUNIT_TEST_SUITE_END();
 public:
 	static std::size_t num_random_test_points;
@@ -22,6 +24,8 @@ public:
 	virtual void setUp() override;
 public:
 	void special();
+	void special2();
+	void special3();
 };
 
 std::size_t Kernel_sp_Test::num_random_test_points;
@@ -170,6 +174,36 @@ void Kernel_sp_Test::special() {
 		tic.cycle_coords();
 		toc.cycle_coords();
 	}
+}
+
+void Kernel_sp_Test::special2() {
+	using K = dts2::Kernel_sp_64;
+	using P = K::Point_2;
+	using Pred = K::Orientation_2;
+	
+	P p(82594246, -11085779, 268435456, 2);
+	P q(165140616, -22196759, 536870912, 2);
+	P t(165176382, -22171155, 536870912, 2);
+	
+	K k;
+	Pred pred = k.orientation_2_object();
+	
+	CPPUNIT_ASSERT_EQUAL(CGAL::Sign::POSITIVE, pred(p, q, t));
+}
+
+void Kernel_sp_Test::special3() {
+	using K = dts2::Kernel_sp_64;
+	using P = K::Point_2;
+	using Pred = K::Orientation_2;
+	
+	P p(2, -1, 262144, 3);
+	P q(0, 0, 1, -3);
+	P t(45082135, -9152108, 134217728, 2);
+	
+	K k;
+	Pred pred = k.orientation_2_object();
+	
+	CPPUNIT_ASSERT_EQUAL(CGAL::Sign::POSITIVE, pred(p, q, t));
 }
 
 }} //end namespace ratss::tests
