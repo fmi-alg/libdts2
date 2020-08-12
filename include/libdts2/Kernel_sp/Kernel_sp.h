@@ -339,12 +339,113 @@ struct EpsBasedAuxPointsTraits {
 	using Point_3 = Point_sp<T_LINEAR_KERNEL>;
 };
 
+template<typename T_LINEAR_KERNEL>
+struct AuxPointsGenerator {
+public:
+	using LinearKernel = T_LINEAR_KERNEL;
+	using Point_3 = Point_sp<LinearKernel>;
+	using FT = typename LinearKernel::FT;
+// 	static constexpr uint32_t max_exponent = (static_cast<uint32_t>(1) << (Point_3::BitSizes::EXPONENT))-1;
+	static constexpr uint32_t max_exponent = 60;
+public:
+	class Generate_auxiliary_point final {
+	public:
+		Generate_auxiliary_point() {}
+	public:
+		inline Point_3 operator()(AuxPointSelector s) const {
+			Point_3 p;
+			if (s == AuxPointSelector::LOWER) {
+				p = Point_3(0,0,1, ratss::SP_DIM3_NEGATIVE);
+			}
+			else {
+				p.set_pos(ratss::SP_DIM3_POSITIVE);
+				p.set_exponent(max_exponent);
+				switch(s) {
+					case AuxPointSelector::UPPER_0:
+						p.set_numerator0(0);
+						p.set_numerator1(1);
+						break;
+					case AuxPointSelector::UPPER_1:
+						p.set_numerator0(-1);
+						p.set_numerator1(-1);
+						break;
+					case AuxPointSelector::UPPER_2:
+						p.set_numerator0(1);
+						p.set_numerator1(-1);
+						break;
+					default:
+						throw std::runtime_error("AuxPointsGenerator::Generate_auxiliary_point: Invalid selector");
+						break;
+				}
+			}
+			assert(p == Point_3(p.point3()));
+			return p;
+		};
+	};
+	
+	class Is_in_auxiliary_triangle final {
+	public:
+		Is_in_auxiliary_triangle() {}
+	public:
+		inline bool operator()(Point_3 const & p) const {
+			return (p.pos() == ratss::SP_DIM3_POSITIVE &&
+					p.exponent() >= max_exponent &&
+					std::abs(p.numerator0()) <= 1 &&
+					std::abs(p.numerator1()) <= 1
+			);
+		};
+	};
+
+	class Is_auxiliary_point final {
+	public:
+		Is_auxiliary_point() {}
+	public:
+		bool operator()(Point_3 const & p) const {
+			return (p.pos() == ratss::SP_DIM3_NEGATIVE && p.numerator0() == 0 && p.numerator1() == 0) || m_iat(p);
+		};
+	private:
+		Is_in_auxiliary_triangle m_iat;
+	};
+	
+	//Is true if the given point is on the sphere and outside of the auxiliary triangle
+	class Is_valid_point_on_sphere final {
+	public:
+		Is_valid_point_on_sphere(Is_auxiliary_point const & iap) : m_iap(iap) {}
+	public:
+		bool operator()(Point_3 const & p) const {
+			return p.pos() != 0 && !m_iap(p);
+		}
+	private:
+		Is_auxiliary_point m_iap;
+	};
+public:
+	AuxPointsGenerator() {}
+	virtual ~AuxPointsGenerator() {}
+public:
+	Is_auxiliary_point is_auxiliary_point_object() const {
+		return Is_auxiliary_point();
+	}
+	
+	Is_in_auxiliary_triangle is_in_auxiliary_triangle_object() const {
+		return Is_in_auxiliary_triangle();
+	}
+	
+	Is_valid_point_on_sphere is_valid_point_on_sphere_object() const {
+		return Is_valid_point_on_sphere(is_auxiliary_point_object());
+	}
+	
+	Generate_auxiliary_point generate_auxiliary_point_object() const {
+		return Generate_auxiliary_point();
+	}
+};
+
 } //end namespace detail::Kernel_sp 
 
 
 template<
 	typename T_LINEAR_KERNEL,
-	typename T_AUX_POINT_GENERATOR=detail::EpsBasedAuxPoints<detail::Kernel_sp::EpsBasedAuxPointsTraits<T_LINEAR_KERNEL>>
+// 	typename T_AUX_POINT_GENERATOR=detail::EpsBasedAuxPoints<detail::Kernel_sp::EpsBasedAuxPointsTraits<T_LINEAR_KERNEL>>
+	typename T_AUX_POINT_GENERATOR=detail::Kernel_sp::AuxPointsGenerator<T_LINEAR_KERNEL>
 >
 class Kernel_sp_base:
 	public Constrained_delaunay_triangulation_with_inexact_intersections_base_traits_s2<
