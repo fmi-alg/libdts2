@@ -20,6 +20,9 @@ public:
 	using Is_auxiliary_point = typename MyBaseTrait::Is_auxiliary_point;
 	using Point = Point_sp<typename MyBaseTrait::LinearKernel>;
 	static constexpr int max_exponent = 31;
+	//Signed integer which can represent an unsigned number with up to N bits
+	template<int N>
+	using AINT = typename AlignedIntegerTypeFromBits<N+1>::type; //Plus one for the sign
 public:
 	Side_of_oriented_circle_s2(MyBaseClass const & _base, Is_auxiliary_point const & _iap) :
 	MyBaseClass(_base),
@@ -99,22 +102,21 @@ public:
 	//T_STAGE2: 2n+2 Bits
 	//T_STAGE3: 2n+3 Bits
 	//T_STAGE4: 4n+6 Bits
-	template<
-		int T_START_BITS,
-		typename T_STAGE0 = typename AlignedIntegerTypeFromBits<T_START_BITS>::type,
-		typename T_STAGE1 = typename AlignedIntegerTypeFromBits<T_START_BITS+1>::type,
-		typename T_STAGE2 = typename AlignedIntegerTypeFromBits<2*T_START_BITS+2>::type,
-		typename T_STAGE3 = typename AlignedIntegerTypeFromBits<2*T_START_BITS+3>::type,
-		typename T_STAGE4 = typename AlignedIntegerTypeFromBits<4*T_START_BITS+6>::type
-	>
+	template<int N>
 	inline CGAL::Sign calc(
-					const T_STAGE0 & p_num0, const T_STAGE0 & p_num1,
-					const T_STAGE0 & q_num0, const T_STAGE0 & q_num1,
-					const T_STAGE0 & r_num0, const T_STAGE0 & r_num1,
-					const T_STAGE0 & t_num0, const T_STAGE0 & t_num1
+					const AINT<N> & p_num0, const AINT<N> & p_num1,
+					const AINT<N> & q_num0, const AINT<N> & q_num1,
+					const AINT<N> & r_num0, const AINT<N> & r_num1,
+					const AINT<N> & t_num0, const AINT<N> & t_num1
 	) const
 	{
-		//points have up to T_STAGE0=n Bits
+		
+		using T_STAGE1 = AINT<N+1>;
+		using T_STAGE2 = AINT<2*N+2>;
+		using T_STAGE3 = AINT<2*N+3>;
+		using T_STAGE4 = AINT<4*N+6>;
+		
+		//points have up to AINT<N>=T_STAGE0=n Bits
 		T_STAGE1 px(p_num0), py(p_num1);
 		T_STAGE1 qx(q_num0), qy(q_num1);
 		T_STAGE1 rx(r_num0), ry(r_num1);
