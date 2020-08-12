@@ -268,7 +268,7 @@ PTSP_CLS_NAME::numerators3() const {
 		return Numerators_3(LIB_DTS2_ORIGIN_X, LIB_DTS2_ORIGIN_Y, LIB_DTS2_ORIGIN_Z);
 	}
 	using RT = typename Numerators_3::RT;
-	if (exponent() > std::numeric_limits<RT>::digits-1) {
+	if (2*exponent()+1 > std::numeric_limits<RT>::digits) {
 		throw std::runtime_error("Point_sp::numerators3: exponent is too large");
 	}
 	using LIB_RATSS_NAMESPACE::convert;
