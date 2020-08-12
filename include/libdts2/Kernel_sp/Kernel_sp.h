@@ -196,72 +196,99 @@ class Orientation_s2: public T_BASE_TRAIT::Orientation_2 {
 public:
 	using MyBaseTrait = T_BASE_TRAIT;
 	using MyBaseClass = typename MyBaseTrait::Orientation_2;
-	using Is_auxiliary_point = typename MyBaseTrait::Is_auxiliary_point;
+	using Is_in_auxiliary_triangle = typename MyBaseTrait::Is_in_auxiliary_triangle;
 	using Point = Point_sp<typename MyBaseTrait::LinearKernel>;
 	static constexpr int max_exponent = 30;
+	template<int N>
+	using AINT = typename AlignedIntegerTypeFromBits<N+1>::type; //Plus 1 for the sign
+private:
+	using Numerators_3 = typename Point::Numerators_3;
 public:
-	Orientation_s2(MyBaseClass const & _base, Side_of_oriented_circle_s2<MyBaseTrait> const & _soc) :
+	Orientation_s2(MyBaseClass const & _base, Is_in_auxiliary_triangle const & _iat) :
 	MyBaseClass(_base),
-	m_soc(_soc)
+	m_iat(_iat)
 	{}
 public:
 	CGAL::Sign operator()(Point const & p, Point const & q, Point const & t) const {
-		return MyBaseClass::operator()(p, q, t);
-		if (p.pos() == q.pos() && p.pos() == t.pos() &&
-			!m_soc.iap()(p) && !m_soc.iap()(q) && !m_soc.iap()(t) &&
-			p.exponent() < max_exponent && q.exponent() < max_exponent && t.exponent() < max_exponent
-		)
-		{
-			//we have to normalize the denominators
-			auto max_den = std::max(std::max(p.denominator(), q.denominator()), std::max(t.denominator(), t.denominator()));
-			auto result = (CGAL::Sign) -calc<30>(
-				p.numerator0()*(max_den/p.denominator()), p.numerator1()*(max_den/p.denominator()),
-				q.numerator0()*(max_den/q.denominator()), q.numerator1()*(max_den/q.denominator()),
-				t.numerator0()*(max_den/t.denominator()), t.numerator1()*(max_den/t.denominator())
-			);
-			#ifndef NDEBUG
-			{
-				auto should = MyBaseClass::operator()(p, q, t);
-				if (should != result) {
-					should = MyBaseClass::operator()(p, q, t);
-					result = (CGAL::Sign) -calc<30>(
-						p.numerator0()*(max_den/p.denominator()), p.numerator1()*(max_den/p.denominator()),
-						q.numerator0()*(max_den/q.denominator()), q.numerator1()*(max_den/q.denominator()),
-						t.numerator0()*(max_den/t.denominator()), t.numerator1()*(max_den/t.denominator())
-					);
-				}
-				assert(result == should);
+		if (p.exponent() < max_exponent && q.exponent() < max_exponent && t.exponent() < max_exponent) {
+			Numerators_3 p3 = p.numerators3();
+			Numerators_3 q3 = q.numerators3();
+			Numerators_3 origin(LIB_DTS2_ORIGIN_X, LIB_DTS2_ORIGIN_Y, LIB_DTS2_ORIGIN_Z);
+			Numerators_3 t3 = t.numerators3();
+			
+			CGAL::Sign oriented_side = ot3(p3, q3, origin, t3);
+			
+			if (oriented_side != CGAL::Sign::COLLINEAR && m_iat(p) && m_iat(q)) {
+				//the point always has to be on the opposite side of the infinite vertex
+				oriented_side = - ot3(p3, q3, origin, Numerators_3(0, 0, 1));
 			}
-			#endif
-			return result;
+			assert(oriented_side == MyBaseClass::operator()(p, q, t));
+			return oriented_side;
 		}
 		else { //use base predicate
 			return MyBaseClass::operator()(p, q, t);
 		}
 	}
-	template<
-		int T_START_BITS,
-		typename T_STAGE0 = typename AlignedIntegerTypeFromBits<T_START_BITS>::type,
-		typename T_STAGE1 = typename AlignedIntegerTypeFromBits<T_START_BITS+1>::type
-	>
-	CGAL::Sign calc(
-					const T_STAGE0 & p_num0, const T_STAGE0 & p_num1,
-					const T_STAGE0 & q_num0, const T_STAGE0 & q_num1,
-					const T_STAGE0 & t_num0, const T_STAGE0 & t_num1
+private:
+	CGAL::Sign ot3(Numerators_3 const & p, Numerators_3 const & q, Numerators_3 const & r, Numerators_3 const & s) const {
+		return ot3<2*max_exponent+1>(p.x, p.y, p.z,
+				   q.x, q.y, q.z,
+				   r.x, r.y, r.z,
+				   s.x, s.y, s.z
+			   );
+	}
+	template<int N>
+	CGAL::Sign ot3(
+					const AINT<N+1> & px, const AINT<N+1> & py, const AINT<N+1> & pz,
+					const AINT<N+1> & qx, const AINT<N+1> & qy, const AINT<N+1> & qz,
+					const AINT<N+1> & rx, const AINT<N+1> & ry, const AINT<N+1> & rz,
+					const AINT<N+1> & sx, const AINT<N+1> & sy, const AINT<N+1> & sz
 	) const {
-		//calculate a point reflected third point
-		//and use the Oriented_side_of_circle predicate
-		T_STAGE1 r_num0 = -T_STAGE1(p_num0);
-		T_STAGE1 r_num1 = -T_STAGE1(p_num1);
-		return m_soc.template calc<T_START_BITS+1, T_STAGE1> (
-				p_num0, p_num1,
-				q_num0, q_num1,
-				r_num0, r_num1,
-				t_num0, t_num1
-		);
+		return sign_of_determinant<N+1>(qx-px,rx-px,sx-px,
+                                    qy-py,ry-py,sy-py,
+                                    qz-pz,rz-pz,sz-pz);
+	}
+	
+	template<int N>
+	CGAL::Sign sign_of_determinant(const AINT<2*N> & a00,  const AINT<2*N>& a01,  const AINT<2*N>& a02,
+									const AINT<2*N> & a10,  const AINT<2*N>& a11,  const AINT<2*N>& a12,
+									const AINT<2*N> & a20,  const AINT<2*N>& a21,  const AINT<2*N>& a22) const
+	{
+		using T_STAGE1 = AINT<2*N+1>;
+		using T_STAGE2 = AINT<3*N+1>;
+		using T_STAGE3 = AINT<3*N+3>;
+		//aij have 2*n bits
+		//based on CGAL's sign_of_determinant
+				// First compute the det2x2
+		T_STAGE2 m01 = T_STAGE1(a00*a11) - T_STAGE1(a10*a01);
+		T_STAGE2 m02 = T_STAGE1(a00*a21) - T_STAGE1(a20*a01);
+		T_STAGE2 m12 = T_STAGE1(a10*a21) - T_STAGE1(a20*a11);
+		
+// 		std::cout << "m01=" << m01 << std::endl;
+// 		std::cout << "m02=" << m02 << std::endl;
+// 		std::cout << "m12=" << m12 << std::endl;
+		
+		//mij have 2n+1 bits
+		
+		// Now compute the minors of rank 3
+		T_STAGE3 m012 = T_STAGE3(m01*a22) - T_STAGE3(m02*a12) + T_STAGE3(m12*a02);
+		
+// 		std::cout << "m012=" << m012 << std::endl;
+		
+		//mij*akl has 2n+1+n = 3n+1 bits
+		//Thus m012 needs 3n+2 bits
+		if (m012 < 0) {
+			return CGAL::NEGATIVE;
+		}
+		else if (m012 > 0) {
+			return CGAL::POSITIVE;
+		}
+		else {
+			return CGAL::ZERO;
+		}
 	}
 private:
-	Side_of_oriented_circle_s2<MyBaseTrait> m_soc;
+	Is_in_auxiliary_triangle m_iat;
 };
 
 #define LESS_VAR_THREE(__VAR) template<typename T_BASE_TRAIT> \
@@ -350,7 +377,7 @@ public:
 		return Side_of_oriented_circle_2( MyBaseTrait::side_of_oriented_circle_2_object(), MyBaseTrait::is_auxiliary_point_object() );
 	}
 	Orientation_2 orientation_2_object() const {
-		return Orientation_2( MyBaseTrait::orientation_2_object(), Self::side_of_oriented_circle_2_object() );
+		return Orientation_2( MyBaseTrait::orientation_2_object(), MyBaseTrait::is_in_auxiliary_triangle_object() );
 	}
 	
 	#define LESS_VAR_OBJECT(__VAR) Less_ ## __VAR less_ ## __VAR ## _object() const { return Less_ ## __VAR( MyBaseTrait::less_ ## __VAR ## _object() ); }
