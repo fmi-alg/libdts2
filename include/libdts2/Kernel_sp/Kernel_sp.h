@@ -296,18 +296,40 @@ private:
 	Is_in_auxiliary_triangle m_iat;
 };
 
+//Less_var_3 for the case of var=x, but all other vars should to the same
+//a.x = num_ax/den_ax, b.x = num_bx/den_bx
+//a.x<b.x <=> a.x-b.x < 0
+//<=> num_ax/den_ax - num_bx/den_bx < 0
+//<=> (num_ax*den_bx - num_bx*den_ax)(den_ax*den_bx) < 0
+//<=> (num_ax*den_bx - num_bx*den_ax)*sign(den_ax)*sign(den_bx) < 0
 #define LESS_VAR_THREE(__VAR) template<typename T_BASE_TRAIT> \
 class Less_ ## __VAR ## _3: public T_BASE_TRAIT::Less_ ## __VAR ## _3 { \
 public: \
 	using MyBaseTrait = T_BASE_TRAIT; \
 	using MyParent = typename MyBaseTrait::Less_ ## __VAR ## _3; \
 	using Point = Point_sp<typename MyBaseTrait::LinearKernel>; \
+	static constexpr int max_exponent = 32; \
+	template<int N> \
+	using AINT = typename AlignedIntegerTypeFromBits<N+1>::type; \
 public: \
 	Less_ ## __VAR ## _3(); \
 	Less_ ## __VAR ## _3(MyParent const & other): MyParent(other) {} \
 public: \
 	inline bool operator()(Point const & a, Point const & b) const { \
-		return a.template __VAR <mpq_class>() < b.template __VAR <mpq_class>(); \
+		bool result; \
+		if (a.exponent() < max_exponent && b.exponent() < max_exponent) { \
+			auto a3 = a.num_den_ ## __VAR ## _3(); \
+			auto b3 = b.num_den_ ## __VAR ## _3(); \
+			using MyInt = AINT<2*(2*(max_exponent-1)+1)>; \
+			MyInt num = MyInt(a3.num)*MyInt(b3.den) - MyInt(b3.num)*MyInt(a3.den); \
+			num *= (a3.den < 0 ? -1 : 1)*(b3.den < 0 ? -1 : 1); \
+			result = (num < 0); \
+			assert(result == (a.template __VAR <mpq_class>() < b.template __VAR <mpq_class>()) ); \
+		} \
+		else { \
+			result = a.template __VAR <mpq_class>() < b.template __VAR <mpq_class>(); \
+		} \
+		return result; \
 	} \
 };
 
