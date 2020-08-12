@@ -5,46 +5,10 @@
 #include <libdts2/constants.h>
 #include <libdts2/Kernel_sp/Point_sp.h>
 #include <libdts2/Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2.h>
-#include <boost/multiprecision/cpp_int.hpp>
 #include <libratss/Conversion.h>
 
 namespace LIB_DTS2_NAMESPACE {
 namespace detail::Kernel_sp {
-
-template<int T_BITS>
-struct IntegerTypeFromBits {
-	using type = boost::multiprecision::number<
-		boost::multiprecision::cpp_int_backend<
-			T_BITS,
-			T_BITS,
-			boost::multiprecision::signed_magnitude,
-			boost::multiprecision::unchecked,
-			void
-		>
-	>;
-};
-
-template<>
-struct IntegerTypeFromBits<32> {
-	using type = int32_t;
-};
-
-template<>
-struct IntegerTypeFromBits<64> {
-	using type = int64_t;
-};
-
-template<>
-struct IntegerTypeFromBits<128> {
-	using type = __int128_t;
-};
-
-template<int T_BITS>
-struct AlignedIntegerTypeFromBits {
-	static constexpr int requested_bits = T_BITS;
-	static constexpr int bits = (requested_bits/64 + (requested_bits%64 == 0 ? 0 : 1))*64;
-	using type = typename IntegerTypeFromBits<bits>::type;
-};
 
 template<typename T_BASE_TRAIT>
 class Side_of_oriented_circle_s2:
