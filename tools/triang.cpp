@@ -1774,8 +1774,8 @@ void Data::create(InputOutput& io, const Config& cfg) {
 			io.info() << "done" << std::endl;
 		}
 	}
-	points.clear();
-	edges.clear();
+	points = decltype(points)();
+	edges = decltype(edges)();
 }
 
 void Data::info(InputOutput& io) {
