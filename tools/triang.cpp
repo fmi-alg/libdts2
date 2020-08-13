@@ -314,7 +314,7 @@ BinaryIo::write(const Point3 & v) {
 	this->write( ratss::convert<FT>( v.z() ) );
 }
 
-typedef enum {TT_DELAUNAY, TT_DELAUNAY_64, TT_CONVEX_HULL_INEXACT, TT_CONVEX_HULL, TT_CONVEX_HULL_64, TT_CONSTRAINED, TT_CONSTRAINED_INEXACT, TT_CONSTRAINED_INEXACT_64, TT_CONSTRAINED_INEXACT_SP, TT_CONSTRAINED_INEXACT_SPK64, TT_CONSTRAINED_EXACT, TT_CONSTRAINED_EXACT_SPHERICAL} TriangulationType;
+typedef enum {TT_DELAUNAY, TT_DELAUNAY_64, TT_CONVEX_HULL_INEXACT, TT_CONVEX_HULL, TT_CONVEX_HULL_64, TT_CONSTRAINED, TT_CONSTRAINED_INEXACT, TT_CONSTRAINED_INEXACT_64, TT_CONSTRAINED_INEXACT_SP, TT_CONSTRAINED_INEXACT_SPK, TT_CONSTRAINED_INEXACT_SPK64, TT_CONSTRAINED_EXACT, TT_CONSTRAINED_EXACT_SPHERICAL} TriangulationType;
 typedef enum {GOT_INVALID, GOT_NONE, GOT_WITHOUT_SPECIAL, GOT_WITHOUT_SPECIAL_HASH_MAP, GOT_SIMPLEST_GRAPH_RENDERING, GOT_SIMPLEST_GRAPH_RENDERING_ANDRE} GraphOutputType;
 typedef enum {GIT_INVALID, GIT_NODES_EDGES, GIT_EDGES, GIT_NODES_EDGES_BY_POINTS_BINARY} GraphInputType;
 typedef enum {TIO_INVALID, TIO_NODES_EDGES, TIO_EDGES, TIO_NODES_EDGES_BY_POINTS_BINARY} TriangulationInputOrder;
@@ -998,6 +998,8 @@ using TriangulationCreatorInExactIntersectionsConstrainedDelaunaySp =
 	TriangulationCreatorConstrainedDelaunay<dts2::Constrained_Delaunay_triangulation_with_inexact_intersections_with_info_s2_sp>;
 using TriangulationCreatorInExactIntersectionsConstrainedDelaunaySpk64 =
 	TriangulationCreatorConstrainedDelaunay<dts2::Constrained_Delaunay_triangulation_with_inexact_intersections_with_info_s2_spk_64>;
+using TriangulationCreatorInExactIntersectionsConstrainedDelaunaySpk =
+	TriangulationCreatorConstrainedDelaunay<dts2::Constrained_Delaunay_triangulation_with_inexact_intersections_with_info_s2_spk>;
 using TriangulationCreatorExactIntersectionsConstrainedDelaunay = 
 	TriangulationCreatorConstrainedDelaunay<dts2::Constrained_Delaunay_triangulation_with_exact_intersections_with_info_s2>;
 
@@ -1066,6 +1068,17 @@ m_tr(
 			LIB_RATSS_NAMESPACE::convert<mpq_class>(std::numeric_limits<uint32_t>::max()-1)/
 			LIB_RATSS_NAMESPACE::convert<mpq_class>(std::numeric_limits<uint32_t>::max())
 		),
+		significands,
+		intersectionSignificands
+	)
+)
+{}
+
+template<>
+TriangulationCreatorInExactIntersectionsConstrainedDelaunaySpk::TriangulationCreatorConstrainedDelaunay(int significands, int intersectionSignificands) :
+m_tr(
+	TriangulationCreatorInExactIntersectionsConstrainedDelaunaySpk::Tr::Geom_traits(
+		dts2::Kernel_sp::AuxiliaryPointsGenerator(),
 		significands,
 		intersectionSignificands
 	)
@@ -1241,7 +1254,10 @@ bool Config::parse(const std::string & token,int & i, int argc, char ** argv) {
 		else if (type == "cxsp" || type == "constrained-intersection-sp") {
 			triangType = TT_CONSTRAINED_INEXACT_SP;
 		}
-		else if (type == "cxspk64" || type == "constrained-intersection-sp") {
+		else if (type == "cxspk" || type == "constrained-intersection-spk") {
+			triangType = TT_CONSTRAINED_INEXACT_SPK;
+		}
+		else if (type == "cxspk64" || type == "constrained-intersection-spk-64") {
 			triangType = TT_CONSTRAINED_INEXACT_SPK64;
 		}
 		else if (type == "cxe" || type == "constrained-intersection-exact") {
@@ -1321,7 +1337,7 @@ void Config::parse_completed() {
 		intersectSignificands = significands;
 		autoChangedOptions = true;
 	}
-	if (triangType == TT_CONSTRAINED_INEXACT_64 || triangType == TT_CONSTRAINED_INEXACT_SP || triangType == TT_CONSTRAINED_INEXACT_SPK64 || triangType == TT_CONVEX_HULL_64 || triangType == TT_DELAUNAY_64) {
+	if (triangType == TT_CONSTRAINED_INEXACT_64 || triangType == TT_CONSTRAINED_INEXACT_SP || triangType == TT_CONSTRAINED_INEXACT_SPK || triangType == TT_CONSTRAINED_INEXACT_SPK64 || triangType == TT_CONVEX_HULL_64 || triangType == TT_DELAUNAY_64) {
 		significands = 31;
 		intersectSignificands = 31;
 		snapType = ratss::ST_PLANE | ratss::ST_FX | ratss::ST_NORMALIZE;
@@ -1394,6 +1410,9 @@ void Config::print(std::ostream & out) const {
 	case TT_CONSTRAINED_INEXACT_SP:
 		out << "constrained in-exact intersections using ExtendedInt64 kernel and Point_sp";
 		break;
+	case TT_CONSTRAINED_INEXACT_SPK:
+		out << "constrained in-exact intersections using Kernel_sp";
+		break;
 	case TT_CONSTRAINED_INEXACT_SPK64:
 		out << "constrained in-exact intersections using Kernel_sp with ExtendedInt64";
 		break;
@@ -1456,7 +1475,7 @@ void Config::print(std::ostream & out) const {
 		break;
 	};
 	out << '\n';
-	if (triangType == TT_CONSTRAINED_INEXACT || triangType == TT_CONSTRAINED_INEXACT_64 || triangType == TT_CONSTRAINED_INEXACT_SP || triangType == TT_CONSTRAINED_INEXACT_SPK64) {
+	if (triangType == TT_CONSTRAINED_INEXACT || triangType == TT_CONSTRAINED_INEXACT_64 || triangType == TT_CONSTRAINED_INEXACT_SP || triangType == TT_CONSTRAINED_INEXACT_SPK64 || triangType == TT_CONSTRAINED_INEXACT_SPK64) {
 		out << "Intersection point significands: " << intersectSignificands << '\n';
 	}
 	std::cout << "Check: " << (check ? "yes" : "no") << '\n';
@@ -1502,6 +1521,9 @@ void Data::init(const Config & cfg) {
 		break;
 	case TT_CONSTRAINED_INEXACT_SP:
 		tc = new TriangulationCreatorInExactIntersectionsConstrainedDelaunaySp(cfg.significands, cfg.intersectSignificands);
+		break;
+	case TT_CONSTRAINED_INEXACT_SPK:
+		tc = new TriangulationCreatorInExactIntersectionsConstrainedDelaunaySpk(cfg.significands, cfg.intersectSignificands);
 		break;
 	case TT_CONSTRAINED_INEXACT_SPK64:
 		tc = new TriangulationCreatorInExactIntersectionsConstrainedDelaunaySpk64(cfg.significands, cfg.intersectSignificands);
