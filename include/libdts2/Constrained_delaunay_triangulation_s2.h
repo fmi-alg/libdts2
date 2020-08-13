@@ -193,6 +193,18 @@ using Constrained_Delaunay_triangulation_with_inexact_intersections_with_info_s2
 	>;
 
 template<typename T_VERTEX_INFO, typename T_FACE_INFO>
+using Constrained_Delaunay_triangulation_with_inexact_intersections_with_info_s2_spk =
+	Constrained_delaunay_triangulation_s2<
+		Kernel_sp,
+		typename internal::ConstrainedTriangulationDataStructureSelector<
+			Kernel_sp,
+			T_VERTEX_INFO,
+			T_FACE_INFO
+		>::type,
+		CGAL::Exact_predicates_tag
+	>;
+	
+template<typename T_VERTEX_INFO, typename T_FACE_INFO>
 using Constrained_Delaunay_triangulation_with_inexact_intersections_with_info_s2_spk_64 =
 	Constrained_delaunay_triangulation_s2<
 		Kernel_sp_64,
