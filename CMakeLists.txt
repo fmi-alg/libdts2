@@ -28,6 +28,7 @@ set(LIB_SOURCES_CPP
 	src/Constrained_delaunay_triangulation_s2.cpp
 	src/Kernel_sp/Point_sp.cpp
 	src/Kernel_sp/Kernel_sp.cpp
+	src/vendor/signed_wider.cpp
 )
 
 set(LIB_SOURCES_H
@@ -47,6 +48,8 @@ set(LIB_SOURCES_H
 	include/libdts2/Triangulation_base_s2.h
 	include/libdts2/Constrained_delaunay_triangulation_with_exact_intersections_spherical_traits_s2.h
 	include/libdts2/Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2.h
+	include/libdts2/vendor/wider/signed_wider.h
+	include/libdts2/vendor/wider/wider.h
 )
 
 add_library(${PROJECT_NAME} STATIC

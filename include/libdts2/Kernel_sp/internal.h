@@ -6,8 +6,12 @@
 
 #include <libdts2/vendor/ttmath/ttmathint.h>
 #include <gmpxx.h>
+#include <libdts2/vendor/wider/signed_wider.h>
+
 // #define LIB_DTS_2_KERNEL_SP_USE_TTMATH
 // #define LIB_DTS_2_KERNEL_SP_USE_MPZ_CLASS
+// #define LIB_DTS_2_KERNEL_SP_USE_SIGNED_WIDER
+
 namespace LIB_DTS2_NAMESPACE::detail::Kernel_sp {
 
 #ifdef LIB_DTS_2_KERNEL_SP_USE_TTMATH
@@ -43,6 +47,36 @@ struct IntegerTypeFromBits<32> {
 template<>
 struct IntegerTypeFromBits<64> {
 	using type = int64_t;
+};
+
+#elif defined(LIB_DTS_2_KERNEL_SP_USE_SIGNED_WIDER)
+
+template<int T_BITS>
+struct IntegerTypeFromBits;
+
+template<>
+struct IntegerTypeFromBits<32> {
+	using type = int64_t;
+};
+
+template<>
+struct IntegerTypeFromBits<64> {
+	using type = int64_t;
+};
+
+template<>
+struct IntegerTypeFromBits<128> {
+	using type = SignedWider< Wider<uint64_t> >;
+};
+
+template<>
+struct IntegerTypeFromBits<192> {
+	using type = SignedWider< Wider< Wider<uint64_t> > >;
+};
+
+template<>
+struct IntegerTypeFromBits<256> {
+	using type = SignedWider< Wider< Wider<uint64_t> > >;
 };
 
 #else
