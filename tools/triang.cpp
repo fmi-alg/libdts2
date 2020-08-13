@@ -1094,6 +1094,7 @@ public:
 	TriangulationInputOrder tio = TIO_NODES_EDGES;
 	int intersectSignificands = -1;
 	std::string rewriteFileName;
+	bool check{false};
 public:
 	bool autoChangedOptions{false};
 public:
@@ -1309,6 +1310,9 @@ bool Config::parse(const std::string & token,int & i, int argc, char ** argv) {
 		intersectSignificands = ::atoi(argv[i+1]);
 		++i;
 	}
+	else if (token == "--check" && i+1 < argc) {
+		check = true;
+	}
 	else {
 		return false;
 	}
@@ -1344,7 +1348,8 @@ void Config::help(std::ostream & out) const {
 		"\t-go type\tgraph output type = [none, wx, witout_special, simplest, simplest_andre]\n"
 		"\t-gi type\tgraph input type = [ne, nodes-edges, e, edges, nei, nodes-edges-iterative]\n"
 		"\t-io type\tinput order type = [ne, nodes-edges, e, edges, nei, nodes-edges-iterative]\n"
-		"\t-is num\tsignificands used to calculate intersection points\n";
+		"\t-is num\tsignificands used to calculate intersection points\n"
+		"\t--check\tCheck points and triangulation\n";
 	ratss::BasicCmdLineOptions::options_help(out);
 	out << '\n';
 	out << "For gi=ne the input format is as follows:\n"
@@ -1457,6 +1462,7 @@ void Config::print(std::ostream & out) const {
 	if (triangType == TT_CONSTRAINED_INEXACT || triangType == TT_CONSTRAINED_INEXACT_64 || triangType == TT_CONSTRAINED_INEXACT_SP || triangType == TT_CONSTRAINED_INEXACT_SPK64) {
 		out << "Intersection point significands: " << intersectSignificands << '\n';
 	}
+	std::cout << "Check: " << (check ? "yes" : "no") << '\n';
 	ratss::BasicCmdLineOptions::options_selection(out);
 }
 
@@ -1704,6 +1710,12 @@ Point3 Data::readPoint(std::istream& is, const Config& cfg) {
 		proj.snap(ip.coords.begin(), ip.coords.end(), op.coords.begin(), cfg.snapType, cfg.significands);
 	}
 	assert(op.valid());
+	
+	if (cfg.check) {
+		if (!op.valid()) {
+			throw std::runtime_error("Invalid point detected");
+		}
+	}
 	
 	using FT = Point3::FT;
 	FT x = ratss::Conversion<FT>::moveFrom( std::move(op.coords.at(0)) );
