@@ -868,8 +868,11 @@ public:
 	virtual void create(Points & points, Edges & edges, InputOutput & io, bool clear) override  {
 		std::size_t ps = points.size();
 		io.info() << "Inserting points..." << std::flush;
+		TimeMeasurer tm;
+		tm.begin();
 		this->insert(points.begin(), points.end());
-		io.info() << "done" << std::endl;
+		tm.end();
+		io.info() << tm << std::endl;
 		if (clear) {
 			points = Points();
 		}
@@ -882,21 +885,23 @@ public:
 				vh =(Vertex_handle) it;
 			}
 		}
+		io.info() << "Filtering constraints..." << std::flush;
+		tm.begin();
+		auto relevantEdges = compute_relevant_edges(pId2Vertex, edges, io);
+		tm.end();
+		io.info() << tm << std::endl;
+		
 		io.info() << "Inserting constraints..." << std::flush;
-		insert_constraints(pId2Vertex, edges, io);
-		io.info() << "done" << std::endl;
+		tm.begin();
+		insert_constraints(pId2Vertex, edges, relevantEdges, io);
+		tm.end();
+		io.info() << tm << std::endl;
 		if (clear) {
 			edges = Edges();
 		}
 	}
-	FT csd2 (const Point & a, const Point & b) {
-		auto x = a.x() - b.x();
-		auto y = a.y() - b.y();
-		auto z = a.z() - b.z();
-		return x*x + y*y + z*z;
-	}
-	
-	void insert_constraints(std::vector<Vertex_handle> & pId2Vertex, Edges & edges, InputOutput & /*io*/) {
+	std::vector<bool> compute_relevant_edges(std::vector<Vertex_handle> & pId2Vertex, Edges & edges, InputOutput & /*io*/) {
+		std::vector<bool> result(edges.size(), false);
 		Vertex_handle nullHandle;
 		FT maxLen(0.5);
 		for(std::size_t i(0), s(edges.size()); i < s; ++i) {
@@ -906,12 +911,33 @@ public:
 				const auto & v2 = pId2Vertex.at(e.second);
 				if (v1 != v2 && v1 != nullHandle && v2 != nullHandle) {
 					if (csd2(v1->point(), v2->point()) < maxLen) {
-						m_tr.insert(v1, v2);
+						result[i] = true;
 					}
 					else {
 						std::cerr << "Removed long edge" << std::endl;
 					}
 				}
+			}
+		}
+		return result;
+	}
+	
+	FT csd2 (const Point & a, const Point & b) {
+		auto x = a.x() - b.x();
+		auto y = a.y() - b.y();
+		auto z = a.z() - b.z();
+		return x*x + y*y + z*z;
+	}
+	
+	void insert_constraints(std::vector<Vertex_handle> & pId2Vertex, Edges & edges, std::vector<bool> const & relevantEdges, InputOutput & /*io*/) {
+		Vertex_handle nullHandle;
+		FT maxLen(0.5);
+		for(std::size_t i(0), s(edges.size()); i < s; ++i) {
+			if (relevantEdges[i]) {
+				const std::pair<int, int> & e = edges[s-i-1];
+				const auto & v1 = pId2Vertex.at(e.first);
+				const auto & v2 = pId2Vertex.at(e.second);
+				m_tr.insert(v1, v2);
 			}
 		}
 	}
