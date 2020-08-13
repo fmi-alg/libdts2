@@ -1760,18 +1760,22 @@ void Data::create(InputOutput& io, const Config& cfg) {
 		
 		if (cfg.tio == TIO_NODES_EDGES_BY_POINTS_BINARY) {
 			io.info() << "Inserting points..." << std::flush;
+			TimeMeasurer tm;
+			tm.begin();
 			for(uint32_t i(0); i < nc; ++i) {
 				Point3 p = bio.get<Point3>();
 				tc->add(p);
 			}
-			io.info() << "done" << std::endl;
+			tm.end();
+			io.info() << tm << std::endl;
 			io.info() << "Inserting constraints..." << std::flush;
+			tm.begin();
 			for(uint32_t i(0); i < ec; ++i) {
 				auto p1 = bio.get<Point3>();
 				auto p2 = bio.get<Point3>();
 				tc->add(p1, p2);
 			}
-			io.info() << "done" << std::endl;
+			io.info() << tm << std::endl;
 		}
 	}
 	points = decltype(points)();
