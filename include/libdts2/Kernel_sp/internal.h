@@ -5,7 +5,9 @@
 #include <boost/multiprecision/cpp_int.hpp>
 
 #include <libdts2/vendor/ttmath/ttmathint.h>
+#include <gmpxx.h>
 // #define LIB_DTS_2_KERNEL_SP_USE_TTMATH
+// #define LIB_DTS_2_KERNEL_SP_USE_MPZ_CLASS
 namespace LIB_DTS2_NAMESPACE::detail::Kernel_sp {
 
 #ifdef LIB_DTS_2_KERNEL_SP_USE_TTMATH
@@ -14,6 +16,23 @@ template<int T_BITS>
 struct IntegerTypeFromBits {
 	static constexpr int words = std::max<int>(1, (T_BITS/64) + int(T_BITS%64!=0));
 	using type = ttmath::Int<words>;
+};
+
+template<>
+struct IntegerTypeFromBits<32> {
+	using type = int64_t;
+};
+
+template<>
+struct IntegerTypeFromBits<64> {
+	using type = int64_t;
+};
+
+#elif defined(LIB_DTS_2_KERNEL_SP_USE_MPZ_CLASS)
+
+template<int T_BITS>
+struct IntegerTypeFromBits {
+	using type = mpz_class;
 };
 
 template<>
