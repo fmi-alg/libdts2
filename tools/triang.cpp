@@ -1095,6 +1095,8 @@ public:
 	int intersectSignificands = -1;
 	std::string rewriteFileName;
 public:
+	bool autoChangedOptions{false};
+public:
 	using ratss::BasicCmdLineOptions::parse;
 public:
 	virtual bool parse(const std::string & currentToken,int & i, int argc, char ** argv) override;
@@ -1146,6 +1148,10 @@ int main(int argc, char ** argv) {
 	io.setInput(cfg.inFileName);
 	io.setOutput(cfg.outFileName);
 	
+	if (cfg.autoChangedOptions) {
+		io.info() << "NOTICE: Some options were added/changed to accomodate the requested type of triangulation." << std::endl;
+	}
+
 	if (cfg.verbose) {
 		cfg.print(io.info());
 		io.info() << std::endl;
@@ -1312,16 +1318,19 @@ bool Config::parse(const std::string & token,int & i, int argc, char ** argv) {
 void Config::parse_completed() {
 	if (intersectSignificands < 2) {
 		intersectSignificands = significands;
+		autoChangedOptions = true;
 	}
 	if (triangType == TT_CONSTRAINED_INEXACT_64 || triangType == TT_CONSTRAINED_INEXACT_SP || triangType == TT_CONSTRAINED_INEXACT_SPK64 || triangType == TT_CONVEX_HULL_64 || triangType == TT_DELAUNAY_64) {
 		significands = 31;
 		intersectSignificands = 31;
 		snapType = ratss::ST_PLANE | ratss::ST_FX | ratss::ST_NORMALIZE;
+		autoChangedOptions = true;
 		
 	}
 	if (triangType == TT_CONVEX_HULL_64 || triangType == TT_CONVEX_HULL || triangType == TT_CONVEX_HULL_INEXACT) {
 		if (tio != TIO_NODES_EDGES && tio != TIO_NODES_EDGES_BY_POINTS_BINARY) {
 			tio = TIO_NODES_EDGES;
+			autoChangedOptions = true;
 		}
 	}
 	if (tio == TIO_NODES_EDGES_BY_POINTS_BINARY && rewriteFileName.empty()) {
