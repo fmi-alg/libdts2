@@ -1076,10 +1076,7 @@ template<>
 TriangulationCreatorInExactIntersectionsConstrainedDelaunaySpk64::TriangulationCreatorConstrainedDelaunay(int significands, int intersectionSignificands) :
 m_tr(
 	TriangulationCreatorInExactIntersectionsConstrainedDelaunaySpk64::Tr::Geom_traits(
-		LIB_RATSS_NAMESPACE::Conversion<TriangulationCreatorInExactIntersectionsConstrainedDelaunaySpk64::Tr::Geom_traits::FT>::moveFrom(
-			LIB_RATSS_NAMESPACE::convert<mpq_class>(std::numeric_limits<uint32_t>::max()-1)/
-			LIB_RATSS_NAMESPACE::convert<mpq_class>(std::numeric_limits<uint32_t>::max())
-		),
+		dts2::Kernel_sp_64::AuxiliaryPointsGenerator(),
 		significands,
 		intersectionSignificands
 	)
