@@ -1114,7 +1114,7 @@ struct Data {
 
 	ratss::FloatPoint ip;
 	ratss::RationalPoint op;
-	ratss::ProjectSN proj;
+	ratss::ProjectS2 proj;
 
 	std::vector<std::pair<Point3, VertexInfo>> points;
 	std::vector<std::pair<int, int>> edges;
@@ -1689,25 +1689,40 @@ void Data::readEdges(InputOutput& io, const Config& cfg) {
 }
 
 Point3 Data::readPoint(std::istream& is, const Config& cfg) {
+	bool geoFormat = (cfg.inFormat & (ratss::FloatPoint::FM_GEO|ratss::FloatPoint::FM_SPHERICAL));
+	ratss::PointBase::Format format = (geoFormat ? ratss::PointBase::FM_CARTESIAN_FLOAT128 : cfg.inFormat);
 	bool opFromIp = !cfg.rationalPassThrough;
 	if (cfg.rationalPassThrough) {
-		op.assign(is, cfg.inFormat, cfg.precision, 3);
+		op.assign(is, format, cfg.precision, 3);
 		if (!op.valid()) {
 			ip.assign(op.coords.begin(), op.coords.end(), cfg.precision);
 			opFromIp = true;
 		}
 	}
 	else {
-		ip.assign(is, cfg.inFormat, cfg.precision, 3);
+		ip.assign(is, format, cfg.precision, 3);
 	}
 	if (opFromIp) {
-		if (cfg.snapType & ratss::ST_NORMALIZE) {
-			ip.normalize();
-		}
-		ip.setPrecision(cfg.precision);
 		op.clear();
-		op.resize(ip.coords.size());
-		proj.snap(ip.coords.begin(), ip.coords.end(), op.coords.begin(), cfg.snapType, cfg.significands);
+		op.resize(3);
+		ip.setPrecision(cfg.precision);
+		switch(cfg.inFormat) {
+			case ratss::FloatPoint::FM_GEO:
+				if (ip.coords.size() != 2) {
+					throw std::runtime_error("Invalid input point");
+				}
+				proj.projectFromGeo(ip.coords[0], ip.coords[1], op.coords[0], op.coords[1], op.coords[2], cfg.snapType, cfg.significands);
+				break;
+			case ratss::FloatPoint::FM_SPHERICAL:
+				if (ip.coords.size() != 2) {
+					throw std::runtime_error("Invalid input point");
+				}
+				proj.projectFromSpherical(ip.coords[0], ip.coords[1], op.coords[0], op.coords[1], op.coords[2], cfg.snapType, cfg.significands);
+				break;
+			default:
+				proj.snap(ip.coords.begin(), ip.coords.end(), op.coords.begin(), cfg.snapType, cfg.significands);
+				break;
+		}
 	}
 	assert(op.valid());
 	
