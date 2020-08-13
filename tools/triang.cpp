@@ -1323,7 +1323,7 @@ bool Config::parse(const std::string & token,int & i, int argc, char ** argv) {
 		intersectSignificands = ::atoi(argv[i+1]);
 		++i;
 	}
-	else if (token == "--check" && i+1 < argc) {
+	else if (token == "--check") {
 		check = true;
 	}
 	else {
