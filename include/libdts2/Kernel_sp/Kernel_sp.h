@@ -527,8 +527,30 @@ public:
 	
 };
 
-using Kernel_sp = Kernel_sp_base<CGAL::Exact_predicates_exact_constructions_kernel>;
+} //end namespace dts2
+
+#include <CGAL/Exact_predicates_exact_constructions_kernel.h>
+
+namespace CGAL {
+	
+// Equivalent to Filtered_kernel<Simple_cartesian<Lazy_exact_nt<Epeck_ft> > >
+class EpeckLazyNt
+  : public Filtered_kernel_adaptor<
+               Type_equality_wrapper< Simple_cartesian<Lazy_exact_nt<Epeck_ft> >::Base<EpeckLazyNt>::Type, EpeckLazyNt >,
+#ifdef CGAL_NO_STATIC_FILTERS
+               false >
+#else
+               true >
+#endif
+{}; // end class Epeck
+	
+} //end namespace CGAL
+
+namespace LIB_DTS2_NAMESPACE {
+
 using Kernel_sp_64 = Kernel_sp_base<CGAL::Filtered_simple_cartesian_extended_integer_kernel>;
+// using Kernel_sp_64 = Kernel_sp_base<CGAL::Simple_cartesian_extended_integer_kernel>;
+using Kernel_sp = Kernel_sp_base<CGAL::EpeckLazyNt>;
 
 }//end namespace
 
