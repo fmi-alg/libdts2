@@ -345,6 +345,12 @@ public:
 	using Is_in_auxiliary_triangle = typename AuxiliaryPointsGenerator::Is_in_auxiliary_triangle;
 	using Is_valid_point_on_sphere = typename AuxiliaryPointsGenerator::Is_valid_point_on_sphere;
 	using Generate_auxiliary_point = typename AuxiliaryPointsGenerator::Generate_auxiliary_point;
+protected:
+	template<typename T>
+	static auto bpc(T && x) {
+		using BasePoint = typename LinearKernel::Point_3;
+		return detail::ipt_static_cast<BasePoint>(std::forward<T>(x));
+	}
 public: //own implementations
 
 	class Triangle_2: private Triangle_3 {
@@ -368,11 +374,11 @@ public: //own implementations
 			assert(p.z() <= 1 && q.z() <= 1 && r.z() <= 1);
 			assert(p != q);
 			
-			Orientation oriented_side = ot3(p, q, LIB_DTS2_ORIGIN, r);
+			Orientation oriented_side = ot3(bpc(p), bpc(q), bpc(LIB_DTS2_ORIGIN), bpc(r));
 			
 			if (oriented_side != Orientation::COLLINEAR && m_iat(p) && m_iat(q)) {
 				//the point always has to be on the opposite side of the infinite vertex
-				oriented_side = - ot3(p, q, LIB_DTS2_ORIGIN, Point(0, 0, 1));
+				oriented_side = - ot3(bpc(p), bpc(q), bpc(LIB_DTS2_ORIGIN), bpc(Point(0, 0, 1)));
 			}
 			return oriented_side;
 		}
@@ -387,13 +393,7 @@ public: //own implementations
 		Orientation operator()(const Point_3 & p, const Point_3 & q, const Point_3 & r, const Point_3 & s) const
 		{
 			assert(p != q && p != r && q != r && r != s);
-			using BasePoint = typename LinearKernel::Point_3;
-			return ot3(
-						detail::ipt_static_cast<BasePoint>(p),
-						detail::ipt_static_cast<BasePoint>(q),
-						detail::ipt_static_cast<BasePoint>(r),
-						detail::ipt_static_cast<BasePoint>(s)
-				   );
+			return ot3(bpc(p), bpc(q), bpc(r), bpc(s));
 		}
 	private:
 		Orientation_3 ot3;
@@ -404,8 +404,7 @@ public: //own implementations
 		Compare_x_2() {}
 	public:
 		Comparison_result  operator()(const Point_3 & p, const Point_3 & q) const {
-			DEBUG_OUT("Compare_x_2 called")
-			return m_cx3(p, q);
+			return m_cx3(bpc(p), bpc(q));
 		}
 	private:
 		Compare_x_3 m_cx3;
@@ -417,10 +416,7 @@ public: //own implementations
 		Compare_y_2() {}
 	public:
 		Comparison_result  operator()(const Point_3 & p, const Point_3 & q) const {
-			DEBUG_OUT("Compare_y_2 called")
-			//if this function gets called then we have to check why!
-			assert(false);
-			return m_cy3(p, q);
+			return m_cy3(bpc(p), bpc(q));
 		}
 	private:
 		Compare_y_3 m_cy3;
@@ -434,7 +430,7 @@ public: //own implementations
 		Collinear_are_ordered_along_line_2() {}
 	public:
 		bool operator()(const Point_3 & p, const Point_3 & q, const Point_3 & r) const {
-			if (!m_cop3(LIB_DTS2_ORIGIN, p, q, r)) {
+			if (!m_cop3(bpc(LIB_DTS2_ORIGIN), bpc(p), bpc(q), bpc(r))) {
 				return false;
 			}
 			if (p == q || q == r) {
@@ -443,8 +439,8 @@ public: //own implementations
 			//are coplanar, the direction of one point to another is defined by the vector with shorter euclidean distance
 			//the following works since p, q, r have all the same length
 			//here we check the angle >pq and >pr. >pq has to be smaller than >pr
-			auto pq_sp = m_csp3(p, q);
-			auto pr_sp = m_csp3(p, r);
+			auto pq_sp = m_csp3(bpc(p), bpc(q));
+			auto pr_sp = m_csp3(bpc(p), bpc(r));
 			if (pq_sp > pr_sp) {
 				return false;
 			}
@@ -455,8 +451,8 @@ public: //own implementations
 			//then q,r are on the same side
 			//They point in the same direction if pq_cpv = l*pr_cpv with l positive
 			//They point in different direction if l negative
-			auto pq_cpv = m_ccpv3(p, q);
-			auto pr_cpv = m_ccpv3(p, r);
+			auto pq_cpv = m_ccpv3(bpc(p), bpc(q));
+			auto pr_cpv = m_ccpv3(bpc(p), bpc(r));
 			return (CGAL::sign(pq_cpv.x()) * CGAL::sign(pr_cpv.x()) == CGAL::POSITIVE ||
 					CGAL::sign(pq_cpv.y()) * CGAL::sign(pr_cpv.y()) == CGAL::POSITIVE ||
 					CGAL::sign(pq_cpv.z()) * CGAL::sign(pr_cpv.z()) == CGAL::POSITIVE);
