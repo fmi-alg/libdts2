@@ -1730,13 +1730,13 @@ Point3 Data::readPoint(std::istream& is, const Config& cfg) {
 				if (ip.coords.size() != 2) {
 					throw std::runtime_error("Invalid input point");
 				}
-				proj.projectFromGeo(ip.coords[0], ip.coords[1], op.coords[0], op.coords[1], op.coords[2], cfg.snapType, cfg.significands);
+				proj.projectFromGeo(ip.coords[0], ip.coords[1], op.coords[0], op.coords[1], op.coords[2], cfg.significands, cfg.snapType);
 				break;
 			case ratss::FloatPoint::FM_SPHERICAL:
 				if (ip.coords.size() != 2) {
 					throw std::runtime_error("Invalid input point");
 				}
-				proj.projectFromSpherical(ip.coords[0], ip.coords[1], op.coords[0], op.coords[1], op.coords[2], cfg.snapType, cfg.significands);
+				proj.projectFromSpherical(ip.coords[0], ip.coords[1], op.coords[0], op.coords[1], op.coords[2], cfg.significands, cfg.snapType);
 				break;
 			default:
 				proj.snap(ip.coords.begin(), ip.coords.end(), op.coords.begin(), cfg.snapType, cfg.significands);
