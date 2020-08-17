@@ -463,9 +463,9 @@ struct TriangulationWriter {
 		
 			const VertexInfo & vi = it->info();
 			const Point & p = it->point();
-			op.coords[0] = ratss::Conversion<FT>::toMpq( p.x() );
-			op.coords[1] = ratss::Conversion<FT>::toMpq( p.y() );
-			op.coords[2] = ratss::Conversion<FT>::toMpq( p.z() );
+			op.coords[0] = ratss::convert<mpq_class>( p.x() );
+			op.coords[1] = ratss::convert<mpq_class>( p.y() );
+			op.coords[2] = ratss::convert<mpq_class>( p.z() );
 			
 			op.print(out, outFormat);
 			out << '\n';
