@@ -35,8 +35,12 @@
 	void malloc_trim(int) {}
 #endif
 
-// using K = CGAL::Exact_predicates_exact_constructions_kernel;
-// using Point3 = K::Point_3;
+template<typename T_VERTEX_INFO, typename T_FACE_INFO>
+using Delaunay_triangulation_with_info_s2_epeck = dts2::Delaunay_triangulation_with_info_s2<T_VERTEX_INFO, T_FACE_INFO, CGAL::Exact_predicates_exact_constructions_kernel>;
+
+template<typename T_VERTEX_INFO, typename T_FACE_INFO>
+using Delaunay_triangulation_with_info_s2_fsceik =
+	dts2::Delaunay_triangulation_with_info_s2<T_VERTEX_INFO, T_FACE_INFO, CGAL::Filtered_simple_cartesian_extended_integer_kernel>;
 
 class MemUsage {
 public:
@@ -834,13 +838,6 @@ private:
 	Tr m_tr;
 	Vertex_handle m_lastAddVh;
 };
-
-template<typename T_VERTEX_INFO, typename T_FACE_INFO>
-using Delaunay_triangulation_with_info_s2_epeck = dts2::Delaunay_triangulation_with_info_s2<T_VERTEX_INFO, T_FACE_INFO, CGAL::Exact_predicates_exact_constructions_kernel>;
-
-template<typename T_VERTEX_INFO, typename T_FACE_INFO>
-using Delaunay_triangulation_with_info_s2_fsceik =
-	dts2::Delaunay_triangulation_with_info_s2<T_VERTEX_INFO, T_FACE_INFO, CGAL::Filtered_simple_cartesian_extended_integer_kernel>;
 
 using TriangulationCreatorDelaunayEpeck =
 	TriangulationCreatorDelaunay<Delaunay_triangulation_with_info_s2_epeck>;
