@@ -94,6 +94,35 @@ public:
 	template<typename T>
 	Point_3 operator()(T && p) const { return Point_3(std::forward<T>(p)); }
 };
+
+class Construct_segment_s2 {
+public:
+	using K = CGAL::Exact_spherical_kernel_3;
+	using Point_3 = K::Circular_arc_point_3;
+	using MyBase = K::Construct_circular_arc_3;
+	using Segment = K::Circular_arc_3;
+public:
+	Construct_segment_s2() {}
+public:
+	Segment operator()(Point_3 const & src, Point_3 const & tgt) const {
+		return Segment();
+	}
+private:
+	MyBase m_d;
+};
+
+class Intersect_s2 {
+public:
+	using K = CGAL::Exact_spherical_kernel_3;
+	using Point_3 = K::Circular_arc_point_3;
+	using MyBase = K::Construct_circular_arc_3;
+	using Segment = K::Circular_arc_3;
+public:
+	CGAL::Object operator()(Segment const & a, Segment const & b) const {
+		return CGAL::Object();
+	}
+	
+};
 	
 }//end namespace detail
 
@@ -112,7 +141,7 @@ public:
 	using Segment_2 = MyKernel::Circular_arc_3;
 	using Triangle_2 = detail::spherical_traits::Triangle;
 	using Construct_point_2 = detail::spherical_traits::Construct_point;
-	using Construct_segment_2 = MyKernel::Construct_circular_arc_3;
+	using Construct_segment_2 = detail::spherical_traits::Construct_segment_s2;
 	using Construct_triangle_2 = detail::spherical_traits::Construct_triangle;
 	using Less_x_2 = detail::spherical_traits::Less_x;
 	using Less_y_2 = detail::spherical_traits::Less_y;
@@ -128,6 +157,9 @@ public:
 	
 	using Point_3 = Point_2;
 	using Point = Point_3;
+	
+	using Do_intersect_2 = MyKernel::Do_intersect_3;
+	using Intersect_2 = detail::spherical_traits::Intersect_s2;
 	
 public:
 	class Is_auxiliary_point {
@@ -273,6 +305,14 @@ public:
 
 	Less_y_2 less_y_2_object() const {
 		return Less_y_2();
+	}
+	
+	Do_intersect_2 do_intersect_2_object() const {
+		return m_traits.do_intersect_3_object();
+	}
+	
+	Intersect_2 intersect_2_object() const {
+		return Intersect_2();
 	}
 	
 	Project_on_sphere project_on_sphere_object() const {
