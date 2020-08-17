@@ -41,6 +41,17 @@ using Delaunay_triangulation_with_info_s2_epeck = dts2::Delaunay_triangulation_w
 template<typename T_VERTEX_INFO, typename T_FACE_INFO>
 using Delaunay_triangulation_with_info_s2_fsceik =
 	dts2::Delaunay_triangulation_with_info_s2<T_VERTEX_INFO, T_FACE_INFO, CGAL::Filtered_simple_cartesian_extended_integer_kernel>;
+	
+template<typename T_VERTEX_INFO, typename T_FACE_INFO>
+using Delaunay_triangulation_with_info_s2_spherical =
+	dts2::Delaunay_triangulation_s2<
+		dts2::Constrained_delaunay_triangulation_with_exact_intersections_spherical_traits_s2,
+		typename dts2::internal::TriangulationDataStructureSelector<
+			dts2::Constrained_delaunay_triangulation_with_exact_intersections_spherical_traits_s2,
+			T_VERTEX_INFO,
+			T_FACE_INFO
+		>::type
+	>;
 
 class MemUsage {
 public:
@@ -175,7 +186,8 @@ public:
 	using EpecksqrtPoint = Epecksqrt::Point_3;
 public:
 	using Epecsk = CGAL::Exact_spherical_kernel_3;
-	using EpecskPoint = Epecsk::Point_3;
+	using EpecskPoint = Epecsk::Circular_arc_point_3;
+	using EpecslkPoint = Epecsk::Linear_kernel::Point_3;
 public:
 // 	using FT = mpq_class;
 	using K = Sceik;
@@ -215,7 +227,8 @@ public:
 	explicit operator Fsce1024ikPoint() const { return convert_to_p<Fsce1024ik>(); }
 	explicit operator Flce1024ikPoint() const { return convert_to_p<Flce1024ik>(); }
 	explicit operator EpecksqrtPoint() const { return convert_to_p<Epecksqrt>(); }
-	explicit operator EpecskPoint() const { return convert_to_p<Epecsk>();}
+	explicit operator EpecslkPoint() const { return convert_to_p<Epecsk::Linear_kernel>(); } 
+	explicit operator EpecskPoint() const { return EpecskPoint( static_cast<EpecslkPoint>(*this) );}
 	template<typename T_KERNEL>
 	explicit operator dts2::Point_sp<T_KERNEL> () const {
 		return dts2::Point_sp<T_KERNEL>( convert_to_p<T_KERNEL>() );
@@ -318,7 +331,7 @@ BinaryIo::write(const Point3 & v) {
 	this->write( ratss::convert<FT>( v.z() ) );
 }
 
-typedef enum {TT_DELAUNAY, TT_DELAUNAY_64, TT_CONVEX_HULL_INEXACT, TT_CONVEX_HULL, TT_CONVEX_HULL_64, TT_CONSTRAINED, TT_CONSTRAINED_INEXACT, TT_CONSTRAINED_INEXACT_64, TT_CONSTRAINED_INEXACT_SP, TT_CONSTRAINED_INEXACT_SPK, TT_CONSTRAINED_INEXACT_SPK64, TT_CONSTRAINED_EXACT, TT_CONSTRAINED_EXACT_SPHERICAL} TriangulationType;
+typedef enum {TT_DELAUNAY, TT_DELAUNAY_64, TT_DELAUNAY_SPHERICAL, TT_CONVEX_HULL_INEXACT, TT_CONVEX_HULL, TT_CONVEX_HULL_64, TT_CONSTRAINED, TT_CONSTRAINED_INEXACT, TT_CONSTRAINED_INEXACT_64, TT_CONSTRAINED_INEXACT_SP, TT_CONSTRAINED_INEXACT_SPK, TT_CONSTRAINED_INEXACT_SPK64, TT_CONSTRAINED_EXACT, TT_CONSTRAINED_EXACT_SPHERICAL} TriangulationType;
 typedef enum {GOT_INVALID, GOT_NONE, GOT_WITHOUT_SPECIAL, GOT_WITHOUT_SPECIAL_HASH_MAP, GOT_SIMPLEST_GRAPH_RENDERING, GOT_SIMPLEST_GRAPH_RENDERING_ANDRE} GraphOutputType;
 typedef enum {GIT_INVALID, GIT_NODES_EDGES, GIT_EDGES, GIT_NODES_EDGES_BY_POINTS_BINARY} GraphInputType;
 typedef enum {TIO_INVALID, TIO_NODES_EDGES, TIO_EDGES, TIO_NODES_EDGES_BY_POINTS_BINARY} TriangulationInputOrder;
@@ -338,6 +351,14 @@ bool
 is_constrained(
 	const dts2::Delaunay_triangulation_with_info_s2<VertexInfo, void, T_LINEAR_KERNEL> & /*trs*/,
 	const typename dts2::Delaunay_triangulation_with_info_s2<VertexInfo, void, T_LINEAR_KERNEL>::Edge & /*e*/)
+{
+	return false;
+}
+
+bool
+is_constrained(
+	const Delaunay_triangulation_with_info_s2_spherical<VertexInfo, void> & /*trs*/,
+	const Delaunay_triangulation_with_info_s2_spherical<VertexInfo, void>::Edge & /*e*/)
 {
 	return false;
 }
@@ -804,8 +825,8 @@ public:
 			edges = Edges();
 		}
 	
-		auto tf = [](const Points::value_type & pi) {
-			return std::pair<Point_3, VertexInfo>((Point_3) pi.first, pi.second);
+		auto tf = [](const Points::value_type & pi) -> std::pair<Point_3, VertexInfo> {
+			return std::pair<Point_3, VertexInfo>(static_cast<Point_3>(pi.first), pi.second);
 		};
 		using MyIterator = boost::transform_iterator<decltype(tf), Points::const_iterator>;
 		io.info() << "Inserting points..." << std::flush;
@@ -818,7 +839,7 @@ public:
 	}
 
 	virtual void add(const Point3 & p) override {
-		m_lastAddVh = m_tr.insert((Point_3) p, (m_lastAddVh != Vertex_handle() ? m_lastAddVh->face() : Face_handle()), false);
+		m_lastAddVh = m_tr.insert( static_cast<Point_3>(p), (m_lastAddVh != Vertex_handle() ? m_lastAddVh->face() : Face_handle()), false);
 	}
 	
 	virtual void add(const Point3 & p1, const Point3 & p2) override {
@@ -844,6 +865,9 @@ using TriangulationCreatorDelaunayEpeck =
 	
 using TriangulationCreatorDelaunayFsceik =
 	TriangulationCreatorDelaunay<Delaunay_triangulation_with_info_s2_fsceik>;
+	
+using TriangulationCreatorDelaunaySpherical =
+	TriangulationCreatorDelaunay<Delaunay_triangulation_with_info_s2_spherical>;
 
 template< template<typename, typename> class T_TRS>
 class TriangulationCreatorConstrainedDelaunay: public TriangulationCreator {
@@ -1230,6 +1254,9 @@ bool Config::parse(const std::string & token,int & i, int argc, char ** argv) {
 		else if (type == "d64" || type == "delaunay-64") {
 			triangType = TT_DELAUNAY_64;
 		}
+		else if (type == "ds" || type == "delaunay-spherical") {
+			triangType = TT_DELAUNAY_SPHERICAL;
+		}
 		else if (type == "chi" || type == "convexhull-inexact") {
 			triangType = TT_CONVEX_HULL_INEXACT;
 		}
@@ -1354,7 +1381,7 @@ void Config::parse_completed() {
 
 void Config::help(std::ostream & out) const {
 	out << "triang OPTIONS:\n"
-		"\t-t type\ttype = [d,delaunay,d64,delaunay-64,chi,convexhull-inexact,ch,convexhull,ch64,convexhull-64,c,constrained,cx,constrained-intersection,cx64,constrained-intersection-64,cxsp,constrained-intersection-sp,cxspk-64,constrained-intersection-spk-64,cxe,constrained-intesection-exact, cxs, constrained-intersection-exact-spherical]\n"
+		"\t-t type\ttype = [d,delaunay,d64,delaunay-64,ds,delaunay-spherical,chi,convexhull-inexact,ch,convexhull,ch64,convexhull-64,c,constrained,cx,constrained-intersection,cx64,constrained-intersection-64,cxsp,constrained-intersection-sp,cxspk-64,constrained-intersection-spk-64,cxe,constrained-intesection-exact, cxs, constrained-intersection-exact-spherical]\n"
 		"\t-go type\tgraph output type = [none, wx, witout_special, simplest, simplest_andre]\n"
 		"\t-gi type\tgraph input type = [ne, nodes-edges, e, edges, nei, nodes-edges-iterative]\n"
 		"\t-io type\tinput order type = [ne, nodes-edges, e, edges, nei, nodes-edges-iterative]\n"
@@ -1385,6 +1412,9 @@ void Config::print(std::ostream & out) const {
 		break;
 	case TT_DELAUNAY_64:
 		out << "delaunay using ExtendedInt64 kernel";
+		break;
+	case TT_DELAUNAY_SPHERICAL:
+		out << "delaunay using spherical kernel";
 		break;
 	case TT_CONVEX_HULL:
 		out << "convex hull";
@@ -1497,6 +1527,9 @@ void Data::init(const Config & cfg) {
 		break;
 	case TT_DELAUNAY_64:
 		tc = new TriangulationCreatorDelaunayFsceik(cfg.significands);
+		break;
+	case TT_DELAUNAY_SPHERICAL:
+		tc = new TriangulationCreatorDelaunaySpherical(cfg.significands);
 		break;
 	case TT_CONVEX_HULL_INEXACT:
 		tc = new EpickConvexHullTriangulationCreator();
