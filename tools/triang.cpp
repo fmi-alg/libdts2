@@ -1024,11 +1024,11 @@ using TriangulationCreatorInExactIntersectionsConstrainedDelaunaySpk =
 using TriangulationCreatorExactIntersectionsConstrainedDelaunay = 
 	TriangulationCreatorConstrainedDelaunay<dts2::Constrained_Delaunay_triangulation_with_exact_intersections_with_info_s2>;
 
-// using TriangulationCreatorExactIntersectionsSphericalConstrainedDelaunay =
-// 	TriangulationCreatorConstrainedDelaunay<dts2::Constrained_Delaunay_triangulation_with_exact_intersections_spherical_with_info_s2>;
-
 using TriangulationCreatorExactIntersectionsSphericalConstrainedDelaunay =
-	TriangulationCreatorExactIntersectionsConstrainedDelaunay;
+	TriangulationCreatorConstrainedDelaunay<dts2::Constrained_Delaunay_triangulation_with_exact_intersections_spherical_with_info_s2>;
+
+// using TriangulationCreatorExactIntersectionsSphericalConstrainedDelaunay =
+// 	TriangulationCreatorExactIntersectionsConstrainedDelaunay;
 	
 template<>
 TriangulationCreatorNoIntersectionsConstrainedDelaunay::TriangulationCreatorConstrainedDelaunay(int significands, int /*intersectionSignificands*/) :
