@@ -10,6 +10,92 @@
 #include <libdts2/Constrained_delaunay_triangulation_base_traits_s2.h>
 
 namespace LIB_DTS2_NAMESPACE {
+namespace detail::spherical_traits {
+	
+class Triangle {
+public:
+	using K = CGAL::Exact_spherical_kernel_3;
+	using Point_3 = K::Circular_arc_point_3;
+public:
+	Triangle(Point_3 const & a, Point_3 const & b, Point_3 const & c) : m_d({a, b, c}) {}
+public:
+	const Point_3 & vertex(int i) const { return m_d.at(i); }
+private:
+	std::array<Point_3, 3> m_d;
+};
+
+class Construct_triangle {
+public:
+	using K = CGAL::Exact_spherical_kernel_3;
+	using Point_3 = K::Circular_arc_point_3;
+public:
+	Triangle operator()(Point_3 const & a, Point_3 const & b, Point_3 const & c) const {
+		return Triangle(a, b, c);
+	}
+};
+
+class Less_x: private CGAL::Exact_spherical_kernel_3::Compare_x_3 {
+public:
+	using MyBaseClass = CGAL::Exact_spherical_kernel_3::Compare_x_3;
+public:
+	template<typename T>
+	bool operator()(T const & a, T const & b) const {
+		return MyBaseClass::operator()(a, b) == CGAL::SMALLER;
+	}
+};
+
+class Less_y: private CGAL::Exact_spherical_kernel_3::Compare_y_3 {
+public:
+	using MyBaseClass = CGAL::Exact_spherical_kernel_3::Compare_y_3;
+public:
+	template<typename T>
+	bool operator()(T const & a, T const & b) const {
+		return MyBaseClass::operator()(a, b) == CGAL::SMALLER;
+	}
+};
+
+class Less_z: private CGAL::Exact_spherical_kernel_3::Compare_z_3 {
+public:
+	using MyBaseClass = CGAL::Exact_spherical_kernel_3::Compare_z_3;
+public:
+	template<typename T>
+	bool operator()(T const & a, T const & b) const {
+		return MyBaseClass::operator()(a, b) == CGAL::SMALLER;
+	}
+};
+
+class Orientation_s2 {
+public:
+	using K = CGAL::Exact_spherical_kernel_3;
+	using Point_3 = K::Circular_arc_point_3;
+public:
+	CGAL::Orientation operator()(const Point_3 & p, const Point_3 & q, const Point_3 & r) const {
+		return CGAL::NEGATIVE;
+	}
+};
+
+class Side_of_oriented_circle_s2 {
+public:
+	using K = CGAL::Exact_spherical_kernel_3;
+	using Point_3 = K::Circular_arc_point_3;
+public:
+	CGAL::Orientation operator()(const Point_3 & p, const Point_3 & q, const Point_3 & r, const Point_3 & s) const {
+		return CGAL::NEGATIVE;
+	}
+};
+
+class Construct_point {
+public:
+	using K = CGAL::Exact_spherical_kernel_3;
+	using Point_3 = K::Circular_arc_point_3;
+public:
+	Point_3 const & operator()(Point_3 const & p) const { return p; }
+	
+	template<typename T>
+	Point_3 operator()(T && p) const { return Point_3(std::forward<T>(p)); }
+};
+	
+}//end namespace detail
 
 class Constrained_delaunay_triangulation_with_exact_intersections_spherical_traits_s2 {
 public:
@@ -21,31 +107,75 @@ public:
 	using Comparison_result = MyKernel::Comparison_result;
 	using Orientation = MyKernel::Orientation;
 	
-	using Segment_2 = MyKernel::Circular_arc_3;
-	using Segment = Segment_2;
 	
-	using Point_3 = MyLinearCDTKernel::Point_3;
 	using Point_2 = MyKernel::Circular_arc_point_3;
-	using Point = MyKernel::Circular_arc_point_3;
-	
-	using Compare_distance_2 = MyLinearCDTKernel::Compare_distance_2;
+	using Segment_2 = MyKernel::Circular_arc_3;
+	using Triangle_2 = detail::spherical_traits::Triangle;
+	using Construct_point_2 = detail::spherical_traits::Construct_point;
+	using Construct_segment_2 = MyKernel::Construct_circular_arc_3;
+	using Construct_triangle_2 = detail::spherical_traits::Construct_triangle;
+	using Less_x_2 = detail::spherical_traits::Less_x;
+	using Less_y_2 = detail::spherical_traits::Less_y;
+	using Compare_x_2 = MyKernel::Compare_x_3;
+	using Compare_y_2 = MyKernel::Compare_y_3;
+	using Orientation_2 = detail::spherical_traits::Orientation_s2;
+	using Side_of_oriented_circle_2 = detail::spherical_traits::Side_of_oriented_circle_s2;
 	
 	//the following is needed for spatial sorting
-	using Less_x_3 = MyLinearCDTKernel::Less_x_3;
-	using Less_y_3 = MyLinearCDTKernel::Less_y_3;
-	using Less_z_3 = MyLinearCDTKernel::Less_z_3;
+	using Less_x_3 = detail::spherical_traits::Less_x;
+	using Less_y_3 = detail::spherical_traits::Less_y;
+	using Less_z_3 = detail::spherical_traits::Less_z;
 	
-	//this is needed for spatial sorting during insertion of constraints
-	//cgal uses Spatial_sort_traits_adapter_2 to sort inserted vertices
-	//this in turn needs the following predicates
-	//maybe we should just specialize Spatial_sort_traits_adapter_2 for this Trait
+	using Point_3 = Point_2;
+	using Point = Point_3;
 	
-	using Less_x_2 = MyLinearCDTKernel::Less_x_2;
-	using Less_y_2 = MyLinearCDTKernel::Less_y_2;
-	
-	using Construct_segment_2 = MyKernel::Construct_circular_arc_3;
 public:
-	class Project_on_sphere: public MyLinearCDTKernel::Project_on_sphere {
+	class Is_auxiliary_point {
+	public:
+		Is_auxiliary_point(MyLinearCDTKernel::Is_auxiliary_point const & base) : m_d(base) {}
+	public:
+		bool operator()(Point_2 const & p) const {
+			return false;
+		}
+	private:
+		MyLinearCDTKernel::Is_auxiliary_point m_d;
+	};
+	
+	class Is_in_auxiliary_triangle {
+	public:
+		Is_in_auxiliary_triangle(MyLinearCDTKernel::Is_in_auxiliary_triangle const & base) : m_d(base) {}
+	public:
+		bool operator()(Point_2 const & p) const {
+			return false;
+		}
+	private:
+		MyLinearCDTKernel:: Is_in_auxiliary_triangle m_d;
+	};
+	
+	class Is_valid_point_on_sphere {
+	public:
+		Is_valid_point_on_sphere(MyLinearCDTKernel::Is_valid_point_on_sphere const & base) : m_d(base) {}
+	public:
+		bool operator()(Point_2 const & p) const {
+			return false;
+		}
+	private:
+		MyLinearCDTKernel:: Is_valid_point_on_sphere m_d;
+	};
+	
+	class Generate_auxiliary_point {
+	public:
+		Generate_auxiliary_point(MyLinearCDTKernel::Generate_auxiliary_point const & base) : m_d(base) {}
+	public:
+		Point_2 operator()(AuxPointSelector s) const {
+			return Point_2( m_d(s) );
+		}
+	private:
+		MyLinearCDTKernel:: Generate_auxiliary_point m_d;
+	};
+	
+public:
+	class Project_on_sphere: private MyLinearCDTKernel::Project_on_sphere {
 	public:
 		using MyBaseClass = MyLinearCDTKernel::Project_on_sphere;
 	private:
@@ -54,14 +184,20 @@ public:
 	public:
 		Project_on_sphere(const MyBaseClass & v) : MyBaseClass(v) {}
 	public:
-		using MyBaseClass::operator();
+		using MyBaseClass::projector;
+	public:
 		Point_3 operator()(const Point_3 & v) const {
-			return (*this)(v.x(), v.y(), v.z());
+			throw std::runtime_error("Projecting a circular arc point is not supported");
+			return Point_3();
+		}
+		Point_3 operator()(Point_3 & v) const {
+			throw std::runtime_error("Projecting a circular arc point is not supported");
+			return Point_3();
 		}
 		Point_3 operator()(FT const & x, FT const & y, FT const & z) const {
-			FT sqLen(x*x + y*y + z*z);
+			auto sqLen = x*x + y*y + z*z;
 			if (sqLen == 1) {
-				return Point_3(x, y, z);
+				return Point_3(MyLinearCDTKernel::Point_3(x, y, z));
 			}
 			
 			mpq_class sqLenQ( Conversion<FT>::toMpq(sqLen) );
@@ -73,16 +209,98 @@ public:
 			mpfr::mpreal zf(Conversion<FT>::toMpreal(z, sqLenPrec));
 			mpq_class xq, yq, zq;
 			projector().snap(xf, yf, zf, xq, yq, zq, significands());
-			return Point_3( Conversion<FT>::moveFrom(xq),
+			return Point_3( MyLinearCDTKernel::Point_3(
+							Conversion<FT>::moveFrom(xq),
 							Conversion<FT>::moveFrom(yq),
 							Conversion<FT>::moveFrom(zq)
-			);
+			));
+		}
+		template<typename... T>
+		Point_3 operator()(T const & ... t) const {
+			return Point_3( MyBaseClass::operator()(t...) );
 		}
 	};
 public:
 	Constrained_delaunay_triangulation_with_exact_intersections_spherical_traits_s2();
+	Constrained_delaunay_triangulation_with_exact_intersections_spherical_traits_s2(MyLinearCDTKernel const & lk) : m_ltraits(lk) {}
+	Constrained_delaunay_triangulation_with_exact_intersections_spherical_traits_s2(FT const & epsZ, int significands) : m_ltraits(epsZ, significands) {}
+public:
+	
+	Side_of_oriented_circle_2 side_of_oriented_circle_2_object () const {
+		return Side_of_oriented_circle_2();
+	}
+	
+// 	Compare_distance_2 compare_distance_2_object () const {
+// 		return baseTraits().compare_distance_3_object();
+// 	}
+	
+	Orientation_2 orientation_2_object () const {
+		return Orientation_2();
+	}
+	
+	Compare_x_2 compare_x_2_object() const {
+		return Compare_x_2();
+	}
+	
+	Compare_y_2 compare_y_2_object() const {
+		return Compare_y_2();
+	}
+	
+	Less_x_3 less_x_3_object() const {
+		return Less_x_3();
+	}
+
+	Less_y_3 less_y_3_object() const {
+		return Less_y_3();
+	}
+
+	Less_z_3 less_z_3_object() const {
+		return Less_z_3();
+	}
+	
+	//stuff to support intersections
+	Construct_segment_2 construct_segment_2_object() const {
+		return Construct_segment_2();
+	}
+
+	Construct_point_2 construct_point_2_object() const {
+		return Construct_point_2();
+	}
+	
+	Less_x_2 less_x_2_object() const {
+		return Less_x_2();
+	}
+
+	Less_y_2 less_y_2_object() const {
+		return Less_y_2();
+	}
+	
+	Project_on_sphere project_on_sphere_object() const {
+		return Project_on_sphere(m_ltraits.project_on_sphere_object());
+	}
+
+	Project_on_sphere project_on_sphere_object(int _significands) const {
+		return Project_on_sphere( m_ltraits.project_on_sphere_object(_significands) );
+	}
+	
+	Is_auxiliary_point is_auxiliary_point_object() const {
+		return  Is_auxiliary_point( m_ltraits.is_auxiliary_point_object() );
+	}
+	
+	Is_in_auxiliary_triangle is_in_auxiliary_triangle_object() const {
+		return Is_in_auxiliary_triangle( m_ltraits.is_in_auxiliary_triangle_object() );
+	}
+	
+	Is_valid_point_on_sphere is_valid_point_on_sphere_object() const {
+		return Is_valid_point_on_sphere( m_ltraits.is_valid_point_on_sphere_object() );
+	}
+	
+	Generate_auxiliary_point generate_auxiliary_point_object() const {
+		return Generate_auxiliary_point( m_ltraits.generate_auxiliary_point_object() );
+	}
 private:
-	   MyKernel m_traits;
+	MyKernel m_traits;
+	MyLinearCDTKernel m_ltraits;
 };
 
 
