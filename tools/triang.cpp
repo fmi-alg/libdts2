@@ -908,7 +908,7 @@ public:
 		}
 		io.info() << "Filtering constraints..." << std::flush;
 		tm.begin();
-		auto relevantEdges = compute_relevant_edges(pId2Vertex, edges, io);
+		auto relevantEdges = compute_relevant_edges(points, pId2Vertex, edges, io);
 		tm.end();
 		io.info() << tm << std::endl;
 		
@@ -921,17 +921,17 @@ public:
 			edges = Edges();
 		}
 	}
-	std::vector<bool> compute_relevant_edges(std::vector<Vertex_handle> & pId2Vertex, Edges & edges, InputOutput & /*io*/) {
+	std::vector<bool> compute_relevant_edges(Points & points, std::vector<Vertex_handle> & pId2Vertex, Edges & edges, InputOutput & /*io*/) {
 		std::vector<bool> result(edges.size(), false);
 		Vertex_handle nullHandle;
-		FT maxLen(0.5);
+		Point3::FT maxLen(0.5);
 		for(std::size_t i(0), s(edges.size()); i < s; ++i) {
 			const std::pair<int, int> & e = edges[s-i-1];
 			if (e.first != e.second) {
 				const auto & v1 = pId2Vertex.at(e.first);
 				const auto & v2 = pId2Vertex.at(e.second);
 				if (v1 != v2 && v1 != nullHandle && v2 != nullHandle) {
-					if (csd2(v1->point(), v2->point()) < maxLen) {
+					if (csd2(points.at(e.first).first, points.at(e.second).first) < maxLen) {
 						result[i] = true;
 					}
 					else {
@@ -943,7 +943,7 @@ public:
 		return result;
 	}
 	
-	FT csd2 (const Point & a, const Point & b) {
+	auto csd2 (const Point3 & a, const Point3 & b) {
 		auto x = a.x() - b.x();
 		auto y = a.y() - b.y();
 		auto z = a.z() - b.z();
