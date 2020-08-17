@@ -473,6 +473,7 @@ public:
 		using Conversion = LIB_RATSS_NAMESPACE::Conversion<T>;
 	public:
 		Project_on_sphere(int _significands, const Projector & p) : m_significands(_significands), m_proj(p) {}
+		Project_on_sphere(int _significands, int _snapType, const Projector & p) : m_significands(_significands), m_snapType(_snapType), m_proj(p) {}
 	public:
 		Point_3 operator()(const std::pair<double, double> & geoCoord) const {
 			return this->operator()( LIB_RATSS_NAMESPACE::GeoCoord(geoCoord) );
@@ -499,11 +500,15 @@ public:
 		int significands() const {
 			return m_significands;
 		}
+		int snapType() const {
+			return m_snapType;
+		}
 		const Projector & projector() const {
 			return m_proj;
 		}
 	private:
 		int m_significands;
+		int m_snapType{LIB_RATSS_NAMESPACE::ST_FX|LIB_RATSS_NAMESPACE::ST_NORMALIZE|LIB_RATSS_NAMESPACE::ST_PLANE};
 		Projector m_proj;
 	};
 protected:
