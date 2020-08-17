@@ -479,7 +479,7 @@ public:
 		}
 		Point_3 operator()(const LIB_RATSS_NAMESPACE::GeoCoord & geoCoord) const {
 			mpq_class x, y, z;
-			m_proj.projectFromGeo(geoCoord.lat, geoCoord.lon, x, y, z, significands());
+			m_proj.projectFromGeo(mpfr::mpreal(geoCoord.lat), mpfr::mpreal(geoCoord.lon), x, y, z, significands(), snapType());
 			return Point_3(
 				Conversion<FT>::moveFrom(x),
 				Conversion<FT>::moveFrom(y),
@@ -488,7 +488,7 @@ public:
 		}
 		Point_3 operator()(const LIB_RATSS_NAMESPACE::SphericalCoord & sphericalCoord) const {
 			mpq_class x, y, z;
-			m_proj.projectFromSpherical(sphericalCoord.theta, sphericalCoord.phi, x, y, z, significands());
+			m_proj.projectFromSpherical(mpfr::mpreal(sphericalCoord.theta), mpfr::mpreal(sphericalCoord.phi), x, y, z, significands(), snapType());
 			return Point_3(
 				Conversion<FT>::moveFrom(x),
 				Conversion<FT>::moveFrom(y),
