@@ -352,6 +352,7 @@ public:
 public:
 	template<typename ...T>
 	Point operator()(T && ... t) const { return Point(std::forward<T>(t)...); }
+	Point const & operator()(Point const & p) const { return p; }
 };
 
 template<typename T_LINEAR_KERNEL>
