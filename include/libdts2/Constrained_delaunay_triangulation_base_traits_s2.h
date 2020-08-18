@@ -97,7 +97,8 @@ public:
 	public:
 		Is_auxiliary_point(FT const & _epsZ) : m_epsZ(_epsZ) {}
 	public:
-		inline bool operator()(Point_3 const & p) const {
+		template<typename T_POINT>
+		inline bool operator()(T_POINT const & p) const {
 			return p.z() == FT(-1) || p.z() >= m_epsZ;
 		};
 	private:
@@ -108,7 +109,8 @@ public:
 	public:
 		Is_in_auxiliary_triangle(FT const & _epsZ) : m_epsZ(_epsZ) {}
 	public:
-		inline bool operator()(Point_3 const & p) const {
+		template<typename T_POINT>
+		inline bool operator()(T_POINT const & p) const {
 			return p.z() >= m_epsZ;
 		};
 	private:

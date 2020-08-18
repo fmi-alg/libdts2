@@ -12,6 +12,66 @@
 namespace LIB_DTS2_NAMESPACE {
 namespace detail::spherical_traits {
 	
+class Is_auxiliary_point {
+public:
+	using MyKernel = CGAL::Exact_spherical_kernel_3;
+	using MyLinearCDTKernel = Constrained_delaunay_triangulation_base_traits_s2<MyKernel::Linear_kernel>;
+	using Point_2 = MyKernel::Circular_arc_point_3;
+public:
+	Is_auxiliary_point(MyLinearCDTKernel::Is_auxiliary_point const & base) : m_d(base) {}
+public:
+	bool operator()(Point_2 const & p) const {
+		return m_d(p);
+	}
+private:
+	MyLinearCDTKernel::Is_auxiliary_point m_d;
+};
+
+class Is_in_auxiliary_triangle {
+public:
+	using MyKernel = CGAL::Exact_spherical_kernel_3;
+	using MyLinearCDTKernel = Constrained_delaunay_triangulation_base_traits_s2<MyKernel::Linear_kernel>;
+	using Point_2 = MyKernel::Circular_arc_point_3;
+public:
+	Is_in_auxiliary_triangle(MyLinearCDTKernel::Is_in_auxiliary_triangle const & base) : m_d(base) {}
+public:
+	bool operator()(Point_2 const & p) const {
+		return m_d(p);
+	}
+private:
+	MyLinearCDTKernel:: Is_in_auxiliary_triangle m_d;
+};
+
+class Is_valid_point_on_sphere {
+public:
+	using MyKernel = CGAL::Exact_spherical_kernel_3;
+	using MyLinearCDTKernel = Constrained_delaunay_triangulation_base_traits_s2<MyKernel::Linear_kernel>;
+	using Point_2 = MyKernel::Circular_arc_point_3;
+public:
+	Is_valid_point_on_sphere(MyLinearCDTKernel::Is_auxiliary_point const & base) : m_iap(base) {}
+public:
+	bool operator()(Point_2 const & p) const {
+		return !m_iap(p);
+	}
+private:
+	MyLinearCDTKernel::Is_auxiliary_point m_iap;
+};
+
+class Generate_auxiliary_point {
+public:
+	using MyKernel = CGAL::Exact_spherical_kernel_3;
+	using MyLinearCDTKernel = Constrained_delaunay_triangulation_base_traits_s2<MyKernel::Linear_kernel>;
+	using Point_2 = MyKernel::Circular_arc_point_3;
+public:
+	Generate_auxiliary_point(MyLinearCDTKernel::Generate_auxiliary_point const & base) : m_d(base) {}
+public:
+	Point_2 operator()(AuxPointSelector s) const {
+		return Point_2( m_d(s) );
+	}
+private:
+	MyLinearCDTKernel:: Generate_auxiliary_point m_d;
+};
+	
 class Triangle {
 public:
 	using K = CGAL::Exact_spherical_kernel_3;
@@ -64,24 +124,55 @@ public:
 	}
 };
 
-class Orientation_s2 {
-public:
-	using K = CGAL::Exact_spherical_kernel_3;
-	using Point_3 = K::Circular_arc_point_3;
-public:
-	CGAL::Orientation operator()(const Point_3 & p, const Point_3 & q, const Point_3 & r) const {
-		return CGAL::NEGATIVE;
-	}
-};
-
 class Side_of_oriented_circle_s2 {
 public:
 	using K = CGAL::Exact_spherical_kernel_3;
-	using Point_3 = K::Circular_arc_point_3;
+	using LK = K::Linear_kernel;
+	using Point_3 = LK::Point_3;
+	using Point_s = K::Circular_arc_point_3;
 public:
-	CGAL::Orientation operator()(const Point_3 & p, const Point_3 & q, const Point_3 & r, const Point_3 & s) const {
-		return CGAL::NEGATIVE;
+	CGAL::Orientation operator()(const Point_s & p, const Point_s & q, const Point_s & r, const Point_s & s) const {
+		return ot3(p, q, r, s);
 	}
+private:
+	CGAL::Orientation ot3(const Point_s & p, const Point_s & q, const Point_s & r, const Point_s & s) const {
+		return CGAL::orientationC3<K::Root_of_2>(p.x(), p.y(), p.z(),
+											  q.x(), q.y(), q.z(),
+											  r.x(), r.y(), r.z(),
+											  s.x(), s.y(), s.z()
+								   );
+	}
+};
+
+class Orientation_s2 {
+public:
+	using K = CGAL::Exact_spherical_kernel_3;
+	using LK = K::Linear_kernel;
+	using Point_3 = LK::Point_3;
+	using Point_s = K::Circular_arc_point_3;
+public:
+	Orientation_s2(Is_in_auxiliary_triangle const & v) : m_iat(v) {}
+public:
+	CGAL::Orientation operator()(const Point_s & p, const Point_s & q, const Point_s & t) const {
+		Point_s origin(LIB_DTS2_ORIGIN);
+		CGAL::Sign oriented_side = ot3(p, q, origin, t);
+		
+		if (oriented_side != CGAL::Sign::COLLINEAR && m_iat(p) && m_iat(q)) {
+			//the point always has to be on the opposite side of the infinite vertex
+			oriented_side = - ot3(p, q, origin, Point_s(Point_3(0, 0, 1)));
+		}
+		return oriented_side;
+	}
+private:
+	CGAL::Orientation ot3(const Point_s & p, const Point_s & q, const Point_s & r, const Point_s & s) const {
+		return CGAL::orientationC3<K::Root_of_2>(p.x(), p.y(), p.z(),
+											  q.x(), q.y(), q.z(),
+											  r.x(), r.y(), r.z(),
+											  s.x(), s.y(), s.z()
+								   );
+	}
+private:
+	Is_in_auxiliary_triangle m_iat;
 };
 
 class Construct_point {
@@ -101,10 +192,12 @@ public:
 	using Point_3 = K::Circular_arc_point_3;
 	using MyBase = K::Construct_circular_arc_3;
 	using Segment = K::Circular_arc_3;
+	using Circel_3 = K::Circle_3;
 public:
 	Construct_segment_s2() {}
 public:
 	Segment operator()(Point_3 const & src, Point_3 const & tgt) const {
+		throw std::runtime_error("Unimplemented function");
 		return Segment();
 	}
 private:
@@ -119,6 +212,7 @@ public:
 	using Segment = K::Circular_arc_3;
 public:
 	CGAL::Object operator()(Segment const & a, Segment const & b) const {
+		throw std::runtime_error("Unimplemented function");
 		return CGAL::Object();
 	}
 	
@@ -160,51 +254,12 @@ public:
 	
 	using Do_intersect_2 = MyKernel::Do_intersect_3;
 	using Intersect_2 = detail::spherical_traits::Intersect_s2;
-	
-public:
-	class Is_auxiliary_point {
-	public:
-		Is_auxiliary_point(MyLinearCDTKernel::Is_auxiliary_point const & base) : m_d(base) {}
-	public:
-		bool operator()(Point_2 const & p) const {
-			return false;
-		}
-	private:
-		MyLinearCDTKernel::Is_auxiliary_point m_d;
-	};
-	
-	class Is_in_auxiliary_triangle {
-	public:
-		Is_in_auxiliary_triangle(MyLinearCDTKernel::Is_in_auxiliary_triangle const & base) : m_d(base) {}
-	public:
-		bool operator()(Point_2 const & p) const {
-			return false;
-		}
-	private:
-		MyLinearCDTKernel:: Is_in_auxiliary_triangle m_d;
-	};
-	
-	class Is_valid_point_on_sphere {
-	public:
-		Is_valid_point_on_sphere(MyLinearCDTKernel::Is_valid_point_on_sphere const & base) : m_d(base) {}
-	public:
-		bool operator()(Point_2 const & p) const {
-			return false;
-		}
-	private:
-		MyLinearCDTKernel:: Is_valid_point_on_sphere m_d;
-	};
-	
-	class Generate_auxiliary_point {
-	public:
-		Generate_auxiliary_point(MyLinearCDTKernel::Generate_auxiliary_point const & base) : m_d(base) {}
-	public:
-		Point_2 operator()(AuxPointSelector s) const {
-			return Point_2( m_d(s) );
-		}
-	private:
-		MyLinearCDTKernel:: Generate_auxiliary_point m_d;
-	};
+
+	//special stuff
+	using Is_auxiliary_point = detail::spherical_traits::Is_auxiliary_point;
+	using Is_in_auxiliary_triangle = detail::spherical_traits::Is_in_auxiliary_triangle;
+	using Is_valid_point_on_sphere = detail::spherical_traits::Is_valid_point_on_sphere;
+	using Generate_auxiliary_point = detail::spherical_traits::Generate_auxiliary_point;
 	
 public:
 	class Project_on_sphere: private MyLinearCDTKernel::Project_on_sphere {
@@ -218,11 +273,11 @@ public:
 	public:
 		using MyBaseClass::projector;
 	public:
-		Point_3 operator()(const Point_3 & v) const {
+		Point_3 operator()(const Point_3 & /*v*/) const {
 			throw std::runtime_error("Projecting a circular arc point is not supported");
 			return Point_3();
 		}
-		Point_3 operator()(Point_3 & v) const {
+		Point_3 operator()(Point_3 & /*v*/) const {
 			throw std::runtime_error("Projecting a circular arc point is not supported");
 			return Point_3();
 		}
@@ -267,7 +322,7 @@ public:
 // 	}
 	
 	Orientation_2 orientation_2_object () const {
-		return Orientation_2();
+		return Orientation_2(is_in_auxiliary_triangle_object());
 	}
 	
 	Compare_x_2 compare_x_2_object() const {
@@ -332,7 +387,7 @@ public:
 	}
 	
 	Is_valid_point_on_sphere is_valid_point_on_sphere_object() const {
-		return Is_valid_point_on_sphere( m_ltraits.is_valid_point_on_sphere_object() );
+		return Is_valid_point_on_sphere( m_ltraits.is_auxiliary_point_object() );
 	}
 	
 	Generate_auxiliary_point generate_auxiliary_point_object() const {
