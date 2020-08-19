@@ -136,7 +136,7 @@ public:
 	}
 private:
 	CGAL::Orientation ot3(const Point_s & p, const Point_s & q, const Point_s & r, const Point_s & s) const {
-		return CGAL::orientationC3<K::Root_of_2>(p.x(), p.y(), p.z(),
+		return CGAL::orientationC3(p.x(), p.y(), p.z(),
 											  q.x(), q.y(), q.z(),
 											  r.x(), r.y(), r.z(),
 											  s.x(), s.y(), s.z()
@@ -165,7 +165,7 @@ public:
 	}
 private:
 	CGAL::Orientation ot3(const Point_s & p, const Point_s & q, const Point_s & r, const Point_s & s) const {
-		return CGAL::orientationC3<K::Root_of_2>(p.x(), p.y(), p.z(),
+		return CGAL::orientationC3(p.x(), p.y(), p.z(),
 											  q.x(), q.y(), q.z(),
 											  r.x(), r.y(), r.z(),
 											  s.x(), s.y(), s.z()
