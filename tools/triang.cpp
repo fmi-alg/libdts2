@@ -894,10 +894,6 @@ public:
 		this->insert(points.begin(), points.end());
 		tm.end();
 		io.info() << tm << std::endl;
-		if (clear) {
-			points = Points();
-		}
-		
 		std::vector<Vertex_handle> pId2Vertex(ps);
 		for(Finite_vertices_iterator it(m_tr.finite_vertices_begin()), end(m_tr.finite_vertices_end()); it != end; ++it) {
 			const VertexInfo & vi = it->info();
@@ -911,6 +907,10 @@ public:
 		auto relevantEdges = compute_relevant_edges(points, pId2Vertex, edges, io);
 		tm.end();
 		io.info() << tm << std::endl;
+		
+		if (clear) {
+			points = Points();
+		}
 		
 		io.info() << "Inserting constraints..." << std::flush;
 		tm.begin();
