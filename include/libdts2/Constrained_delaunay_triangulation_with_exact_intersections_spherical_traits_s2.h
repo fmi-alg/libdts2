@@ -71,6 +71,22 @@ public:
 private:
 	MyLinearCDTKernel:: Generate_auxiliary_point m_d;
 };
+
+class Segment {
+public:
+	using K = CGAL::Exact_spherical_kernel_3;
+	using Point_s = K::Circular_arc_point_3;
+public:
+	Segment(Point_s const & src, Point_s const & tgt) :
+	m_src(src), m_tgt(tgt)
+	{}
+public:
+	inline Point_s const & src() const { return m_src; }
+	inline Point_s const & tgt() const { return m_tgt; }
+public:
+	Point_s m_src;
+	Point_s m_tgt;
+};
 	
 class Triangle {
 public:
@@ -188,34 +204,37 @@ public:
 
 class Construct_segment_s2 {
 public:
-	using K = CGAL::Exact_spherical_kernel_3;
-	using Point_3 = K::Circular_arc_point_3;
-	using MyBase = K::Construct_circular_arc_3;
-	using Segment = K::Circular_arc_3;
-	using Circel_3 = K::Circle_3;
+	using Segment = dts2::detail::spherical_traits::Segment;
+	using Point_s = Segment::Point_s;
 public:
 	Construct_segment_s2() {}
 public:
-	Segment operator()(Point_3 const & src, Point_3 const & tgt) const {
-		throw std::runtime_error("Unimplemented function");
-		return Segment();
+	Segment operator()(Point_s const & src, Point_s const & tgt) const {
+		return Segment(src, tgt);
 	}
-private:
-	MyBase m_d;
+};
+
+class Do_intersect_s2 {
+public:
+	using Segment = Construct_segment_s2::Segment;
+	using Point_s = Segment::Point_s;
+public:
+	Do_intersect_s2() {}
+public:
+	bool operator()(Segment const & a, Segment const & b) const {
+		return false;
+	}
 };
 
 class Intersect_s2 {
 public:
-	using K = CGAL::Exact_spherical_kernel_3;
-	using Point_3 = K::Circular_arc_point_3;
-	using MyBase = K::Construct_circular_arc_3;
-	using Segment = K::Circular_arc_3;
+	using Segment = Construct_segment_s2::Segment;
+	using Point_s = Segment::Point_s;
 public:
 	CGAL::Object operator()(Segment const & a, Segment const & b) const {
 		throw std::runtime_error("Unimplemented function");
 		return CGAL::Object();
 	}
-	
 };
 	
 }//end namespace detail
@@ -232,7 +251,7 @@ public:
 	
 	
 	using Point_2 = MyKernel::Circular_arc_point_3;
-	using Segment_2 = MyKernel::Circular_arc_3;
+	using Segment_2 = detail::spherical_traits::Segment;
 	using Triangle_2 = detail::spherical_traits::Triangle;
 	using Construct_point_2 = detail::spherical_traits::Construct_point;
 	using Construct_segment_2 = detail::spherical_traits::Construct_segment_s2;
@@ -252,7 +271,7 @@ public:
 	using Point_3 = Point_2;
 	using Point = Point_3;
 	
-	using Do_intersect_2 = MyKernel::Do_intersect_3;
+	using Do_intersect_2 = detail::spherical_traits::Do_intersect_s2;
 	using Intersect_2 = detail::spherical_traits::Intersect_s2;
 
 	//special stuff
@@ -363,7 +382,7 @@ public:
 	}
 	
 	Do_intersect_2 do_intersect_2_object() const {
-		return m_traits.do_intersect_3_object();
+		return Do_intersect_2();
 	}
 	
 	Intersect_2 intersect_2_object() const {
