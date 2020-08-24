@@ -15,6 +15,8 @@
 namespace LIB_DTS2_NAMESPACE {
 namespace detail {
 	
+//TODO:Check endianness
+	
 struct Point_sp_cfg {
 	static constexpr uint8_t fixed_exponent = 0; //set this to a value greater than 0 to have fixed size denominators
 	
@@ -22,10 +24,10 @@ struct Point_sp_cfg {
 	struct Digits {
 		static constexpr int NUMERATOR0=31;
 		static constexpr int NUMERATOR1=31;
-		static constexpr int EXPONENT=7;
+		static constexpr int EXPONENT=7; //don't change this
 // 		static constexpr int DENOMINATOR=static_cast<int>(1) << EXPONENT;
 		static constexpr int DENOMINATOR=31;
-		static constexpr int POS=3;
+		static constexpr int POS=3; //don't change this
 	};
 	struct Signedness {
 		static constexpr bool NUMERATOR0=true;
