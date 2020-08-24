@@ -125,7 +125,7 @@ private:
 	//The remaining 84 Bits are used for the coordinates
 	//Order is
 	//numerator0, numerator1, pos, exponent
-	std::array<char, 9+(fixed_exponent? 0 : 1)> m_d;
+	std::array<char, Storage::total_bytes> m_d;
 };
 
 std::ostream & operator<<(std::ostream & out, Point_sp_base const & v);
@@ -303,8 +303,8 @@ PTSP_CLS_NAME::point3() const {
 	}
 	using LIB_RATSS_NAMESPACE::convert;
 // 	using PQType = mpq_class;
-	using PQType = FT;
-	PQType x, y, z;
+	auto PQType = [](Types::sphere_coord const & x) -> FT { return LIB_RATSS_NAMESPACE::convert<FT>(x); };
+	FT x, y, z;
 	auto sqr = [](Types::sphere_coord v) { return v*v; };
 	Types::sphere_coord den2 = sqr(denominator());
 	Types::sphere_coord sum_p_i2 = sqr(numerator0()) + sqr(numerator1());
@@ -454,22 +454,24 @@ PTSP_CLS_NAME::point3_slow() const {
 	LIB_RATSS_NAMESPACE::ProjectS2 proj;
 	mpq_class xp, yp, zp;
 	mpq_class xs, ys, zs;
-	mpq_class den = denominator();
+	mpq_class num0 = LIB_RATSS_NAMESPACE::convert<mpq_class>(numerator0());
+	mpq_class num1 = LIB_RATSS_NAMESPACE::convert<mpq_class>(numerator1());
+	mpq_class den = LIB_RATSS_NAMESPACE::convert<mpq_class>(denominator());
 	
 	switch (std::abs(this->pos())) {
 	case 1:
 		xp = 0;
-		yp = mpq_class(numerator0())/den;
-		zp = mpq_class(numerator1())/den;
+		yp = num0/den;
+		zp = num1/den;
 		break;
 	case 2:
-		xp = mpq_class(numerator0())/den;
+		xp = num0/den;
 		yp = 0;
-		zp = mpq_class(numerator1())/den;
+		zp = num1/den;
 		break;
 	case 3:
-		xp = mpq_class(numerator0())/den;
-		yp = mpq_class(numerator1())/den;
+		xp = num0/den;
+		yp = num1/den;
 		zp = 0;
 		break;
 	default:
@@ -513,10 +515,10 @@ PTSP_CLS_NAME::x() const {
 	mpq_class result;
 	switch (abs(pos())) {
 	case 1: //x is the missing coordinate
-		result = (std::signbit<int>(pos()) ? 1 : -1)*mpq_class(sum_p_i2 - den2)/mpq_class(den2 + sum_p_i2);
+		result = (std::signbit<int>(pos()) ? 1 : -1)*convert<mpq_class>(sum_p_i2 - den2)/convert<mpq_class>(den2 + sum_p_i2);
 		break;
 	default: //in any case num0 holds x
-		result = mpq_class(2*numerator0()*denominator())/mpq_class(den2 + sum_p_i2);
+		result = convert<mpq_class>(2*numerator0()*denominator())/convert<mpq_class>(den2 + sum_p_i2);
 		break;
 	};
 	assert(result == convert<mpq_class>(point3_slow().x()));
@@ -540,13 +542,13 @@ PTSP_CLS_NAME::y() const {
 	mpq_class result;
 	switch (abs(pos())) {
 	case 1: //x is the missing coordinate, thus num0 holds y
-		result = mpq_class(2*numerator0()*denominator())/mpq_class(den2 + sum_p_i2);
+		result = convert<mpq_class>(2*numerator0()*denominator())/convert<mpq_class>(den2 + sum_p_i2);
 		break;
 	case 2: //y is the missing coordinate
-		result = (std::signbit<int>(pos()) ? 1 : -1)*mpq_class(sum_p_i2 - den2)/mpq_class(den2 + sum_p_i2);
+		result = (std::signbit<int>(pos()) ? 1 : -1)*convert<mpq_class>(sum_p_i2 - den2)/convert<mpq_class>(den2 + sum_p_i2);
 		break;
 	case 3: //z is the missing coordinate, thus num1 holds y
-		result = mpq_class(2*numerator1()*denominator())/mpq_class(den2 + sum_p_i2);
+		result = convert<mpq_class>(2*numerator1()*denominator())/convert<mpq_class>(den2 + sum_p_i2);
 		break;
 	};
 	assert(result == convert<mpq_class>(point3_slow().y()));
@@ -571,10 +573,10 @@ PTSP_CLS_NAME::z() const {
 	switch (abs(pos())) {
 	case 1: //x,y are the missing coordinate, thus num1 holds z
 	case 2:
-		result = mpq_class(2*numerator1()*denominator())/mpq_class(den2 + sum_p_i2);
+		result = convert<mpq_class>(2*numerator1()*denominator())/convert<mpq_class>(den2 + sum_p_i2);
 		break;
 	case 3: //z is the missing coordinate, thus num1 holds y
-		result = (std::signbit<int>(pos()) ? 1 : -1)*mpq_class(sum_p_i2 - den2)/mpq_class(den2 + sum_p_i2);
+		result = (std::signbit<int>(pos()) ? 1 : -1)*convert<mpq_class>(sum_p_i2 - den2)/convert<mpq_class>(den2 + sum_p_i2);
 		break;
 	};
 	assert(result == convert<mpq_class>(point3_slow().z()));
