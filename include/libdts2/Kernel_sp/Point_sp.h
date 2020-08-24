@@ -18,6 +18,7 @@ namespace detail {
 struct Point_sp_cfg {
 	static constexpr uint8_t fixed_exponent = 0; //set this to a value greater than 0 to have fixed size denominators
 	
+	//Maximum numerator size is 63 Bits resulting in 127 Bits for the sphere coordinate (which still fits a int128_t)
 	struct Digits {
 		static constexpr int NUMERATOR0=31;
 		static constexpr int NUMERATOR1=31;
@@ -43,27 +44,31 @@ struct Point_sp_cfg {
 	};
 	
 	struct Storage {
+		static constexpr bool dense_coding = false;
 		static constexpr int total_bits = (BitSizes::NUMERATOR0+BitSizes::NUMERATOR1+BitSizes::EXPONENT+BitSizes::POS);
-		static constexpr int total_bytes = total_bits/8 + int(total_bits%8!=0);
-		static constexpr int a(int v) { return v/8 + int(v%8!=0); }
+		//if dense_coding==true then this tells the bit size, otherwise the byte size
 		struct Size {
-			static constexpr int NUMERATOR0 = Kernel_sp::align(BitSizes::NUMERATOR0, 8);
-			static constexpr int NUMERATOR1 = Kernel_sp::align(BitSizes::NUMERATOR1, 8);
-			static constexpr int POS = Kernel_sp::align(BitSizes::POS, 8);
-			static constexpr int EXPONENT = Kernel_sp::align(BitSizes::EXPONENT, 8);
+			static constexpr int NUMERATOR0 = dense_coding ? BitSizes::NUMERATOR0 : Kernel_sp::align(BitSizes::NUMERATOR0, 8);
+			static constexpr int NUMERATOR1 = dense_coding ? BitSizes::NUMERATOR1 : Kernel_sp::align(BitSizes::NUMERATOR1, 8);
+			static constexpr int POS = dense_coding ? BitSizes::POS : Kernel_sp::align(BitSizes::POS, 8);
+			static constexpr int EXPONENT = fixed_exponent ? 0 : (dense_coding ? BitSizes::EXPONENT : Kernel_sp::align(BitSizes::EXPONENT, 8));
 		};
+		//if dense_coding==true then this tells the bit offset, otherwise the byte offset
 		struct Begin {
 			static constexpr int NUMERATOR0 = 0;
 			static constexpr int NUMERATOR1 = NUMERATOR0+Size::NUMERATOR0;
 			static constexpr int POS = NUMERATOR1+Size::NUMERATOR1;
 			static constexpr int EXPONENT = POS+Size::POS;
 		};
+		//if dense_coding==true then this tells the bit offset, otherwise the byte offset
 		struct End { //one passed the end
 			static constexpr int NUMERATOR0 = Begin::NUMERATOR1;
 			static constexpr int NUMERATOR1 = Begin::POS;
 			static constexpr int POS = Begin::EXPONENT;
 			static constexpr int EXPONENT = fixed_exponent > 0 ? POS+Size::EXPONENT : POS;
 		};
+		
+		static constexpr int total_bytes = dense_coding ? Kernel_sp::align(total_bits, 8) : (Size::NUMERATOR0+Size::NUMERATOR1+Size::POS+Size::EXPONENT);
 	};
 	
 	struct Types {
@@ -78,6 +83,8 @@ struct Point_sp_cfg {
 	};
 	
 	static constexpr Types::denominator fixed_denominator = (fixed_exponent > 0 ? (static_cast<Types::denominator>(1) << (fixed_exponent-1)) : Types::denominator(0));
+	
+	static_assert(std::is_integral<Types::numerator>::value, "Point_sp coordinates need to be integral values");
 };
 
 class Point_sp_base: public Point_sp_cfg {
@@ -296,9 +303,9 @@ PTSP_CLS_NAME::point3() const {
 // 	using PQType = mpq_class;
 	using PQType = FT;
 	PQType x, y, z;
-	auto sqr = [](int64_t v) { return v*v; };
-	int64_t den2 = sqr(denominator());
-	int64_t sum_p_i2 = sqr(numerator0()) + sqr(numerator1());
+	auto sqr = [](Types::sphere_coord v) { return v*v; };
+	Types::sphere_coord den2 = sqr(denominator());
+	Types::sphere_coord sum_p_i2 = sqr(numerator0()) + sqr(numerator1());
 	switch (abs(pos())) {
 	case 1: //x is the missing coordinate, thus num0 holds y, num1 holds z
 		x = (std::signbit<int>(pos()) ? 1 : -1)*PQType(sum_p_i2 - den2)/PQType(den2 + sum_p_i2);
@@ -333,9 +340,9 @@ PTSP_CLS_NAME::numerators3() const {
 	}
 	using LIB_RATSS_NAMESPACE::convert;
 	Numerators_3 r;
-	auto sqr = [](int64_t v) { return v*v; };
-	int64_t den2 = sqr(denominator());
-	int64_t sum_p_i2 = sqr(numerator0()) + sqr(numerator1());
+	auto sqr = [](Types::sphere_coord v) { return v*v; };
+	Types::sphere_coord den2 = sqr(denominator());
+	Types::sphere_coord sum_p_i2 = sqr(numerator0()) + sqr(numerator1());
 	switch (abs(pos())) {
 	case 1: //x is the missing coordinate, thus num0 holds y, num1 holds z
 		r.x = (std::signbit<int>(pos()) ? 1 : -1)*RT(sum_p_i2 - den2);
@@ -366,9 +373,9 @@ PTSP_CLS_NAME::num_den_x_3() const {
 	if (2*exponent()+1 > std::numeric_limits<RT>::digits) {
 		throw std::runtime_error("Point_sp::num_den_x_3: exponent is too large");
 	}
-	auto sqr = [](int64_t v) { return v*v; };
-	int64_t den2 = sqr(denominator());
-	int64_t sum_p_i2 = sqr(numerator0()) + sqr(numerator1());
+	auto sqr = [](Types::sphere_coord v) { return v*v; };
+	Types::sphere_coord den2 = sqr(denominator());
+	Types::sphere_coord sum_p_i2 = sqr(numerator0()) + sqr(numerator1());
 	Numerator_Denominator_1_3 result;
 	switch (abs(pos())) {
 	case 1: //x is the missing coordinate
@@ -392,9 +399,9 @@ PTSP_CLS_NAME::num_den_y_3() const {
 	if (2*exponent()+1 > std::numeric_limits<RT>::digits) {
 		throw std::runtime_error("Point_sp::num_den_y_3: exponent is too large");
 	}
-	auto sqr = [](int64_t v) { return v*v; };
-	int64_t den2 = sqr(denominator());
-	int64_t sum_p_i2 = sqr(numerator0()) + sqr(numerator1());
+	auto sqr = [](Types::sphere_coord v) { return v*v; };
+	Types::sphere_coord den2 = sqr(denominator());
+	Types::sphere_coord sum_p_i2 = sqr(numerator0()) + sqr(numerator1());
 	Numerator_Denominator_1_3 result;
 	switch (abs(pos())) {
 	case 1: //x is the missing coordinate, thus num0 holds y
@@ -421,9 +428,9 @@ PTSP_CLS_NAME::num_den_z_3() const {
 	if (2*exponent()+1 > std::numeric_limits<RT>::digits) {
 		throw std::runtime_error("Point_sp::num_den_z_3: exponent is too large");
 	}
-	auto sqr = [](int64_t v) { return v*v; };
-	int64_t den2 = sqr(denominator());
-	int64_t sum_p_i2 = sqr(numerator0()) + sqr(numerator1());
+	auto sqr = [](Types::sphere_coord v) { return v*v; };
+	Types::sphere_coord den2 = sqr(denominator());
+	Types::sphere_coord sum_p_i2 = sqr(numerator0()) + sqr(numerator1());
 	Numerator_Denominator_1_3 result;
 	switch (abs(pos())) {
 	case 1: //x,y are the missing coordinate, thus num1 holds z
@@ -498,9 +505,9 @@ PTSP_CLS_NAME::x() const {
 		return ratss::convert<T_FT>( point3().x() );
 	}
 	using LIB_RATSS_NAMESPACE::convert;
-	auto sqr = [](int64_t v) { return v*v; };
-	int64_t den2 = sqr(denominator());
-	int64_t sum_p_i2 = sqr(numerator0()) + sqr(numerator1());
+	auto sqr = [](Types::sphere_coord v) { return v*v; };
+	Types::sphere_coord den2 = sqr(denominator());
+	Types::sphere_coord sum_p_i2 = sqr(numerator0()) + sqr(numerator1());
 	mpq_class result;
 	switch (abs(pos())) {
 	case 1: //x is the missing coordinate
@@ -525,9 +532,9 @@ PTSP_CLS_NAME::y() const {
 		return ratss::convert<T_FT>( point3().y() );
 	}
 	using LIB_RATSS_NAMESPACE::convert;
-	auto sqr = [](int64_t v) { return v*v; };
-	int64_t den2 = sqr(denominator());
-	int64_t sum_p_i2 = sqr(numerator0()) + sqr(numerator1());
+	auto sqr = [](Types::sphere_coord v) { return v*v; };
+	Types::sphere_coord den2 = sqr(denominator());
+	Types::sphere_coord sum_p_i2 = sqr(numerator0()) + sqr(numerator1());
 	mpq_class result;
 	switch (abs(pos())) {
 	case 1: //x is the missing coordinate, thus num0 holds y
@@ -555,9 +562,9 @@ PTSP_CLS_NAME::z() const {
 		return ratss::convert<T_FT>( point3().z() );
 	}
 	using LIB_RATSS_NAMESPACE::convert;
-	auto sqr = [](int64_t v) { return v*v; };
-	int64_t den2 = sqr(denominator());
-	int64_t sum_p_i2 = sqr(numerator0()) + sqr(numerator1());
+	auto sqr = [](Types::sphere_coord v) { return v*v; };
+	Types::sphere_coord den2 = sqr(denominator());
+	Types::sphere_coord sum_p_i2 = sqr(numerator0()) + sqr(numerator1());
 	mpq_class result;
 	switch (abs(pos())) {
 	case 1: //x,y are the missing coordinate, thus num1 holds z
