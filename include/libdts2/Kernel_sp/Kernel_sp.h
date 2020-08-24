@@ -493,10 +493,19 @@ public:
 	using Side_of_oriented_circle_2 = detail::Kernel_sp::Side_of_oriented_circle_s2<MyBaseTrait>;
 	using Orientation_2 = detail::Kernel_sp::Orientation_s2<MyBaseTrait>;
 public:
-	Kernel_sp_base() {}
+	Kernel_sp_base() :
+	MyBaseTrait(AuxiliaryPointsGenerator(), snap_bits, snap_bits)
+	{}
 	Kernel_sp_base(AuxiliaryPointsGenerator const & _apg, int _significands, int _intersectSignificands = -1) :
 	MyBaseTrait(_apg, _significands, _intersectSignificands)
-	{}
+	{
+		if (_significands > snap_bits) {
+			throw std::runtime_error("_significands > snap_bits");
+		}
+		if (_intersectSignificands > snap_bits) {
+			throw std::runtime_error("_intersectSignificands > snap_bits");
+		}
+	}
 	Kernel_sp_base(const Kernel_sp_base & other) :
 	MyBaseTrait(other)
 	{}
