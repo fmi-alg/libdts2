@@ -14,43 +14,97 @@
 
 namespace LIB_DTS2_NAMESPACE {
 namespace detail {
-
-class Point_sp_base {
-public:
-	using base_type = int64_t;
-	using unsigned_base_type = uint64_t;
-	//TODO: extend this to 42 bits for numerators
+	
+struct Point_sp_cfg {
 	static constexpr uint8_t fixed_exponent = 0; //set this to a value greater than 0 to have fixed size denominators
-	static constexpr unsigned_base_type fixed_denominator = (fixed_exponent > 0 ? (static_cast<unsigned_base_type>(1) << (fixed_exponent-1)) : unsigned_base_type(0));
-	struct BitSizes {
-		static constexpr int NUMERATOR0=32;
-		static constexpr int NUMERATOR1=32;
-		static constexpr int DENOMINATOR=7;
-		static constexpr int EXPONENT=DENOMINATOR;
+	
+	struct Digits {
+		static constexpr int NUMERATOR0=31;
+		static constexpr int NUMERATOR1=31;
+		static constexpr int EXPONENT=7;
+// 		static constexpr int DENOMINATOR=static_cast<int>(1) << EXPONENT;
+		static constexpr int DENOMINATOR=31;
 		static constexpr int POS=3;
 	};
+	struct Signedness {
+		static constexpr bool NUMERATOR0=true;
+		static constexpr bool NUMERATOR1=true;
+		static constexpr bool DENOMINATOR=false;
+		static constexpr bool EXPONENT=DENOMINATOR;
+		static constexpr bool POS=false;
+	};
+	//Bit sizes are not accurate for non integral types
+	struct BitSizes {
+		static constexpr int NUMERATOR0=Digits::NUMERATOR0+int(Signedness::NUMERATOR0);
+		static constexpr int NUMERATOR1=Digits::NUMERATOR1+int(Signedness::NUMERATOR1);
+		static constexpr int DENOMINATOR=Digits::DENOMINATOR+int(Signedness::DENOMINATOR);
+		static constexpr int EXPONENT=Digits::EXPONENT+int(Signedness::EXPONENT);
+		static constexpr int POS=Digits::POS+int(Signedness::POS);
+	};
+	
+	struct Storage {
+		static constexpr int total_bits = (BitSizes::NUMERATOR0+BitSizes::NUMERATOR1+BitSizes::EXPONENT+BitSizes::POS);
+		static constexpr int total_bytes = total_bits/8 + int(total_bits%8!=0);
+		static constexpr int a(int v) { return v/8 + int(v%8!=0); }
+		struct Size {
+			static constexpr int NUMERATOR0 = Kernel_sp::align(BitSizes::NUMERATOR0, 8);
+			static constexpr int NUMERATOR1 = Kernel_sp::align(BitSizes::NUMERATOR1, 8);
+			static constexpr int POS = Kernel_sp::align(BitSizes::POS, 8);
+			static constexpr int EXPONENT = Kernel_sp::align(BitSizes::EXPONENT, 8);
+		};
+		struct Begin {
+			static constexpr int NUMERATOR0 = 0;
+			static constexpr int NUMERATOR1 = NUMERATOR0+Size::NUMERATOR0;
+			static constexpr int POS = NUMERATOR1+Size::NUMERATOR1;
+			static constexpr int EXPONENT = POS+Size::POS;
+		};
+		struct End { //one passed the end
+			static constexpr int NUMERATOR0 = Begin::NUMERATOR1;
+			static constexpr int NUMERATOR1 = Begin::POS;
+			static constexpr int POS = Begin::EXPONENT;
+			static constexpr int EXPONENT = fixed_exponent > 0 ? POS+Size::EXPONENT : POS;
+		};
+	};
+	
+	struct Types {
+		using numerator = Kernel_sp::AINT<Digits::NUMERATOR0>;
+		using denominator = Kernel_sp::AINT<Digits::DENOMINATOR>;
+		
+		using exponent = uint8_t;
+		using pos = int8_t;
+		
+		using sphere_coord = Kernel_sp::AINT<2*Digits::NUMERATOR0+1>;
+		using unsigned_sphere_coord = Kernel_sp::AUINT<2*Digits::NUMERATOR0+1>;
+	};
+	
+	static constexpr Types::denominator fixed_denominator = (fixed_exponent > 0 ? (static_cast<Types::denominator>(1) << (fixed_exponent-1)) : Types::denominator(0));
+};
+
+class Point_sp_base: public Point_sp_cfg {
+public:
+	using Config = Point_sp_cfg;
 public:
 	Point_sp_base();
 	Point_sp_base(Point_sp_base const &) = default;
-	Point_sp_base(base_type _num0, base_type _num1, base_type _den, base_type _pos);
+	Point_sp_base(Types::numerator _num0, Types::numerator _num1, Types::denominator _den, Types::pos _pos);
 	virtual ~Point_sp_base();
 	Point_sp_base & operator=(Point_sp_base const &) = default;
 public:
-	void set_numerator0(base_type v);
-	void set_numerator1(base_type v);
-	void set_denominator(base_type v);
-	void set_exponent(uint8_t v);
-	void set_pos(int v);
+	void set_numerator0(Types::numerator v);
+	void set_numerator1(Types::numerator v);
+	void set_denominator(Types::denominator v);
+	void set_exponent(Types::exponent v);
+	void set_pos(Types::pos v);
 	void set_numerator0(mpz_class v);
 	void set_numerator1(mpz_class v);
 	void set_denominator(mpz_class v);
 public:
-	base_type numerator0() const;
-	base_type numerator1() const;
-	base_type denominator() const;
+	Types::numerator numerator0() const;
+	Types::numerator numerator1() const;
+	Types::denominator denominator() const;
 	///@return position on Sphere
 	LIB_RATSS_NAMESPACE::PositionOnSphere pos() const;
-	uint8_t exponent() const;
+	Types::exponent exponent() const;
 public:
 	bool operator!=(Point_sp_base const & other) const;
 	bool operator==(Point_sp_base const & other) const;
@@ -73,15 +127,16 @@ template<typename T_LINEAR_KERNEL>
 class Point_sp: public detail::Point_sp_base {
 public:
 	using MyParent = detail::Point_sp_base;
+	using Types = MyParent::Types;
 	using MyBaseTrait = T_LINEAR_KERNEL;
 	using FT = typename MyBaseTrait::FT;
 	using Point_3 = typename MyBaseTrait::Point_3;
 	using K = MyBaseTrait;
 	using Numerators_3 = detail::Kernel_sp::Numerators_3<
-		typename detail::Kernel_sp::AlignedIntegerTypeFromBits<
+		typename detail::Kernel_sp::AlignedIntegerTypeFromDigits<
 			2*std::max<int>(
 				fixed_exponent+1,
-				MyParent::BitSizes::NUMERATOR0
+				MyParent::Config::Digits::NUMERATOR0
 			)
 		>::type
 	>;
@@ -89,7 +144,7 @@ public:
 public:
 	Point_sp();
 	Point_sp(MyParent const & v);
-	Point_sp(base_type _num0, base_type _num1, base_type _den, base_type _pos);
+	Point_sp(Types::numerator _num0, Types::numerator _num1, Types::denominator _den, Types::pos _pos);
 	Point_sp(FT const & x, FT const & y, FT const & z);
 	Point_sp(Point_3 const & v);
 	Point_sp(Point_sp const & other);
@@ -219,7 +274,7 @@ PTSP_CLS_NAME::Point_sp(FT const & x, FT const & y, FT const & z) {
 }
 
 PTSP_TMP_PRMS
-PTSP_CLS_NAME::Point_sp(base_type _num0, base_type _num1, base_type _den, base_type _pos) :
+PTSP_CLS_NAME::Point_sp(Types::numerator _num0, Types::numerator _num1, Types::denominator _den, Types::pos _pos) :
 MyParent(_num0, _num1, _den, _pos)
 {}
 

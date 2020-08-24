@@ -2,17 +2,24 @@
 #ifndef LIB_DTS2_KERNEL_SP_INTERNAL_H
 #define LIB_DTS2_KERNEL_SP_INTERNAL_H
 
-#include <boost/multiprecision/cpp_int.hpp>
-
-#include <libdts2/vendor/ttmath/ttmathint.h>
-#include <gmpxx.h>
-#include <libdts2/vendor/wider/signed_wider.h>
-
 // #define LIB_DTS_2_KERNEL_SP_USE_TTMATH
 // #define LIB_DTS_2_KERNEL_SP_USE_MPZ_CLASS
 // #define LIB_DTS_2_KERNEL_SP_USE_SIGNED_WIDER
 
+#ifdef LIB_DTS_2_KERNEL_SP_USE_TTMATH
+	#include <libdts2/vendor/ttmath/ttmathint.h>
+	#include <libdts2/vendor/ttmath/ttmathuint.h>
+#elif defined(LIB_DTS_2_KERNEL_SP_USE_MPZ_CLASS)
+	#include <gmpxx.h>
+#elif defined(LIB_DTS_2_KERNEL_SP_USE_SIGNED_WIDER)
+	#include <libdts2/vendor/wider/signed_wider.h>
+#else 
+	#include <boost/multiprecision/cpp_int.hpp>
+#endif
+
 namespace LIB_DTS2_NAMESPACE::detail::Kernel_sp {
+	
+constexpr int align(int v, int alignment) { return (v/alignment) + int(v%alignment!=0); } 
 
 #ifdef LIB_DTS_2_KERNEL_SP_USE_TTMATH
 
@@ -32,6 +39,24 @@ struct IntegerTypeFromBits<64> {
 	using type = int64_t;
 };
 
+//unsigned integer variants
+
+template<int T_BITS>
+struct UnsignedIntegerTypeFromBits {
+	static constexpr int words = std::max<int>(1, align(T_BITS, 64));
+	using type = ttmath::UInt<words>;
+};
+
+template<>
+struct UnsignedIntegerTypeFromBits<32> {
+	using type = uint64_t;
+};
+
+template<>
+struct UnsignedIntegerTypeFromBits<64> {
+	using type = uint64_t;
+};
+
 #elif defined(LIB_DTS_2_KERNEL_SP_USE_MPZ_CLASS)
 
 template<int T_BITS>
@@ -47,6 +72,23 @@ struct IntegerTypeFromBits<32> {
 template<>
 struct IntegerTypeFromBits<64> {
 	using type = int64_t;
+};
+
+//unsigned integer variants
+
+template<int T_BITS>
+struct UnsignedIntegerTypeFromBits {
+	using type = mpz_class;
+};
+
+template<>
+struct UnsignedIntegerTypeFromBits<32> {
+	using type = uint64_t;
+};
+
+template<>
+struct UnsignedIntegerTypeFromBits<64> {
+	using type = uint64_t;
 };
 
 #elif defined(LIB_DTS_2_KERNEL_SP_USE_SIGNED_WIDER)
@@ -79,6 +121,23 @@ struct IntegerTypeFromBits<256> {
 	using type = SignedWider< Wider< Wider<uint64_t> > >;
 };
 
+//unsigned integer variants
+
+template<int T_BITS>
+struct UnsignedIntegerTypeFromBits {
+	using type = typename IntegerTypeFromBits<T_BITS>::type;
+};
+
+template<>
+struct UnsignedIntegerTypeFromBits<32> {
+	using type = uint64_t;
+};
+
+template<>
+struct UnsignedIntegerTypeFromBits<64> {
+	using type = uint64_t;
+};
+
 #else
 	
 template<int T_BITS>
@@ -109,19 +168,66 @@ struct IntegerTypeFromBits<128> {
 	using type = __int128_t;
 };
 
-#endif
+//unsigned integer variants
 
 template<int T_BITS>
-struct AlignedIntegerTypeFromBits {
-	static constexpr int requested_bits = T_BITS;
-	static constexpr int bits = (requested_bits/64 + int((requested_bits%64)!=0))*64;
+struct UnsignedIntegerTypeFromBits {
+	using type = boost::multiprecision::number<
+		boost::multiprecision::cpp_int_backend<
+			T_BITS,
+			T_BITS,
+			boost::multiprecision::unsigned_magnitude,
+			boost::multiprecision::unchecked,
+			void
+		>
+	>;
+};
+
+template<>
+struct UnsignedIntegerTypeFromBits<32> {
+	using type = uint32_t;
+};
+
+template<>
+struct UnsignedIntegerTypeFromBits<64> {
+	using type = uint64_t;
+};
+
+template<>
+struct UnsignedIntegerTypeFromBits<128> {
+	using type = __uint128_t;
+};
+
+#endif
+
+template<int T_DIGITS>
+struct AlignedIntegerTypeFromDigits {
+	static constexpr int requested_digits = T_DIGITS;
+	static constexpr int requested_bits = requested_digits+1;
+	static constexpr int bits = align(requested_bits, 64)*64;
+	static constexpr int digits = bits-1;
 	using type = typename IntegerTypeFromBits<bits>::type;
 };
 
-template<typename T_RT, int T_MAX_BITS = std::numeric_limits<T_RT>::digits>
+template<int T_DIGITS>
+struct AlignedUnsignedIntegerTypeFromDigits {
+	static constexpr int requested_digits = T_DIGITS;
+	static constexpr int requested_bits = requested_digits;
+	static constexpr int bits = align(requested_bits, 64)*64;
+	static constexpr int digits = bits;
+	using type = typename UnsignedIntegerTypeFromBits<bits>::type;
+};
+
+template<int T_DIGITS>
+using AINT = typename AlignedIntegerTypeFromDigits<T_DIGITS>::type;
+
+template<int T_DIGITS>
+using AUINT = typename AlignedUnsignedIntegerTypeFromDigits<T_DIGITS>::type;
+
+template<typename T_RT, int T_MAX_DIGITS = std::numeric_limits<T_RT>::digits>
 struct Numerator_Denominator_1_3 {
 	using RT = T_RT;
-	static constexpr int max_bits = T_MAX_BITS;
+	static constexpr int max_digits = T_MAX_DIGITS;
 	RT num;
 	RT den;
 	Numerator_Denominator_1_3() {}
@@ -132,10 +238,10 @@ struct Numerator_Denominator_1_3 {
 	Numerator_Denominator_1_3 & operator=(Numerator_Denominator_1_3 &&) = default;
 };
 
-template<typename T_RT, int T_MAX_BITS = std::numeric_limits<T_RT>::digits>
+template<typename T_RT, int T_MAX_DIGITS = std::numeric_limits<T_RT>::digits>
 struct Numerators_3 {
 	using RT = T_RT;
-	static constexpr int max_bits = T_MAX_BITS;
+	static constexpr int max_digits = T_MAX_DIGITS;
 	RT x;
 	RT y;
 	RT z;

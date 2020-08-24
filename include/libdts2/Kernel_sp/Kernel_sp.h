@@ -20,9 +20,6 @@ public:
 	using Is_auxiliary_point = typename MyBaseTrait::Is_auxiliary_point;
 	using Point = Point_sp<typename MyBaseTrait::LinearKernel>;
 	static constexpr int max_exponent = 32;
-	//Signed integer which can represent an unsigned number with up to N bits
-	template<int N>
-	using AINT = typename AlignedIntegerTypeFromBits<N+1>::type; //Plus one for the sign
 public:
 	Side_of_oriented_circle_s2(MyBaseClass const & _base, Is_auxiliary_point const & _iap) :
 	MyBaseClass(_base),
@@ -199,8 +196,6 @@ public:
 	using Is_in_auxiliary_triangle = typename MyBaseTrait::Is_in_auxiliary_triangle;
 	using Point = Point_sp<typename MyBaseTrait::LinearKernel>;
 	static constexpr int max_exponent = 32;
-	template<int N>
-	using AINT = typename AlignedIntegerTypeFromBits<N+1>::type; //Plus 1 for the sign
 private:
 	using Numerators_3 = typename Point::Numerators_3;
 public:
@@ -309,8 +304,6 @@ public: \
 	using MyParent = typename MyBaseTrait::Less_ ## __VAR ## _3; \
 	using Point = Point_sp<typename MyBaseTrait::LinearKernel>; \
 	static constexpr int max_exponent = 32; \
-	template<int N> \
-	using AINT = typename AlignedIntegerTypeFromBits<N+1>::type; \
 public: \
 	Less_ ## __VAR ## _3(); \
 	Less_ ## __VAR ## _3(MyParent const & other): MyParent(other) {} \
