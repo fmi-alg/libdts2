@@ -19,7 +19,7 @@ public:
 	using MyBaseClass = typename MyBaseTrait::Side_of_oriented_circle_2;
 	using Is_auxiliary_point = typename MyBaseTrait::Is_auxiliary_point;
 	using Point = Point_sp<typename MyBaseTrait::LinearKernel>;
-	static constexpr int max_exponent = 32;
+	static constexpr int max_exponent = Point::Digits::NUMERATOR0+1;
 public:
 	Side_of_oriented_circle_s2(MyBaseClass const & _base, Is_auxiliary_point const & _iap) :
 	MyBaseClass(_base),
@@ -195,7 +195,7 @@ public:
 	using MyBaseClass = typename MyBaseTrait::Orientation_2;
 	using Is_in_auxiliary_triangle = typename MyBaseTrait::Is_in_auxiliary_triangle;
 	using Point = Point_sp<typename MyBaseTrait::LinearKernel>;
-	static constexpr int max_exponent = 32;
+	static constexpr int max_exponent = Point::Digits::NUMERATOR0+1;
 private:
 	using Numerators_3 = typename Point::Numerators_3;
 public:
@@ -303,7 +303,7 @@ public: \
 	using MyBaseTrait = T_BASE_TRAIT; \
 	using MyParent = typename MyBaseTrait::Less_ ## __VAR ## _3; \
 	using Point = Point_sp<typename MyBaseTrait::LinearKernel>; \
-	static constexpr int max_exponent = 32; \
+	static constexpr int max_exponent = Point::Digits::NUMERATOR0+1; \
 public: \
 	Less_ ## __VAR ## _3(); \
 	Less_ ## __VAR ## _3(MyParent const & other): MyParent(other) {} \
@@ -362,7 +362,7 @@ public:
 	using Point_3 = Point_sp<LinearKernel>;
 	using FT = typename LinearKernel::FT;
 // 	static constexpr uint32_t max_exponent = (static_cast<uint32_t>(1) << (Point_3::BitSizes::EXPONENT))-1;
-	static constexpr uint32_t max_exponent = 60;
+	static constexpr uint32_t max_exponent = Point_3::Digits::NUMERATOR0;
 public:
 	class Generate_auxiliary_point final {
 	public:
@@ -471,7 +471,7 @@ class Kernel_sp_base:
 		>
 {
 public:
-	static constexpr int snap_bits = 31;
+	static constexpr int snap_bits = Point_sp<T_LINEAR_KERNEL>::Digits::NUMERATOR0;
 public:
 	using Self = Kernel_sp_base<T_LINEAR_KERNEL, T_AUX_POINT_GENERATOR>;
 	using MyBaseTrait = Constrained_delaunay_triangulation_with_inexact_intersections_base_traits_s2<
