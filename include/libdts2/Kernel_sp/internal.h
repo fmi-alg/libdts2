@@ -2,6 +2,10 @@
 #ifndef LIB_DTS2_KERNEL_SP_INTERNAL_H
 #define LIB_DTS2_KERNEL_SP_INTERNAL_H
 
+#include <libdts2/constants.h>
+#include <libdts2/util.h>
+#include <libratss/Conversion.h>
+
 // #define LIB_DTS_2_KERNEL_SP_USE_TTMATH
 // #define LIB_DTS_2_KERNEL_SP_USE_MPZ_CLASS
 // #define LIB_DTS_2_KERNEL_SP_USE_SIGNED_WIDER
@@ -253,6 +257,86 @@ struct Numerators_3 {
 	Numerators_3 & operator=(Numerators_3 &&) = default;
 };
 
+template<int T_DIGITS, template<int> typename T_UNDERLYING_TYPE = AINT>
+class AutoInt {
+public:
+	static constexpr int digits = T_DIGITS;
+	using underlying_type = T_UNDERLYING_TYPE<digits>;
+public:
+	AutoInt() {}
+	AutoInt(AutoInt && other) = default;
+	AutoInt(AutoInt const & other) = default;
+	
+	AutoInt(underlying_type const & v) : m_v(v) {}
+	AutoInt(underlying_type && v) : m_v(std::move(v)) {}
+public:
+	template<int T_O_DIGITS>
+	AutoInt & operator=(typename std::enable_if<T_O_DIGITS <= T_DIGITS, AutoInt<T_O_DIGITS, T_UNDERLYING_TYPE>>::type const & other) {
+		m_v = other.m_v;
+		return *this;
+	}
+	AutoInt & operator=(AutoInt && other) {
+		m_v = std::move(other.m_v);
+		return *this;
+	}
+public:
+	template<int T_O_DIGITS>
+	friend auto
+	operator+(AutoInt<T_DIGITS, T_UNDERLYING_TYPE> const & me, AutoInt<T_O_DIGITS, T_UNDERLYING_TYPE> const & other) {
+		constexpr int result_digits = std::max(T_O_DIGITS, T_DIGITS)+1;
+		using return_type = AutoInt<result_digits, T_UNDERLYING_TYPE>;
+		using return_underlying_type = typename return_type::underlying_type;
+		return return_type( ipt_static_cast<return_underlying_type>(me.value()) + ipt_static_cast<return_underlying_type>(other.value()) );
+	}
+
+	template<int T_O_DIGITS>
+	friend auto
+	operator-(AutoInt<T_DIGITS, T_UNDERLYING_TYPE> const & me, AutoInt<T_O_DIGITS, T_UNDERLYING_TYPE> const & other) {
+		constexpr int result_digits = std::max(T_O_DIGITS, T_DIGITS)+1;
+		using return_type = AutoInt<result_digits, T_UNDERLYING_TYPE>;
+		using return_underlying_type = typename return_type::underlying_type;
+		return return_type( ipt_static_cast<return_underlying_type>(me.value()) - ipt_static_cast<return_underlying_type>(other.value()) );
+	}
+	
+	template<int T_O_DIGITS>
+	friend auto
+	operator*(AutoInt<T_DIGITS, T_UNDERLYING_TYPE> const & me, AutoInt<T_O_DIGITS, T_UNDERLYING_TYPE> const & other) {
+		constexpr int result_digits = T_O_DIGITS+T_DIGITS;
+		using return_type = AutoInt<result_digits, T_UNDERLYING_TYPE>;
+		using return_underlying_type = typename return_type::underlying_type;
+		return return_type( ipt_static_cast<return_underlying_type>(me.value()) * ipt_static_cast<return_underlying_type>(other.value()) );
+	}
+public:
+	underlying_type const & value() const { return m_v; }
+	underlying_type & value() { return m_v; }
+private:
+	
+private:
+	underlying_type m_v;
+};
+
 } // LIB_DTS2_NAMESPACE::detail::Kernel_sp
+
+namespace LIB_RATSS_NAMESPACE {
+	
+template<int T_DIGITS, template<int> typename T_UNDERLYING_TYPE>
+struct Conversion< LIB_DTS2_NAMESPACE::detail::Kernel_sp::AutoInt<T_DIGITS, T_UNDERLYING_TYPE> > {
+	using type = LIB_DTS2_NAMESPACE::detail::Kernel_sp::AutoInt<T_DIGITS, T_UNDERLYING_TYPE>;
+	using underlying_type = typename type::underlying_type;
+	static type moveFrom(mpq_class && v) {
+		return type( Conversion<underlying_type>::moveFrom( std::move(v) ) );
+	}
+	static type moveFrom(mpq_class const & v) {
+		return type( Conversion<underlying_type>::moveFrom(v) );
+	}
+	static mpq_class toMpq(const type & v) {
+		return Conversion<underlying_type>::toMpq( v.value() );
+	}
+	static mpfr::mpreal toMpreal(const type & v, int precision) {
+		return Conversion<underlying_type>::toMpreal( v.value(), precision);
+	}
+};
+
+}
 
 #endif
