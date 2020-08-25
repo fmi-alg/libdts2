@@ -1,5 +1,6 @@
 #include <libdts2/Kernel_sp/Point_sp.h>
 
+#include <libratss/Conversion.h>
 #include <limits>
 
 namespace LIB_DTS2_NAMESPACE {
@@ -20,21 +21,57 @@ Point_sp_base::~Point_sp_base() {}
 
 void
 Point_sp_base::set_numerator0(Types::numerator v) {
-	assert(int32_t(v) == v);
-	int32_t tv(v);
-	::memmove(m_d.data(), &tv, sizeof(tv));
+	if (Storage::dense_coding) {
+		throw std::runtime_error("Unimplemented function");
+	}
+	else {
+		if (sizeof(Types::numerator) != Storage::Size::NUMERATOR0) {
+			bool sign = v<0;
+			if (sign) {
+				v = -v;
+			}
+			v <<= 0;
+			if (sign) {
+				v |= 1;
+			}
+		}
+		::memmove(m_d.data()+Storage::Begin::NUMERATOR0, &v, Storage::Size::NUMERATOR0);
+	}
 }
 
 void
 Point_sp_base::set_numerator1(Types::numerator v) {
-	assert(int32_t(v) == v);
-	int32_t tv(v);
-	::memmove(m_d.data()+4, &tv, sizeof(tv));
+	if (Storage::dense_coding) {
+		throw std::runtime_error("Unimplemented function");
+	}
+	else {
+		if (sizeof(Types::numerator) != Storage::Size::NUMERATOR1) {
+			bool sign = v<0;
+			if (sign) {
+				v = -v;
+			}
+			v <<= 0;
+			if (sign) {
+				v |= 1;
+			}
+		}
+		::memmove(m_d.data()+Storage::Begin::NUMERATOR1, &v, Storage::Size::NUMERATOR1);
+	}
 }
 
 namespace {
 	std::size_t clz(uint64_t v) { return __builtin_clzl(v); }
 	std::size_t clz(uint32_t v) { return __builtin_clz(v); }
+	std::size_t clz(__uint128_t v) {
+		uint64_t upper = v >> 64;
+		uint64_t lower = v;
+		if (upper) {
+			return clz(upper);
+		}
+		else {
+			return clz(lower)+64;
+		}
+	}
 }
 
 void
@@ -57,7 +94,12 @@ Point_sp_base::set_exponent(Types::exponent v) {
 		}
 	}
 	else {
-		m_d.at(9) = v;
+		if (Storage::dense_coding) {
+			throw std::runtime_error("Unimplemented function");
+		}
+		else {
+			m_d.at(Storage::Begin::EXPONENT) = v;
+		}
 	}
 }
 
@@ -77,44 +119,60 @@ Point_sp_base::set_exponent(Types::exponent v) {
 void 
 Point_sp_base::set_pos(Types::pos v) {
 	assert(Types::pos(v) == v);
-	m_d.at(8) = v;
+	m_d.at(Storage::Begin::POS) = v;
 }
 
 void
 Point_sp_base::set_numerator0(mpz_class v) {
-	assert(v.fits_slong_p());
-	assert(Types::numerator(v.get_si()) == v.get_si());
-	set_numerator0(v.get_si());
+	set_numerator0( LIB_RATSS_NAMESPACE::convert<Types::numerator>(v) );
 }
 
 void
 Point_sp_base::set_numerator1(mpz_class v) {
-	assert(v.fits_slong_p());
-	assert(Types::numerator(v.get_si()) == v.get_si());
-	set_numerator1(v.get_si());
+	set_numerator1( LIB_RATSS_NAMESPACE::convert<Types::numerator>(v) );
 }
 
 void
 Point_sp_base::set_denominator(mpz_class v) {
-	assert(v.fits_slong_p());
-	assert(Types::denominator(v.get_si()) == v.fits_slong_p());
-	set_denominator(Types::denominator(v.get_si()));
+	set_denominator( LIB_RATSS_NAMESPACE::convert<Types::denominator>(v) );
 }
 
 Point_sp_base::Types::numerator
 Point_sp_base::numerator0() const {
-	static_assert(std::is_integral<Types::numerator>::value);
-	Types::numerator tmp = 0;
-	::memmove(&tmp, m_d.data(), sizeof(tmp));
-	return tmp;
+	Types::numerator result = 0;
+	if (Storage::dense_coding) {
+		throw std::runtime_error("Unimplemented function");
+	}
+	else {
+		::memmove(&result, m_d.data()+Storage::Begin::NUMERATOR0, Storage::Size::NUMERATOR0);
+		if (sizeof(Types::numerator) != Storage::Size::NUMERATOR0) {
+			bool sign = result & 0x1;
+			result >>= 1;
+			if (sign) {
+				result = -result;
+			}
+		}
+	}
+	return result;
 }
 
 Point_sp_base::Types::numerator
 Point_sp_base::numerator1() const {
-	static_assert(std::is_integral<Types::numerator>::value);
-	Types::numerator tmp = 0;
-	::memmove(&tmp, m_d.data()+sizeof(Types::numerator), sizeof(tmp));
-	return tmp;
+	Types::numerator result = 0;
+	if (Storage::dense_coding) {
+		throw std::runtime_error("Unimplemented function");
+	}
+	else {
+		::memmove(&result, m_d.data()+Storage::Begin::NUMERATOR1, Storage::Size::NUMERATOR1);
+		if (sizeof(Types::numerator) != Storage::Size::NUMERATOR1) {
+			bool sign = result & 0x1;
+			result >>= 1;
+			if (sign) {
+				result = -result;
+			}
+		}
+	}
+	return result;
 }
 
 Point_sp_base::Types::denominator
@@ -125,7 +183,12 @@ Point_sp_base::denominator() const {
 
 LIB_RATSS_NAMESPACE::PositionOnSphere
 Point_sp_base::pos() const {
-	return static_cast<LIB_RATSS_NAMESPACE::PositionOnSphere>(m_d.at(8));
+	if (Storage::dense_coding) {
+		throw std::runtime_error("Unimplemented function");
+	}
+	else {
+		return static_cast<LIB_RATSS_NAMESPACE::PositionOnSphere>(m_d.at(Storage::Begin::POS));
+	}
 }
 
 uint8_t
@@ -134,7 +197,12 @@ Point_sp_base::exponent() const {
 		return fixed_exponent;
 	}
 	else {
-		return m_d.at(9);
+		if (Storage::dense_coding) {
+			throw std::runtime_error("Unimplemented function");
+		}
+		else {
+			return m_d.at(Storage::Begin::EXPONENT);
+		}
 	}
 }
 
