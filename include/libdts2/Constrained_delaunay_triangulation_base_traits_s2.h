@@ -3,6 +3,7 @@
 #define LIB_DTS2_CONSTRAINED_DELAUNAY_TRIANGULATION_BASE_TRAITS_S2_H
 
 #include <libdts2/constants.h>
+#include <libdts2/util.h>
 #include <libratss/ProjectS2.h>
 #include <libratss/SphericalCoord.h>
 #include <libratss/GeoCoord.h>
@@ -16,34 +17,6 @@
 
 namespace LIB_DTS2_NAMESPACE {
 namespace detail {
-
-///Identity pass through cast
-///This makes sure that casting the same class to the same class does not incur any overhead
-template<typename T_TARGET_TYPE, typename T_SOURCE_TYPE>
-struct ipt_static_cast_impl {
-	using SourceType = T_SOURCE_TYPE;
-	using TargetType = T_TARGET_TYPE;
-	static TargetType c(SourceType const & s) { return static_cast<TargetType>(s); }
-	static TargetType c(SourceType & s) { return static_cast<TargetType>(s); }
-};
-
-template<typename T_TARGET_TYPE>
-struct ipt_static_cast_impl<T_TARGET_TYPE, T_TARGET_TYPE> {
-	using SourceType = T_TARGET_TYPE;
-	using TargetType = T_TARGET_TYPE;
-	static TargetType const & c(SourceType const & s) { return s; }
-	static TargetType & c(SourceType & s) { return s; }
-};
-
-template<typename T_TARGET_TYPE, typename T_SOURCE_TYPE>
-auto ipt_static_cast(T_SOURCE_TYPE const & v) {
-	return ipt_static_cast_impl<T_TARGET_TYPE, T_SOURCE_TYPE>::c(v);
-}
-
-template<typename T_TARGET_TYPE, typename T_SOURCE_TYPE>
-auto ipt_static_cast(T_SOURCE_TYPE & v) {
-	return ipt_static_cast_impl<T_TARGET_TYPE, T_SOURCE_TYPE>::c(v);
-}
 
 template<typename T_LINEAR_KERNEL>
 class EpsBasedAuxPoints {
@@ -319,8 +292,8 @@ public:
 	
 	//we want our triangulation to live in cartesian 3D-space
 	//the CDT lives in 2D euclidean space so we have to redefine Point_2;
-	using Point_3 = T_POINT;
-	using Point_2 = Point_3;
+	using Point_3 = T_POINT; //typename MyBaseTrait::Point_3;
+	using Point_2 = T_POINT;
 	using Point = Point_2;
 	
 	using Compare_distance_2 = Compare_distance_3;
