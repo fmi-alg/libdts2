@@ -23,10 +23,10 @@ struct Point_sp_cfg {
 	//Maximum numerator size is 63 Bits resulting in 127 Bits for the sphere coordinate (which still fits a int128_t)
 	struct Digits {
 		static constexpr int NUMERATOR0=31;
-		static constexpr int NUMERATOR1=31;
+		static constexpr int NUMERATOR1=NUMERATOR0;
 		static constexpr int EXPONENT=7; //don't change this
 // 		static constexpr int DENOMINATOR=static_cast<int>(1) << EXPONENT;
-		static constexpr int DENOMINATOR=31;
+		static constexpr int DENOMINATOR=NUMERATOR0;
 		static constexpr int POS=3; //don't change this
 	};
 	struct Signedness {
@@ -71,6 +71,7 @@ struct Point_sp_cfg {
 		};
 		
 		static constexpr int total_bytes = dense_coding ? Kernel_sp::align(total_bits, 8) : (Size::NUMERATOR0+Size::NUMERATOR1+Size::POS+Size::EXPONENT);
+// 		static_assert(total_bytes == 10);
 	};
 	
 	struct Types {
@@ -387,7 +388,10 @@ PTSP_CLS_NAME::num_den_x_3() const {
 		result = Numerator_Denominator_1_3(RT(2*numerator0()*denominator()), RT(den2 + sum_p_i2));
 		break;
 	};
-	assert(mpq_class(result.num)/mpq_class(result.den) == x<mpq_class>());
+	{
+		using LIB_RATSS_NAMESPACE::convert;
+		assert(convert<mpq_class>(result.num)/convert<mpq_class>(result.den) == x<mpq_class>());
+	}
 	return result;
 }
 
@@ -416,7 +420,10 @@ PTSP_CLS_NAME::num_den_y_3() const {
 		result = Numerator_Denominator_1_3(RT(2*numerator1()*denominator()), RT(den2 + sum_p_i2));
 		break;
 	};
-	assert(mpq_class(result.num)/mpq_class(result.den) == y<mpq_class>());
+	{
+		using LIB_RATSS_NAMESPACE::convert;
+		assert(convert<mpq_class>(result.num)/convert<mpq_class>(result.den) == y<mpq_class>());
+	}
 	return result;
 }
 
@@ -443,7 +450,10 @@ PTSP_CLS_NAME::num_den_z_3() const {
 		result = Numerator_Denominator_1_3((std::signbit<int>(pos()) ? 1 : -1)*RT(sum_p_i2 - den2), RT(den2 + sum_p_i2));
 		break;
 	};
-	assert(mpq_class(result.num)/mpq_class(result.den) == z<mpq_class>());
+	{
+		using LIB_RATSS_NAMESPACE::convert;
+		assert(convert<mpq_class>(result.num)/convert<mpq_class>(result.den) == z<mpq_class>());
+	}
 	return result;
 }
 
