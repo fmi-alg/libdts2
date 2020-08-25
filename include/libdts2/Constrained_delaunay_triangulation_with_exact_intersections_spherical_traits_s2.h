@@ -221,7 +221,8 @@ public:
 public:
 	Do_intersect_s2() {}
 public:
-	bool operator()(Segment const & a, Segment const & b) const {
+	bool operator()(Segment const & /*a*/, Segment const & /*b*/) const {
+		throw std::runtime_error("Unimplemented function");
 		return false;
 	}
 };
@@ -231,7 +232,7 @@ public:
 	using Segment = Construct_segment_s2::Segment;
 	using Point_s = Segment::Point_s;
 public:
-	CGAL::Object operator()(Segment const & a, Segment const & b) const {
+	CGAL::Object operator()(Segment const & /*a*/, Segment const & /*b*/) const {
 		throw std::runtime_error("Unimplemented function");
 		return CGAL::Object();
 	}
