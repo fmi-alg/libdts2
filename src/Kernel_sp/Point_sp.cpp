@@ -82,7 +82,7 @@ Point_sp_base::set_denominator(Types::denominator v) {
 	if ((v & (v-1)) != 0) {
 		throw std::runtime_error("Point_sp_base::set_denominator: denominator has to be a power of 2");
 	}
-	set_exponent((std::numeric_limits<Types::numerator>::digits-1)-clz(std::make_unsigned<Types::denominator>::type(v)));
+	set_exponent((std::numeric_limits< std::make_unsigned<Types::numerator>::type >::digits-1)-clz(std::make_unsigned<Types::denominator>::type(v)));
 	assert(denominator() == v);
 }
 
