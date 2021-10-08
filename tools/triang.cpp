@@ -20,7 +20,7 @@
 #include <CGAL/Polyhedron_3.h>
 #include <CGAL/convex_hull_3.h>
 #include <CGAL/Spatial_sort_traits_adapter_3.h>
-#include <libratss/mpreal.h>
+#include <mpreal/mpreal.h>
 #include <libratss/GeoCoord.h>
 #include <libratss/SphericalCoord.h>
 #include <libratss/ProjectSN.h>
