@@ -3,6 +3,7 @@
 #define LIB_DTS2_CONSTRAINED_DELAUNAY_TRIANGULATION_S2_H
 
 #include <libdts2/constants.h>
+#include <libdts2/Kernel_sp/Kernel_sp.h>
 #include <libdts2/Delaunay_triangulation_s2.h>
 #include <libdts2/Constrained_Triangulation_base_s2.h>
 
@@ -10,7 +11,6 @@
 #include <libdts2/Constrained_delaunay_triangulation_with_exact_intersections_spherical_traits_s2.h>
 #include <libdts2/Constrained_delaunay_triangulation_with_exact_intersections_traits_s2.h>
 #include <libdts2/Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2.h>
-#include <libdts2/Kernel_sp/Kernel_sp.h>
 #include <libdts2/Constrained_delaunay_triangulation_traits_s2.h>
 
 #include <CGAL/Constrained_Delaunay_triangulation_2.h>

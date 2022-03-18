@@ -84,6 +84,16 @@ public:
 				};
 				assert(should == should_2d);
 				assert(should_2d == result);
+				assert(should == should_2d);
+				if (result != should) {
+					should = MyBaseClass::operator()(p, q, r, t);
+					result = calc<max_exponent>(
+						p.numerator0()*(max_den/p.denominator()), p.numerator1()*(max_den/p.denominator()),
+						q.numerator0()*(max_den/q.denominator()), q.numerator1()*(max_den/q.denominator()),
+						r.numerator0()*(max_den/r.denominator()), r.numerator1()*(max_den/r.denominator()),
+						t.numerator0()*(max_den/t.denominator()), t.numerator1()*(max_den/t.denominator())
+					);
+				}
 				assert(result == should);
 			}
 			#endif
@@ -218,6 +228,10 @@ public:
 				//the point always has to be on the opposite side of the infinite vertex
 				oriented_side = - ot3(p3, q3, origin, Numerators_3(0, 0, 1), max_exp);
 			}
+// 			if (oriented_side != MyBaseClass::operator()(p, q, t)) {
+// 				oriented_side = (*this)(p, q, t);
+// 				throw std::runtime_error("BANG");
+// 			}
 			assert(oriented_side == MyBaseClass::operator()(p, q, t));
 			return oriented_side;
 		}
@@ -331,6 +345,16 @@ LESS_VAR_THREE(y)
 LESS_VAR_THREE(z)
 
 #undef LESS_VAR_TREE
+
+template<typename T_BASE_TRAIT>
+class Compute_squared_distance_3: public T_BASE_TRAIT::Compute_squared_distance_3 {
+public:
+	using MyBaseTrait = T_BASE_TRAIT;
+	using MyBaseClass = typename MyBaseTrait::Compute_squared_distance_3;
+	using FT = typename MyBaseTrait::FT;
+public:
+	Compute_squared_distance_3();
+};
 
 template<typename T_BASE_TRAIT>
 class Construct_point_sp: public T_BASE_TRAIT::Construct_point_2 {

@@ -22,11 +22,11 @@ struct Point_sp_cfg {
 	
 	//Maximum numerator size is 63 Bits resulting in 127 Bits for the sphere coordinate (which still fits a int128_t)
 	struct Digits {
-		static constexpr int NUMERATOR0=31;
+		static constexpr int NUMERATOR0=30;
 		static constexpr int NUMERATOR1=NUMERATOR0;
 		static constexpr int EXPONENT=7; //don't change this
 // 		static constexpr int DENOMINATOR=static_cast<int>(1) << EXPONENT;
-		static constexpr int DENOMINATOR=NUMERATOR0;
+		static constexpr int DENOMINATOR=NUMERATOR0+1;
 		static constexpr int POS=3; //don't change this
 	};
 	struct Signedness {
@@ -303,26 +303,32 @@ PTSP_CLS_NAME::point3() const {
 		return point3_slow();
 	}
 	using LIB_RATSS_NAMESPACE::convert;
+	using detail::Kernel_sp::AutoInt;
 // 	using PQType = mpq_class;
-	auto PQType = [](Types::sphere_coord const & x) -> FT { return LIB_RATSS_NAMESPACE::convert<FT>(x); };
+	auto PQType = [](auto const & x) -> FT { return LIB_RATSS_NAMESPACE::convert<FT>(x); };
 	FT x, y, z;
-	auto sqr = [](Types::sphere_coord v) { return v*v; };
-	Types::sphere_coord den2 = sqr(denominator());
-	Types::sphere_coord sum_p_i2 = sqr(numerator0()) + sqr(numerator1());
+	auto sqr = [](auto v) { return v*v; };
+	
+	AutoInt<Digits::NUMERATOR0> num0( numerator0() );
+	AutoInt<Digits::NUMERATOR1> num1( numerator1() );
+	AutoInt<Digits::DENOMINATOR> den( denominator() );
+	
+	auto den2 = sqr(den);
+	auto sum_p_i2 = sqr(num0) + sqr(num1);
 	switch (abs(pos())) {
 	case 1: //x is the missing coordinate, thus num0 holds y, num1 holds z
 		x = (std::signbit<int>(pos()) ? 1 : -1)*PQType(sum_p_i2 - den2)/PQType(den2 + sum_p_i2);
-		y = PQType(2*numerator0()*denominator())/PQType(den2 + sum_p_i2);
-		z = PQType(2*numerator1()*denominator())/PQType(den2 + sum_p_i2);
+		y = PQType(AutoInt<2, false>(2)*num0*den)/PQType(den2 + sum_p_i2);
+		z = PQType(AutoInt<2, false>(2)*num1*den)/PQType(den2 + sum_p_i2);
 		break;
 	case 2: //y is the missing coordinate, thus num0 holds x, num1 holds z
-		x = PQType(2*numerator0()*denominator())/PQType(den2 + sum_p_i2);
+		x = PQType(AutoInt<2, false>(2)*num0*den)/PQType(den2 + sum_p_i2);
 		y = (std::signbit<int>(pos()) ? 1 : -1)*PQType(sum_p_i2 - den2)/PQType(den2 + sum_p_i2);
-		z = PQType(2*numerator1()*denominator())/PQType(den2 + sum_p_i2);
+		z = PQType(AutoInt<2, false>(2)*num1*den)/PQType(den2 + sum_p_i2);
 		break;
 	case 3: //z is the missing coordinate, thus num0 holds x, num1 holds y
-		x = PQType(2*numerator0()*denominator())/PQType(den2 + sum_p_i2);
-		y = PQType(2*numerator1()*denominator())/PQType(den2 + sum_p_i2);
+		x = PQType(AutoInt<2, false>(2)*num0*den)/PQType(den2 + sum_p_i2);
+		y = PQType(AutoInt<2, false>(2)*num1*den)/PQType(den2 + sum_p_i2);
 		z = (std::signbit<int>(pos()) ? 1 : -1)*PQType(sum_p_i2 - den2)/PQType(den2 + sum_p_i2);
 		break;
 	};
@@ -597,5 +603,30 @@ PTSP_CLS_NAME::z() const {
 #undef PTSP_CLS_NAME
 
 };
+
+#include <CGAL/Exact_predicates_exact_constructions_kernel.h>
+// #include <CGAL/Lazy.h>
+
+namespace CGAL {
+	
+template<typename T_LINEAR_KERNEL>
+inline const LIB_DTS2_NAMESPACE::Point_sp<T_LINEAR_KERNEL> & approx(const LIB_DTS2_NAMESPACE::Point_sp<T_LINEAR_KERNEL> & d) { return d; }
+
+template<typename T_LINEAR_KERNEL>
+inline const LIB_DTS2_NAMESPACE::Point_sp<T_LINEAR_KERNEL> & exact(const LIB_DTS2_NAMESPACE::Point_sp<T_LINEAR_KERNEL> & d) { return d; }
+
+template<typename T_LINEAR_KERNEL>
+inline unsigned depth (const LIB_DTS2_NAMESPACE::Point_sp<T_LINEAR_KERNEL> &) { return 0; }
+
+#define CGAL_LAZY_FORWARD(T) \
+  inline const T & approx(const T& d) { return d; } \
+  inline const T & exact (const T& d) { return d; } \
+  inline unsigned  depth (const T&  ) { return 0; }
+  
+CGAL_LAZY_FORWARD(LIB_DTS2_NAMESPACE::Point_sp<CGAL::Exact_predicates_exact_constructions_kernel>)
+  
+#undef CGAL_LAZY_FORWARD
+
+} //end namespace CGAL
 
 #endif

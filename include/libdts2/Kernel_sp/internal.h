@@ -343,10 +343,10 @@ constexpr std::pair<const uint64_t, const bool> autoint_mult_upper_bound(const u
 }
 
 ///Upper bound is an absolute value
-template<uint64_t T_UPPER_BOUND, bool T_UB_LOG = true, template<int> typename T_UNDERLYING_TYPE = AINT>
+template<uint64_t T_UPPER_BOUND, bool T_UB_IN_DIGITS = true, template<int> typename T_UNDERLYING_TYPE = AINT>
 class AutoInt {
 public:
-	static constexpr int digits = (T_UB_LOG ? T_UPPER_BOUND : minNeededBits(T_UPPER_BOUND));
+	static constexpr int digits = (T_UB_IN_DIGITS ? T_UPPER_BOUND : minNeededBits(T_UPPER_BOUND));
 	using underlying_type = T_UNDERLYING_TYPE<digits>;
 public:
 	AutoInt() {}
@@ -356,13 +356,13 @@ public:
 	AutoInt(underlying_type const & v) : m_v(v) {}
 	AutoInt(underlying_type && v) : m_v(std::move(v)) {}
 public:
-	template<uint64_t T_O_UPPER_BOUND, bool T_O_UB_LOG>
+	template<uint64_t T_O_UPPER_BOUND, bool T_O_UB_IN_DIGITS>
 	AutoInt & operator=(
 		typename std::enable_if<
-			(T_O_UB_LOG == T_UB_LOG && T_O_UPPER_BOUND <= T_UPPER_BOUND) ||
-			(T_O_UB_LOG && !T_UB_LOG && T_O_UPPER_BOUND < minNeededBits(T_UPPER_BOUND)) ||
-			(!T_O_UB_LOG && T_UB_LOG && minNeededBits(T_O_UPPER_BOUND) <= T_UPPER_BOUND),
-			AutoInt<T_O_UPPER_BOUND, T_O_UB_LOG, T_UNDERLYING_TYPE>
+			(T_O_UB_IN_DIGITS == T_UB_IN_DIGITS && T_O_UPPER_BOUND <= T_UPPER_BOUND) ||
+			(T_O_UB_IN_DIGITS && !T_UB_IN_DIGITS && T_O_UPPER_BOUND < minNeededBits(T_UPPER_BOUND)) ||
+			(!T_O_UB_IN_DIGITS && T_UB_IN_DIGITS && minNeededBits(T_O_UPPER_BOUND) <= T_UPPER_BOUND),
+			AutoInt<T_O_UPPER_BOUND, T_O_UB_IN_DIGITS, T_UNDERLYING_TYPE>
 		>::type const & other)
 	{
 		m_v = other.m_v;
@@ -373,28 +373,28 @@ public:
 		return *this;
 	}
 public:
-	template<uint64_t T_O_UPPER_BOUND, bool T_O_UB_LOG>
+	template<uint64_t T_O_UPPER_BOUND, bool T_O_UB_IN_DIGITS>
 	friend auto
-	operator+(AutoInt<T_UPPER_BOUND, T_UB_LOG, T_UNDERLYING_TYPE> const & me, AutoInt<T_O_UPPER_BOUND, T_O_UB_LOG, T_UNDERLYING_TYPE> const & other) {
-		constexpr std::pair<const uint64_t, const bool> result_traits = autoint_add_upper_bound(T_UPPER_BOUND, T_UB_LOG, T_O_UPPER_BOUND, T_O_UB_LOG);
+	operator+(AutoInt<T_UPPER_BOUND, T_UB_IN_DIGITS, T_UNDERLYING_TYPE> const & me, AutoInt<T_O_UPPER_BOUND, T_O_UB_IN_DIGITS, T_UNDERLYING_TYPE> const & other) {
+		constexpr std::pair<const uint64_t, const bool> result_traits = autoint_add_upper_bound(T_UPPER_BOUND, T_UB_IN_DIGITS, T_O_UPPER_BOUND, T_O_UB_IN_DIGITS);
 		using return_type = AutoInt<result_traits.first, result_traits.second, T_UNDERLYING_TYPE>;
 		using return_underlying_type = typename return_type::underlying_type;
 		return return_type( ipt_static_cast<return_underlying_type>(me.value()) + ipt_static_cast<return_underlying_type>(other.value()) );
 	}
 
-	template<uint64_t T_O_UPPER_BOUND, bool T_O_UB_LOG>
+	template<uint64_t T_O_UPPER_BOUND, bool T_O_UB_IN_DIGITS>
 	friend auto
-	operator-(AutoInt<T_UPPER_BOUND, T_UB_LOG, T_UNDERLYING_TYPE> const & me, AutoInt<T_O_UPPER_BOUND, T_O_UB_LOG, T_UNDERLYING_TYPE> const & other) {
-		constexpr std::pair<const uint64_t, const bool> result_traits = autoint_add_upper_bound(T_UPPER_BOUND, T_UB_LOG, T_O_UPPER_BOUND, T_O_UB_LOG);
+	operator-(AutoInt<T_UPPER_BOUND, T_UB_IN_DIGITS, T_UNDERLYING_TYPE> const & me, AutoInt<T_O_UPPER_BOUND, T_O_UB_IN_DIGITS, T_UNDERLYING_TYPE> const & other) {
+		constexpr std::pair<const uint64_t, const bool> result_traits = autoint_add_upper_bound(T_UPPER_BOUND, T_UB_IN_DIGITS, T_O_UPPER_BOUND, T_O_UB_IN_DIGITS);
 		using return_type = AutoInt<result_traits.first, result_traits.second, T_UNDERLYING_TYPE>;
 		using return_underlying_type = typename return_type::underlying_type;
 		return return_type( ipt_static_cast<return_underlying_type>(me.value()) - ipt_static_cast<return_underlying_type>(other.value()) );
 	}
 	
-	template<uint64_t T_O_UPPER_BOUND, bool T_O_UB_LOG>
+	template<uint64_t T_O_UPPER_BOUND, bool T_O_UB_IN_DIGITS>
 	friend auto
-	operator*(AutoInt<T_UPPER_BOUND, T_UB_LOG, T_UNDERLYING_TYPE> const & me, AutoInt<T_O_UPPER_BOUND, T_O_UB_LOG, T_UNDERLYING_TYPE> const & other) {
-		constexpr std::pair<const uint64_t, const bool> result_traits = autoint_mult_upper_bound(T_UPPER_BOUND, T_UB_LOG, T_O_UPPER_BOUND, T_O_UB_LOG);
+	operator*(AutoInt<T_UPPER_BOUND, T_UB_IN_DIGITS, T_UNDERLYING_TYPE> const & me, AutoInt<T_O_UPPER_BOUND, T_O_UB_IN_DIGITS, T_UNDERLYING_TYPE> const & other) {
+		constexpr std::pair<const uint64_t, const bool> result_traits = autoint_mult_upper_bound(T_UPPER_BOUND, T_UB_IN_DIGITS, T_O_UPPER_BOUND, T_O_UB_IN_DIGITS);
 		using return_type = AutoInt<result_traits.first, result_traits.second, T_UNDERLYING_TYPE>;
 		using return_underlying_type = typename return_type::underlying_type;
 		return return_type( ipt_static_cast<return_underlying_type>(me.value()) * ipt_static_cast<return_underlying_type>(other.value()) );
@@ -412,9 +412,9 @@ private:
 
 namespace LIB_RATSS_NAMESPACE {
 	
-template<uint64_t T_UPPER_BOUND, bool T_UB_LOG, template<int> typename T_UNDERLYING_TYPE>
-struct Conversion< LIB_DTS2_NAMESPACE::detail::Kernel_sp::AutoInt<T_UPPER_BOUND, T_UB_LOG, T_UNDERLYING_TYPE> > {
-	using type = LIB_DTS2_NAMESPACE::detail::Kernel_sp::AutoInt<T_UPPER_BOUND, T_UB_LOG, T_UNDERLYING_TYPE>;
+template<uint64_t T_UPPER_BOUND, bool T_UB_IN_DIGITS, template<int> typename T_UNDERLYING_TYPE>
+struct Conversion< LIB_DTS2_NAMESPACE::detail::Kernel_sp::AutoInt<T_UPPER_BOUND, T_UB_IN_DIGITS, T_UNDERLYING_TYPE> > {
+	using type = LIB_DTS2_NAMESPACE::detail::Kernel_sp::AutoInt<T_UPPER_BOUND, T_UB_IN_DIGITS, T_UNDERLYING_TYPE>;
 	using underlying_type = typename type::underlying_type;
 	static type moveFrom(mpq_class && v) {
 		return type( Conversion<underlying_type>::moveFrom( std::move(v) ) );

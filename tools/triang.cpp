@@ -15,6 +15,7 @@
 #include <sys/time.h>
 #include <fstream>
 #include <string>
+#include <libdts2/Kernel_sp/Point_sp.h>
 #include <libdts2/Constrained_delaunay_triangulation_s2.h>
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Polyhedron_3.h>
@@ -29,6 +30,7 @@
 #include <libratss/util/InputOutput.h>
 #include <libratss/Conversion.h>
 #include <libratss/debug.h>
+#include <libdts2/debug.h>
 #ifndef __APPLE__
 	#include <malloc.h>
 #else
@@ -917,6 +919,7 @@ public:
 		insert_constraints(pId2Vertex, edges, relevantEdges, io);
 		tm.end();
 		io.info() << tm << std::endl;
+		
 		if (clear) {
 			edges = Edges();
 		}
@@ -1167,6 +1170,9 @@ struct Data {
 ///now the main
 
 int main(int argc, char ** argv) {
+	ratss::init_interactive_debuging();
+	dts2::init_interactive_debuging();
+	
 	Config cfg;
 	InputOutput io;
 	Data data;
@@ -1176,7 +1182,7 @@ int main(int argc, char ** argv) {
 		cfg.help(std::cerr);
 		return parseResult;
 	}
-
+	
 	io.setInput(cfg.inFileName);
 	io.setOutput(cfg.outFileName);
 	
@@ -1361,12 +1367,17 @@ void Config::parse_completed() {
 		intersectSignificands = significands;
 		autoChangedOptions = true;
 	}
-	if (triangType == TT_CONSTRAINED_INEXACT_64 || triangType == TT_CONSTRAINED_INEXACT_SP || triangType == TT_CONSTRAINED_INEXACT_SPK || triangType == TT_CONSTRAINED_INEXACT_SPK64 || triangType == TT_CONVEX_HULL_64 || triangType == TT_DELAUNAY_64) {
-		significands = 31;
-		intersectSignificands = 31;
-		snapType = ratss::ST_PLANE | ratss::ST_FX | ratss::ST_NORMALIZE;
-		autoChangedOptions = true;
-		
+	if (triangType == TT_CONSTRAINED_INEXACT_SP || triangType == TT_CONSTRAINED_INEXACT_SPK || triangType == TT_CONSTRAINED_INEXACT_SPK64) {
+		autoChangedOptions = significands > 30 || intersectSignificands > 30 || (snapType & ratss::ST_SPHERE) || !(snapType & ratss::ST_FX);
+		significands = std::min(significands, 30);
+		intersectSignificands = std::min(intersectSignificands, 30);
+		if (snapType & ratss::ST_SPHERE) {
+			snapType = ratss::ST_PLANE | ratss::ST_FX | ratss::ST_NORMALIZE;
+		}
+		if (!(snapType & ratss::ST_FX)) {
+			snapType &= ~ratss::ST_SNAP_TYPES_MASK;
+			snapType |= ratss::ST_FX;
+		}
 	}
 	if (triangType == TT_CONVEX_HULL_64 || triangType == TT_CONVEX_HULL || triangType == TT_CONVEX_HULL_INEXACT) {
 		if (tio != TIO_NODES_EDGES && tio != TIO_NODES_EDGES_BY_POINTS_BINARY) {

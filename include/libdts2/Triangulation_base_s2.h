@@ -511,7 +511,7 @@ TMPL_HDR
 LIB_RATSS_NAMESPACE::SphericalCoord 
 TMPL_CLS::toSpherical(const Point_3 & p) const {
 	SphericalCoord c;
-	m_p.projector().toSpherical(p.x(), p.y(), p.z(), c.theta, c.phi, 64);
+	m_p.projector().toSpherical(p.x(), p.y(), p.z(), c.theta, c.phi, 53);
 	return c;
 }
 
@@ -519,7 +519,7 @@ TMPL_HDR
 LIB_RATSS_NAMESPACE::GeoCoord 
 TMPL_CLS::toGeo(const Point_3 & p) const {
 	GeoCoord c;
-	m_p.projector().toGeo(p.x(), p.y(), p.z(), c.lat, c.lon, 64);
+	m_p.projector().toGeo(p.x(), p.y(), p.z(), c.lat, c.lon, 53);
 	return c;
 }
 //END projection
