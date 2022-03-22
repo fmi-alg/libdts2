@@ -37,6 +37,11 @@
 	void malloc_trim(int) {}
 #endif
 
+//includes for spherical triangulation from CGAL
+#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
+#include <CGAL/Delaunay_triangulation_on_sphere_traits_2.h>
+#include <CGAL/Delaunay_triangulation_on_sphere_2.h>
+
 template<typename T_VERTEX_INFO, typename T_FACE_INFO>
 using Delaunay_triangulation_with_info_s2_epeck = dts2::Delaunay_triangulation_with_info_s2<T_VERTEX_INFO, T_FACE_INFO, CGAL::Exact_predicates_exact_constructions_kernel>;
 
@@ -54,6 +59,94 @@ using Delaunay_triangulation_with_info_s2_spherical =
 			T_FACE_INFO
 		>::type
 	>;
+
+namespace cgal_spherical {
+
+using Kernel = CGAL::Exact_predicates_inexact_constructions_kernel;
+using Traits = CGAL::Delaunay_triangulation_on_sphere_traits_2<Kernel>;
+
+template<typename T_INFO>
+using Vb =  typename dts2::internal::VertexBaseSelector<Kernel, T_INFO>::type;
+
+template<typename T_INFO>
+using Fb = typename dts2::internal::FaceBaseSelector<Kernel, T_INFO>::type;
+
+template<typename T_INFO>
+using SVb = CGAL::Triangulation_on_sphere_vertex_base_2< Traits, Vb<T_INFO> >;
+
+template<typename T_INFO>
+using SFb = CGAL::Triangulation_on_sphere_face_base_2<Traits, Fb<T_INFO>>;
+
+template<typename T_VERTEX_INFO, typename T_FACE_INFO>
+using TDS = CGAL::Triangulation_data_structure_2< SVb<T_VERTEX_INFO>, SFb<T_FACE_INFO> >;
+
+template<typename T_VERTEX_INFO, typename T_FACE_INFO>
+using Triangulation = CGAL::Delaunay_triangulation_on_sphere_2<Traits, TDS<T_VERTEX_INFO, T_FACE_INFO>>;
+
+}
+
+template<typename T_VERTEX_INFO, typename T_FACE_INFO>
+class Delaunay_triangulation_with_info_s2_cgal_spherical:
+	public cgal_spherical::Triangulation<T_VERTEX_INFO, T_FACE_INFO>
+{
+public:
+	using MyBaseClass = cgal_spherical::Triangulation<T_VERTEX_INFO, T_FACE_INFO>;
+	using VertexInfo = T_VERTEX_INFO;
+	using FaceInfo = T_FACE_INFO;
+	using Self = Delaunay_triangulation_with_info_s2_cgal_spherical<VertexInfo, FaceInfo>;
+	using Geom_traits = typename MyBaseClass::Geom_traits;
+	using GeoCoord = ratss::GeoCoord;
+	using Point_3 = typename Geom_traits::Point_3;
+	using Vertex_handle = typename MyBaseClass::Vertex_handle;
+	using Face_handle = typename MyBaseClass::Face_handle;
+
+	Delaunay_triangulation_with_info_s2_cgal_spherical(int significands) :
+	m_significands(significands)
+	{}
+	
+	template<typename T>
+	inline bool is_special(T const &) {
+		return false;
+	}
+	
+	template<typename T>
+	inline bool is_auxiliary(T const &) {
+		return false;
+	}
+	
+	GeoCoord toGeo(const Point_3 & p) const {
+		GeoCoord c;
+		ratss::ProjectS2 proj;
+		auto x = ratss::convert<mpq_class>(p.x());
+		auto y = ratss::convert<mpq_class>(p.y());
+		auto z = ratss::convert<mpq_class>(p.z());
+		proj.toGeo(x, y, z, c.lat, c.lon, 53);
+		return c;
+	}
+	
+	template<typename T_ITERATOR>
+	void insert(T_ITERATOR begin, T_ITERATOR end, bool snap) {
+		if (snap) {
+			throw std::runtime_error("Snapping is not supported");
+		}
+		Face_handle fh;
+		for(; begin != end; ++begin) {
+			auto vh = MyBaseClass::insert(begin->first, fh);
+			fh = vh->face();
+			vh->info() = begin->second;
+		}
+	}
+	
+	Vertex_handle insert(Point_3 const & p, Face_handle const & fh, bool snap) {
+		if (snap) {
+			throw std::runtime_error("Snapping is not supported");
+		}
+		return MyBaseClass::insert(p, fh);
+	}
+	
+private:
+	int m_significands;
+};
 
 class MemUsage {
 public:
@@ -333,7 +426,7 @@ BinaryIo::write(const Point3 & v) {
 	this->write( ratss::convert<FT>( v.z() ) );
 }
 
-typedef enum {TT_DELAUNAY, TT_DELAUNAY_64, TT_DELAUNAY_SPHERICAL, TT_CONVEX_HULL_INEXACT, TT_CONVEX_HULL, TT_CONVEX_HULL_64, TT_CONSTRAINED, TT_CONSTRAINED_INEXACT, TT_CONSTRAINED_INEXACT_64, TT_CONSTRAINED_INEXACT_SP, TT_CONSTRAINED_INEXACT_SPK, TT_CONSTRAINED_INEXACT_SPK64, TT_CONSTRAINED_EXACT, TT_CONSTRAINED_EXACT_SPHERICAL} TriangulationType;
+typedef enum {TT_DELAUNAY, TT_DELAUNAY_64, TT_DELAUNAY_SPHERICAL, TT_DELAUNAY_CGAL_SPHERE, TT_CONVEX_HULL_INEXACT, TT_CONVEX_HULL, TT_CONVEX_HULL_64, TT_CONSTRAINED, TT_CONSTRAINED_INEXACT, TT_CONSTRAINED_INEXACT_64, TT_CONSTRAINED_INEXACT_SP, TT_CONSTRAINED_INEXACT_SPK, TT_CONSTRAINED_INEXACT_SPK64, TT_CONSTRAINED_EXACT, TT_CONSTRAINED_EXACT_SPHERICAL} TriangulationType;
 typedef enum {GOT_INVALID, GOT_NONE, GOT_WITHOUT_SPECIAL, GOT_WITHOUT_SPECIAL_HASH_MAP, GOT_SIMPLEST_GRAPH_RENDERING, GOT_SIMPLEST_GRAPH_RENDERING_ANDRE} GraphOutputType;
 typedef enum {GIT_INVALID, GIT_NODES_EDGES, GIT_EDGES, GIT_NODES_EDGES_BY_POINTS_BINARY} GraphInputType;
 typedef enum {TIO_INVALID, TIO_NODES_EDGES, TIO_EDGES, TIO_NODES_EDGES_BY_POINTS_BINARY} TriangulationInputOrder;
@@ -361,6 +454,14 @@ bool
 is_constrained(
 	const Delaunay_triangulation_with_info_s2_spherical<VertexInfo, void> & /*trs*/,
 	const Delaunay_triangulation_with_info_s2_spherical<VertexInfo, void>::Edge & /*e*/)
+{
+	return false;
+}
+
+bool
+is_constrained(
+	const Delaunay_triangulation_with_info_s2_cgal_spherical<VertexInfo, void> & /*trs*/,
+	const typename Delaunay_triangulation_with_info_s2_cgal_spherical<VertexInfo, void>::Edge & /*e*/)
 {
 	return false;
 }
@@ -870,6 +971,9 @@ using TriangulationCreatorDelaunayFsceik =
 	
 using TriangulationCreatorDelaunaySpherical =
 	TriangulationCreatorDelaunay<Delaunay_triangulation_with_info_s2_spherical>;
+	
+using TriangulationCreatorDelaunayCGALSpherical =
+	TriangulationCreatorDelaunay<Delaunay_triangulation_with_info_s2_cgal_spherical>;
 
 template< template<typename, typename> class T_TRS>
 class TriangulationCreatorConstrainedDelaunay: public TriangulationCreator {
@@ -1263,6 +1367,9 @@ bool Config::parse(const std::string & token,int & i, int argc, char ** argv) {
 		else if (type == "ds" || type == "delaunay-spherical") {
 			triangType = TT_DELAUNAY_SPHERICAL;
 		}
+		else if (type == "cgalds" || type == "cgal-delaunay-spherical") {
+			triangType = TT_DELAUNAY_CGAL_SPHERE;
+		}
 		else if (type == "chi" || type == "convexhull-inexact") {
 			triangType = TT_CONVEX_HULL_INEXACT;
 		}
@@ -1392,7 +1499,7 @@ void Config::parse_completed() {
 
 void Config::help(std::ostream & out) const {
 	out << "triang OPTIONS:\n"
-		"\t-t type\ttype = [d,delaunay,d64,delaunay-64,ds,delaunay-spherical,chi,convexhull-inexact,ch,convexhull,ch64,convexhull-64,c,constrained,cx,constrained-intersection,cx64,constrained-intersection-64,cxsp,constrained-intersection-sp,cxspk-64,constrained-intersection-spk-64,cxe,constrained-intesection-exact, cxs, constrained-intersection-exact-spherical]\n"
+		"\t-t type\ttype = [d,delaunay,d64,delaunay-64,ds,delaunay-spherical,cgalds,cgal-delaunay-spherical,chi,convexhull-inexact,ch,convexhull,ch64,convexhull-64,c,constrained,cx,constrained-intersection,cx64,constrained-intersection-64,cxsp,constrained-intersection-sp,cxspk-64,constrained-intersection-spk-64,cxe,constrained-intesection-exact, cxs, constrained-intersection-exact-spherical]\n"
 		"\t-go type\tgraph output type = [none, wx, witout_special, simplest, simplest_andre]\n"
 		"\t-gi type\tgraph input type = [ne, nodes-edges, e, edges, nei, nodes-edges-iterative]\n"
 		"\t-io type\tinput order type = [ne, nodes-edges, e, edges, nei, nodes-edges-iterative]\n"
@@ -1426,6 +1533,9 @@ void Config::print(std::ostream & out) const {
 		break;
 	case TT_DELAUNAY_SPHERICAL:
 		out << "delaunay using spherical kernel";
+		break;
+	case TT_DELAUNAY_CGAL_SPHERE:
+		out << "delaunay using CGAL package 2D Triangulations on the Sphere";
 		break;
 	case TT_CONVEX_HULL:
 		out << "convex hull";
@@ -1541,6 +1651,9 @@ void Data::init(const Config & cfg) {
 		break;
 	case TT_DELAUNAY_SPHERICAL:
 		tc = new TriangulationCreatorDelaunaySpherical(cfg.significands);
+		break;
+	case TT_DELAUNAY_CGAL_SPHERE:
+		tc = new TriangulationCreatorDelaunayCGALSpherical(cfg.significands);
 		break;
 	case TT_CONVEX_HULL_INEXACT:
 		tc = new EpickConvexHullTriangulationCreator();
