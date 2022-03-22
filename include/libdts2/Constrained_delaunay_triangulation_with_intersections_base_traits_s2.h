@@ -123,7 +123,9 @@ protected: //own implementations not support by the base traits
 		Intersect_2(const Do_intersect_3 & dit3, const Intersect_3 & it3, const Orientation_3 & ot3, const MyBaseClass & base) :
 		MyBaseClass(base), m_dit3(dit3), m_it3(it3), m_ot3 (ot3)
 		{}
-		CGAL::Object operator()(const Segment & a, const Segment & b) const {
+		boost::optional<boost::variant<Point, Segment>>
+		operator()(const Segment & a, const Segment & b) const {
+			using return_type = boost::variant<Point, Segment>;
 // 			std::cerr << "Intersect_2 called -- BEGIN" << std::endl;
 // 			std::cerr << "a=" << a << std::endl;
 // 			std::cerr << "b=" << b << std::endl;
@@ -144,13 +146,13 @@ protected: //own implementations not support by the base traits
 				//Segments are coplanar
 				//check if the segments overlap. This is the case if the line from origin to a.source() intersect b and vice versa
 				if (m_dit3(Ray_3(LIB_DTS2_ORIGIN, a.source()), b)) {
-					return CGAL::make_object( a.source() );
+					return return_type( a.source() );
 				}
 				else if (m_dit3(Ray_3(LIB_DTS2_ORIGIN, a.target()), b)) {
-					return CGAL::make_object( a.target() );
+					return return_type( a.target() );
 				}
 				else {
-					return CGAL::Object();
+					return boost::none;
 				}
 			}
 			
@@ -160,7 +162,7 @@ protected: //own implementations not support by the base traits
 			if (!m_dit3(*line3, a) || !m_dit3(*line3, b)) {
 				print(a, b);
 				assert(false);
-				return CGAL::Object();
+				return boost::none;
 			}
 			Ray_3 ray3(LIB_DTS2_ORIGIN, *line3);
 			//it may still be the case that segments a and b are on opposite sides of the sphere
@@ -171,7 +173,7 @@ protected: //own implementations not support by the base traits
 			if (m_dit3(ray3, a) != m_dit3(ray3, b)) {
 				print(a, b);
 				assert(false);
-				return CGAL::Object();
+				return boost::none;
 			}
 			
 // 			std::cerr << "*line3=" << *line3 << std::endl;
@@ -215,7 +217,7 @@ protected: //own implementations not support by the base traits
 			MyBaseTrait::print(std::cerr, result);
 			std::cerr << std::endl;
 			#endif
-			return CGAL::make_object(result);
+			return return_type(result);
 		}
 	protected:
 		Point_3 pointReflect(const Point_3 & p) const {

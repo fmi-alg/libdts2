@@ -2,7 +2,7 @@
 # It can be build as a stand-alone project as well as a sub-project
 # You may simply do the following:
 
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.19)
 project(dts2)
 
 set(CMAKE_MODULE_PATH
@@ -20,7 +20,7 @@ set(MY_INCLUDE_DIRS
 	"${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
 
-find_package(CGAL REQUIRED Core)
+find_package(CGAL 5.3...5.4 REQUIRED Core )
 add_subdirectory(vendor/libratss libratss)
 
 set(LIB_SOURCES_CPP

@@ -8,7 +8,7 @@
 #include <libratss/Conversion.h>
 #include <libratss/enum.h>
 
-#include <CGAL/internal/info_check.h>
+#include <CGAL/STL_Extension/internal/info_check.h>
 #include <CGAL/enum.h>
 
 #include <functional>

@@ -112,7 +112,7 @@ template<typename T_TDS =
 using Constrained_Delaunay_triangulation_no_intersections_s2 =
 	Constrained_delaunay_triangulation_s2<
 		typename T_TDS::Geom_traits,
-		T_TDS, CGAL::No_intersection_tag>;
+		T_TDS, CGAL::No_constraint_intersection_tag>;
 
 template<typename T_TDS = typename internal::ConstrainedTriangulationDataStructureSelector<Constrained_delaunay_triangulation_with_inexact_intersections_traits_s2> >
 using Constrained_Delaunay_triangulation_with_inexact_intersections_s2 =
@@ -153,7 +153,7 @@ using Constrained_Delaunay_triangulation_no_intersections_with_info_s2 =
 			T_VERTEX_INFO,
 			T_FACE_INFO
 		>::type,
-		CGAL::No_intersection_tag
+		CGAL::No_constraint_intersection_tag
 	>;
 
 template<typename T_VERTEX_INFO, typename T_FACE_INFO>

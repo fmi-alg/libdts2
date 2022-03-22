@@ -232,9 +232,10 @@ public:
 	using Segment = Construct_segment_s2::Segment;
 	using Point_s = Segment::Point_s;
 public:
-	CGAL::Object operator()(Segment const & /*a*/, Segment const & /*b*/) const {
+	boost::optional<boost::variant<Point_s, Segment>>
+	operator()(Segment const & /*a*/, Segment const & /*b*/) const {
 		throw std::runtime_error("Unimplemented function");
-		return CGAL::Object();
+		return boost::none;
 	}
 };
 	

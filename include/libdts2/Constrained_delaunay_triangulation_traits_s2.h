@@ -23,15 +23,14 @@ namespace internal {
 
 	//this one is needed since Constrained_delaunay_triangulation_traits_s2 sets Point_2 = Point_3
 	//and then we get a conflict of this function in the original code
-	
-    template <class RandomAccessIterator, class Policy, typename T_LINEAR_KERNEL, typename T_AUX_POINT_GENERATOR, typename T_POINT>
-    void spatial_sort (
-                       RandomAccessIterator begin, RandomAccessIterator end,
-                       const LIB_DTS2_NAMESPACE::Constrained_delaunay_triangulation_traits_s2<T_LINEAR_KERNEL, T_AUX_POINT_GENERATOR, T_POINT> & k, 
-		       Policy /*policy*/,
-		       std::ptrdiff_t threshold_hilbert,
-		       std::ptrdiff_t threshold_multiscale,
-		       double ratio);
+
+    template <class ConcurrencyTag = Sequential_tag, class RandomAccessIterator, class Policy, typename T_LINEAR_KERNEL, typename T_AUX_POINT_GENERATOR, typename T_POINT>
+    void spatial_sort (RandomAccessIterator begin, RandomAccessIterator end,
+						const LIB_DTS2_NAMESPACE::Constrained_delaunay_triangulation_traits_s2<T_LINEAR_KERNEL, T_AUX_POINT_GENERATOR, T_POINT> & k, 
+						Policy /*policy*/,
+						std::ptrdiff_t threshold_hilbert,
+						std::ptrdiff_t threshold_multiscale,
+						double ratio);
 
 } //end namespace internal
 } //end namespace CGAL
@@ -137,7 +136,7 @@ public:
 namespace CGAL {
 namespace internal {
 
-    template <class RandomAccessIterator, class Policy, typename T_LINEAR_KERNEL, typename T_AUX_POINT_GENERATOR, typename T_POINT>
+    template <class ConcurrencyTag, class RandomAccessIterator, class Policy, typename T_LINEAR_KERNEL, typename T_AUX_POINT_GENERATOR, typename T_POINT>
     void spatial_sort (RandomAccessIterator begin, RandomAccessIterator end,
 						const LIB_DTS2_NAMESPACE::Constrained_delaunay_triangulation_traits_s2<T_LINEAR_KERNEL, T_AUX_POINT_GENERATOR, T_POINT>& k,
 						Policy, std::ptrdiff_t threshold_hilbert, std::ptrdiff_t threshold_multiscale, double ratio)
