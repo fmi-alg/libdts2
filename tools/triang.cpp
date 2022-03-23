@@ -41,6 +41,8 @@
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Delaunay_triangulation_on_sphere_traits_2.h>
 #include <CGAL/Delaunay_triangulation_on_sphere_2.h>
+#include <CGAL/Projection_on_sphere_traits_3.h>
+
 
 template<typename T_VERTEX_INFO, typename T_FACE_INFO>
 using Delaunay_triangulation_with_info_s2_epeck = dts2::Delaunay_triangulation_with_info_s2<T_VERTEX_INFO, T_FACE_INFO, CGAL::Exact_predicates_exact_constructions_kernel>;
@@ -59,48 +61,78 @@ using Delaunay_triangulation_with_info_s2_spherical =
 			T_FACE_INFO
 		>::type
 	>;
+	
+template<bool Exact>
+struct CGALSpherical_KernelSelector;
 
-namespace cgal_spherical {
+template<>
+struct CGALSpherical_KernelSelector<false> {
+	using type = CGAL::Exact_predicates_inexact_constructions_kernel;
+};
 
-using Kernel = CGAL::Exact_predicates_inexact_constructions_kernel;
-using Traits = CGAL::Delaunay_triangulation_on_sphere_traits_2<Kernel>;
+template<>
+struct CGALSpherical_KernelSelector<true> {
+	using type = CGAL::Exact_predicates_exact_constructions_kernel_with_sqrt;
+};
 
-template<typename T_INFO>
-using Vb =  typename dts2::internal::VertexBaseSelector<Kernel, T_INFO>::type;
+template<bool Project>
+struct CGALSpherical_TraitsSelector;
 
-template<typename T_INFO>
-using Fb = typename dts2::internal::FaceBaseSelector<Kernel, T_INFO>::type;
+template<>
+struct CGALSpherical_TraitsSelector<false> {
+	template<typename Kernel>
+	using type = CGAL::Delaunay_triangulation_on_sphere_traits_2<Kernel>;
+};
 
-template<typename T_INFO>
-using SVb = CGAL::Triangulation_on_sphere_vertex_base_2< Traits, Vb<T_INFO> >;
+template<>
+struct CGALSpherical_TraitsSelector<true> {
+	template<typename Kernel>
+	using type = CGAL::Projection_on_sphere_traits_3<Kernel>;
+};
 
-template<typename T_INFO>
-using SFb = CGAL::Triangulation_on_sphere_face_base_2<Traits, Fb<T_INFO>>;
 
-template<typename T_VERTEX_INFO, typename T_FACE_INFO>
-using TDS = CGAL::Triangulation_data_structure_2< SVb<T_VERTEX_INFO>, SFb<T_FACE_INFO> >;
+template<bool Exact, bool Project>
+struct CGALSpherical {
+	
+	using Kernel = typename CGALSpherical_KernelSelector<Exact>::type;
+	using Traits = typename CGALSpherical_TraitsSelector<Project>::template type<Kernel>;
 
-template<typename T_VERTEX_INFO, typename T_FACE_INFO>
-using Triangulation = CGAL::Delaunay_triangulation_on_sphere_2<Traits, TDS<T_VERTEX_INFO, T_FACE_INFO>>;
+	template<typename T_INFO>
+	using Vb =  typename dts2::internal::VertexBaseSelector<Kernel, T_INFO>::type;
 
-}
+	template<typename T_INFO>
+	using Fb = typename dts2::internal::FaceBaseSelector<Kernel, T_INFO>::type;
 
-template<typename T_VERTEX_INFO, typename T_FACE_INFO>
-class Delaunay_triangulation_with_info_s2_cgal_spherical:
-	public cgal_spherical::Triangulation<T_VERTEX_INFO, T_FACE_INFO>
+	template<typename T_INFO>
+	using SVb = CGAL::Triangulation_on_sphere_vertex_base_2< Traits, Vb<T_INFO> >;
+
+	template<typename T_INFO>
+	using SFb = CGAL::Triangulation_on_sphere_face_base_2<Traits, Fb<T_INFO>>;
+
+	template<typename T_VERTEX_INFO, typename T_FACE_INFO>
+	using TDS = CGAL::Triangulation_data_structure_2< SVb<T_VERTEX_INFO>, SFb<T_FACE_INFO> >;
+
+	template<typename T_VERTEX_INFO, typename T_FACE_INFO>
+	using Triangulation = CGAL::Delaunay_triangulation_on_sphere_2<Traits, TDS<T_VERTEX_INFO, T_FACE_INFO>>;
+};
+
+
+template<typename T_VERTEX_INFO, typename T_FACE_INFO, bool Exact, bool Project>
+class Delaunay_triangulation_with_info_cgal_on_sphere_2:
+	public CGALSpherical<Exact, Project>::template Triangulation<T_VERTEX_INFO, T_FACE_INFO>
 {
 public:
-	using MyBaseClass = cgal_spherical::Triangulation<T_VERTEX_INFO, T_FACE_INFO>;
+	using MyBaseClass = typename CGALSpherical<Exact, Project>::template Triangulation<T_VERTEX_INFO, T_FACE_INFO>;
 	using VertexInfo = T_VERTEX_INFO;
 	using FaceInfo = T_FACE_INFO;
-	using Self = Delaunay_triangulation_with_info_s2_cgal_spherical<VertexInfo, FaceInfo>;
+	using Self = Delaunay_triangulation_with_info_cgal_on_sphere_2<VertexInfo, FaceInfo, Exact, Project>;
 	using Geom_traits = typename MyBaseClass::Geom_traits;
 	using GeoCoord = ratss::GeoCoord;
 	using Point_3 = typename Geom_traits::Point_3;
 	using Vertex_handle = typename MyBaseClass::Vertex_handle;
 	using Face_handle = typename MyBaseClass::Face_handle;
 
-	Delaunay_triangulation_with_info_s2_cgal_spherical(int significands) :
+	Delaunay_triangulation_with_info_cgal_on_sphere_2(int significands) :
 	m_significands(significands)
 	{}
 	
@@ -426,7 +458,14 @@ BinaryIo::write(const Point3 & v) {
 	this->write( ratss::convert<FT>( v.z() ) );
 }
 
-typedef enum {TT_DELAUNAY, TT_DELAUNAY_64, TT_DELAUNAY_SPHERICAL, TT_DELAUNAY_CGAL_SPHERE, TT_CONVEX_HULL_INEXACT, TT_CONVEX_HULL, TT_CONVEX_HULL_64, TT_CONSTRAINED, TT_CONSTRAINED_INEXACT, TT_CONSTRAINED_INEXACT_64, TT_CONSTRAINED_INEXACT_SP, TT_CONSTRAINED_INEXACT_SPK, TT_CONSTRAINED_INEXACT_SPK64, TT_CONSTRAINED_EXACT, TT_CONSTRAINED_EXACT_SPHERICAL} TriangulationType;
+typedef enum {
+	TT_DELAUNAY, TT_DELAUNAY_64,
+	TT_DELAUNAY_SPHERICAL,
+	TT_DELAUNAY_CGAL_SPHERE_EXACT, TT_DELAUNAY_CGAL_SPHERE_INEXACT, TT_DELAUNAY_CGAL_SPHERE_PROJECT,
+	TT_CONVEX_HULL_INEXACT, TT_CONVEX_HULL, TT_CONVEX_HULL_64,
+	TT_CONSTRAINED, TT_CONSTRAINED_INEXACT, TT_CONSTRAINED_INEXACT_64, TT_CONSTRAINED_INEXACT_SP, TT_CONSTRAINED_INEXACT_SPK, TT_CONSTRAINED_INEXACT_SPK64,
+	TT_CONSTRAINED_EXACT, TT_CONSTRAINED_EXACT_SPHERICAL
+} TriangulationType;
 typedef enum {GOT_INVALID, GOT_NONE, GOT_WITHOUT_SPECIAL, GOT_WITHOUT_SPECIAL_HASH_MAP, GOT_SIMPLEST_GRAPH_RENDERING, GOT_SIMPLEST_GRAPH_RENDERING_ANDRE} GraphOutputType;
 typedef enum {GIT_INVALID, GIT_NODES_EDGES, GIT_EDGES, GIT_NODES_EDGES_BY_POINTS_BINARY} GraphInputType;
 typedef enum {TIO_INVALID, TIO_NODES_EDGES, TIO_EDGES, TIO_NODES_EDGES_BY_POINTS_BINARY} TriangulationInputOrder;
@@ -458,10 +497,11 @@ is_constrained(
 	return false;
 }
 
+template<typename FaceInfo, bool Exact, bool Project>
 bool
 is_constrained(
-	const Delaunay_triangulation_with_info_s2_cgal_spherical<VertexInfo, void> & /*trs*/,
-	const typename Delaunay_triangulation_with_info_s2_cgal_spherical<VertexInfo, void>::Edge & /*e*/)
+	const Delaunay_triangulation_with_info_cgal_on_sphere_2<VertexInfo, FaceInfo, Exact, Project> & /*trs*/,
+	const typename Delaunay_triangulation_with_info_cgal_on_sphere_2<VertexInfo, FaceInfo, Exact, Project>::Edge & /*e*/)
 {
 	return false;
 }
@@ -971,9 +1011,54 @@ using TriangulationCreatorDelaunayFsceik =
 	
 using TriangulationCreatorDelaunaySpherical =
 	TriangulationCreatorDelaunay<Delaunay_triangulation_with_info_s2_spherical>;
+
+/*
+template<typename T_VERTEX_INFO, typename T_FACE_INFO>
+struct Delaunay_triangulation_with_info_cgal_on_sphere_2_exact_project:
+	Delaunay_triangulation_with_info_cgal_on_sphere_2<T_VERTEX_INFO, T_FACE_INFO, true, true>
+{
+	Delaunay_triangulation_with_info_cgal_on_sphere_2_exact_project(int significands) :
+	Delaunay_triangulation_with_info_cgal_on_sphere_2<T_VERTEX_INFO, T_FACE_INFO, true, true>(significands)
+	{}
+};
+
+template<typename T_VERTEX_INFO, typename T_FACE_INFO>
+struct Delaunay_triangulation_with_info_cgal_on_sphere_2_noexact_project:
+	Delaunay_triangulation_with_info_cgal_on_sphere_2<T_VERTEX_INFO, T_FACE_INFO, false, true>
+{
+	Delaunay_triangulation_with_info_cgal_on_sphere_2_noexact_project(int significands) :
+	Delaunay_triangulation_with_info_cgal_on_sphere_2<T_VERTEX_INFO, T_FACE_INFO, false, true>(significands)
+	{}
+};
+
+template<typename T_VERTEX_INFO, typename T_FACE_INFO>
+struct Delaunay_triangulation_with_info_cgal_on_sphere_2_noexact_noproject:
+	Delaunay_triangulation_with_info_cgal_on_sphere_2<T_VERTEX_INFO, T_FACE_INFO, false, false>
+{
+	Delaunay_triangulation_with_info_cgal_on_sphere_2_noexact_noproject(int significands) :
+	Delaunay_triangulation_with_info_cgal_on_sphere_2<T_VERTEX_INFO, T_FACE_INFO, false, false>(significands)
+	{}
+};
+*/
+
+template<typename T_VERTEX_INFO, typename T_FACE_INFO>
+using Delaunay_triangulation_with_info_cgal_on_sphere_2_exact_project = Delaunay_triangulation_with_info_cgal_on_sphere_2<T_VERTEX_INFO, T_FACE_INFO, true, true>;
+
+template<typename T_VERTEX_INFO, typename T_FACE_INFO>
+using Delaunay_triangulation_with_info_cgal_on_sphere_2_noexact_noproject = Delaunay_triangulation_with_info_cgal_on_sphere_2<T_VERTEX_INFO, T_FACE_INFO, false, false>;
+
+template<typename T_VERTEX_INFO, typename T_FACE_INFO>
+using Delaunay_triangulation_with_info_cgal_on_sphere_2_noexact_project = Delaunay_triangulation_with_info_cgal_on_sphere_2<T_VERTEX_INFO, T_FACE_INFO, false, true>;
+
+using TriangulationCreatorDelaunayCGALSpherical_Exact =
+	TriangulationCreatorDelaunay<Delaunay_triangulation_with_info_cgal_on_sphere_2_exact_project>;
 	
-using TriangulationCreatorDelaunayCGALSpherical =
-	TriangulationCreatorDelaunay<Delaunay_triangulation_with_info_s2_cgal_spherical>;
+using TriangulationCreatorDelaunayCGALSpherical_NoExact =
+	TriangulationCreatorDelaunay<Delaunay_triangulation_with_info_cgal_on_sphere_2_noexact_noproject>;
+	
+using TriangulationCreatorDelaunayCGALSpherical_Project =
+	TriangulationCreatorDelaunay<Delaunay_triangulation_with_info_cgal_on_sphere_2_noexact_project>;
+
 
 template< template<typename, typename> class T_TRS>
 class TriangulationCreatorConstrainedDelaunay: public TriangulationCreator {
@@ -1368,7 +1453,13 @@ bool Config::parse(const std::string & token,int & i, int argc, char ** argv) {
 			triangType = TT_DELAUNAY_SPHERICAL;
 		}
 		else if (type == "cgalds" || type == "cgal-delaunay-spherical") {
-			triangType = TT_DELAUNAY_CGAL_SPHERE;
+			triangType = TT_DELAUNAY_CGAL_SPHERE_INEXACT;
+		}
+		else if (type == "cgaldse" || type == "cgal-delaunay-spherical-exact") {
+			triangType = TT_DELAUNAY_CGAL_SPHERE_EXACT;
+		}
+		else if (type == "cgaldsp" || type == "cgal-delaunay-spherical-project") {
+			triangType = TT_DELAUNAY_CGAL_SPHERE_PROJECT;
 		}
 		else if (type == "chi" || type == "convexhull-inexact") {
 			triangType = TT_CONVEX_HULL_INEXACT;
@@ -1499,7 +1590,23 @@ void Config::parse_completed() {
 
 void Config::help(std::ostream & out) const {
 	out << "triang OPTIONS:\n"
-		"\t-t type\ttype = [d,delaunay,d64,delaunay-64,ds,delaunay-spherical,cgalds,cgal-delaunay-spherical,chi,convexhull-inexact,ch,convexhull,ch64,convexhull-64,c,constrained,cx,constrained-intersection,cx64,constrained-intersection-64,cxsp,constrained-intersection-sp,cxspk-64,constrained-intersection-spk-64,cxe,constrained-intesection-exact, cxs, constrained-intersection-exact-spherical]\n"
+		"\t-t type\ttype is one of \n"
+		"d,delaunay,"
+		"d64,delaunay-64,ds,"
+		"delaunay-spherical,"
+		"cgaldse,cgal-delaunay-spherical-exact,"
+		"cgaldsp,cgal-delaunay-spherical-project,"
+		"cgalds,cgal-delaunay-spherical,"
+		"chi,convexhull-inexact,"
+		"ch,convexhull,"
+		"ch64,convexhull-64,"
+		"c,constrained,"
+		"cx,constrained-intersection,"
+		"cx64,constrained-intersection-64,"
+		"cxsp,constrained-intersection-sp,"
+		"cxspk-64,constrained-intersection-spk-64,"
+		"cxe,constrained-intesection-exact,"
+		"cxs,constrained-intersection-exact-spherical\n"
 		"\t-go type\tgraph output type = [none, wx, witout_special, simplest, simplest_andre]\n"
 		"\t-gi type\tgraph input type = [ne, nodes-edges, e, edges, nei, nodes-edges-iterative]\n"
 		"\t-io type\tinput order type = [ne, nodes-edges, e, edges, nei, nodes-edges-iterative]\n"
@@ -1534,8 +1641,14 @@ void Config::print(std::ostream & out) const {
 	case TT_DELAUNAY_SPHERICAL:
 		out << "delaunay using spherical kernel";
 		break;
-	case TT_DELAUNAY_CGAL_SPHERE:
-		out << "delaunay using CGAL package 2D Triangulations on the Sphere";
+	case TT_DELAUNAY_CGAL_SPHERE_INEXACT:
+		out << "delaunay using CGAL package 2D Triangulations on the Sphere with inexact constructions kernel";
+		break;
+	case TT_DELAUNAY_CGAL_SPHERE_PROJECT:
+		out << "delaunay using CGAL package 2D Triangulations on the Sphere with inexact constructions kernel with projection on sphere";
+		break;
+	case TT_DELAUNAY_CGAL_SPHERE_EXACT:
+		out << "delaunay using CGAL package 2D Triangulations on the Sphere with exact constructions kernel";
 		break;
 	case TT_CONVEX_HULL:
 		out << "convex hull";
@@ -1652,8 +1765,14 @@ void Data::init(const Config & cfg) {
 	case TT_DELAUNAY_SPHERICAL:
 		tc = new TriangulationCreatorDelaunaySpherical(cfg.significands);
 		break;
-	case TT_DELAUNAY_CGAL_SPHERE:
-		tc = new TriangulationCreatorDelaunayCGALSpherical(cfg.significands);
+	case TT_DELAUNAY_CGAL_SPHERE_INEXACT:
+		tc = new TriangulationCreatorDelaunayCGALSpherical_NoExact(cfg.significands);
+		break;
+	case TT_DELAUNAY_CGAL_SPHERE_EXACT:
+		tc = new TriangulationCreatorDelaunayCGALSpherical_Exact(cfg.significands);
+		break;
+	case TT_DELAUNAY_CGAL_SPHERE_PROJECT:
+		tc = new TriangulationCreatorDelaunayCGALSpherical_Project(cfg.significands);
 		break;
 	case TT_CONVEX_HULL_INEXACT:
 		tc = new EpickConvexHullTriangulationCreator();
