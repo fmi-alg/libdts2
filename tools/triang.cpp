@@ -43,9 +43,15 @@
 #include <CGAL/Delaunay_triangulation_on_sphere_2.h>
 #include <CGAL/Projection_on_sphere_traits_3.h>
 
+//Homogenous
+#include <CGAL/Homogeneous.h>
+
 
 template<typename T_VERTEX_INFO, typename T_FACE_INFO>
 using Delaunay_triangulation_with_info_s2_epeck = dts2::Delaunay_triangulation_with_info_s2<T_VERTEX_INFO, T_FACE_INFO, CGAL::Exact_predicates_exact_constructions_kernel>;
+
+template<typename T_VERTEX_INFO, typename T_FACE_INFO>
+using Delaunay_triangulation_with_info_s2_homogenous = dts2::Delaunay_triangulation_with_info_s2<T_VERTEX_INFO, T_FACE_INFO, CGAL::Homogeneous<CGAL::Gmpz>>;
 
 template<typename T_VERTEX_INFO, typename T_FACE_INFO>
 using Delaunay_triangulation_with_info_s2_fsceik =
@@ -163,7 +169,7 @@ public:
 		}
 		Face_handle fh;
 		for(; begin != end; ++begin) {
-			auto vh = MyBaseClass::insert(begin->first, fh);
+			auto vh = MyBaseClass::insert(to_p3(begin->first), fh);
 			fh = vh->face();
 			vh->info() = begin->second;
 		}
@@ -173,8 +179,16 @@ public:
 		if (snap) {
 			throw std::runtime_error("Snapping is not supported");
 		}
-		return MyBaseClass::insert(p, fh);
+		return MyBaseClass::insert(to_p3(p), fh);
 	}
+private:
+	template<typename T>
+	Point_3 to_p3(T const & p) const {
+		double x = ratss::convert<double>( p.x() );
+		double y = ratss::convert<double>( p.y() );
+		double z = ratss::convert<double>( p.z() );
+		return Point_3(x, y, z);
+	};
 	
 private:
 	int m_significands;
@@ -316,13 +330,20 @@ public:
 	using EpecskPoint = Epecsk::Circular_arc_point_3;
 	using EpecslkPoint = Epecsk::Linear_kernel::Point_3;
 public:
+	using Epechk = CGAL::Homogeneous<CGAL::Gmpz>;
+	using EpechkPoint = Epechk::Point_3;
+public:
 // 	using FT = mpq_class;
 	using K = Sceik;
 	using FT = K::FT;
 	using R = K::Point_3::R;
 public:
+	Point3() {}
 	Point3(const FT & x, const FT & y, const FT & z) :
 	m_x(x), m_y(y), m_z(z)
+	{}
+	Point3(FT && x, FT && y, FT && z) :
+	m_x(std::move(x)), m_y(std::move(y)), m_z(std::move(z))
 	{}
 	template<typename T_POINT>
 	Point3(const T_POINT & p) :
@@ -356,6 +377,7 @@ public:
 	explicit operator EpecksqrtPoint() const { return convert_to_p<Epecksqrt>(); }
 	explicit operator EpecslkPoint() const { return convert_to_p<Epecsk::Linear_kernel>(); } 
 	explicit operator EpecskPoint() const { return EpecskPoint( static_cast<EpecslkPoint>(*this) );}
+	explicit operator EpechkPoint() const { return convert_to_p<Epechk>(); }
 	template<typename T_KERNEL>
 	explicit operator dts2::Point_sp<T_KERNEL> () const {
 		return dts2::Point_sp<T_KERNEL>( convert_to_p<T_KERNEL>() );
@@ -461,6 +483,7 @@ BinaryIo::write(const Point3 & v) {
 typedef enum {
 	TT_DELAUNAY, TT_DELAUNAY_64,
 	TT_DELAUNAY_SPHERICAL,
+	TT_DELAUNAY_HOMOGENEOUS,
 	TT_DELAUNAY_CGAL_SPHERE_EXACT, TT_DELAUNAY_CGAL_SPHERE_INEXACT, TT_DELAUNAY_CGAL_SPHERE_PROJECT,
 	TT_CONVEX_HULL_INEXACT, TT_CONVEX_HULL, TT_CONVEX_HULL_64,
 	TT_CONSTRAINED, TT_CONSTRAINED_INEXACT, TT_CONSTRAINED_INEXACT_64, TT_CONSTRAINED_INEXACT_SP, TT_CONSTRAINED_INEXACT_SPK, TT_CONSTRAINED_INEXACT_SPK64,
@@ -1006,6 +1029,9 @@ private:
 using TriangulationCreatorDelaunayEpeck =
 	TriangulationCreatorDelaunay<Delaunay_triangulation_with_info_s2_epeck>;
 	
+using TriangulationCreatorDelaunayHomogeneous =
+	TriangulationCreatorDelaunay<Delaunay_triangulation_with_info_s2_homogenous>;
+	
 using TriangulationCreatorDelaunayFsceik =
 	TriangulationCreatorDelaunay<Delaunay_triangulation_with_info_s2_fsceik>;
 	
@@ -1452,6 +1478,9 @@ bool Config::parse(const std::string & token,int & i, int argc, char ** argv) {
 		else if (type == "ds" || type == "delaunay-spherical") {
 			triangType = TT_DELAUNAY_SPHERICAL;
 		}
+		else if (type == "dh" || type == "delaunay-homogeneous") {
+			triangType = TT_DELAUNAY_HOMOGENEOUS;
+		}
 		else if (type == "cgalds" || type == "cgal-delaunay-spherical") {
 			triangType = TT_DELAUNAY_CGAL_SPHERE_INEXACT;
 		}
@@ -1592,8 +1621,9 @@ void Config::help(std::ostream & out) const {
 	out << "triang OPTIONS:\n"
 		"\t-t type\ttype is one of \n"
 		"d,delaunay,"
-		"d64,delaunay-64,ds,"
-		"delaunay-spherical,"
+		"d64,delaunay-64,"
+		"ds,delaunay-spherical,"
+		"dh,delaunay-homogeneous,"
 		"cgaldse,cgal-delaunay-spherical-exact,"
 		"cgaldsp,cgal-delaunay-spherical-project,"
 		"cgalds,cgal-delaunay-spherical,"
@@ -1640,6 +1670,9 @@ void Config::print(std::ostream & out) const {
 		break;
 	case TT_DELAUNAY_SPHERICAL:
 		out << "delaunay using spherical kernel";
+		break;
+	case TT_DELAUNAY_HOMOGENEOUS:
+		out << "delaunay using homogeneous kernel";
 		break;
 	case TT_DELAUNAY_CGAL_SPHERE_INEXACT:
 		out << "delaunay using CGAL package 2D Triangulations on the Sphere with inexact constructions kernel";
@@ -1764,6 +1797,9 @@ void Data::init(const Config & cfg) {
 		break;
 	case TT_DELAUNAY_SPHERICAL:
 		tc = new TriangulationCreatorDelaunaySpherical(cfg.significands);
+		break;
+	case TT_DELAUNAY_HOMOGENEOUS:
+		tc = new TriangulationCreatorDelaunayHomogeneous(cfg.significands);
 		break;
 	case TT_DELAUNAY_CGAL_SPHERE_INEXACT:
 		tc = new TriangulationCreatorDelaunayCGALSpherical_NoExact(cfg.significands);
