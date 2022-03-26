@@ -46,6 +46,14 @@
 //Homogenous
 #include <CGAL/Homogeneous.h>
 
+//Mmap
+#include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
 
 template<typename T_VERTEX_INFO, typename T_FACE_INFO>
 using Delaunay_triangulation_with_info_s2_epeck = dts2::Delaunay_triangulation_with_info_s2<T_VERTEX_INFO, T_FACE_INFO, CGAL::Exact_predicates_exact_constructions_kernel>;
@@ -389,6 +397,142 @@ private:
 	
 };
 
+
+struct FileHandler {
+
+	static std::size_t fileSize(int fd) {
+		struct ::stat64 stFileInfo;
+		if (::fstat64(fd, &stFileInfo) == 0) {
+			return stFileInfo.st_size;
+		}
+		return 0;
+	}
+
+	static void * mmapFile(int fd, std::size_t fileSize, bool prePopulate, bool randomAccess) {
+		int param = MAP_SHARED;
+		if (prePopulate) {
+			param |= MAP_POPULATE;
+		}
+		
+		void * data = ::mmap(0, fileSize, PROT_READ | PROT_WRITE, param, fd, 0);
+
+		if (data == MAP_FAILED) {
+			data = ::mmap(0, fileSize, PROT_READ, param, fd, 0);
+		}
+		
+		if (data == MAP_FAILED) {
+			return data;
+		}
+
+		if (randomAccess) {
+			::madvise(data, fileSize, MADV_RANDOM);
+		}
+
+		return data;
+	}
+
+	static void * mmapFile(const std::string & fileName, int & fd, std::size_t & fileSize, bool prePopulate, bool randomAccess) {
+		fd = ::open(fileName.c_str(), O_RDONLY);
+		if (fd < 0) {
+			return nullptr;
+		}
+		fileSize = FileHandler::fileSize(fd);
+
+		void * d = mmapFile(fd, fileSize, prePopulate, randomAccess);
+		if (d == MAP_FAILED) {
+			::close(fd);
+			return nullptr;
+		}
+		return d;
+	}
+	static void close(int fd, void * mem, std::size_t size) {
+		::munmap(mem, size);
+		::close(fd);
+	}
+};
+
+class BinaryGraph {
+public:
+	struct Node {
+		double lat;
+		double lon;
+	};
+	struct Edge {
+		uint64_t src;
+		uint64_t tgt;
+	};
+public:
+	BinaryGraph(std::string const & fileName);
+	~BinaryGraph();
+	std::size_t nodeCount() const;
+	std::size_t edgeCount() const;
+	Node node(std::size_t p) const;
+	Edge edge(std::size_t p) const;
+private:
+	uint64_t getU64(std::size_t off) const;
+	double getDouble(std::size_t off) const;
+private:
+	uint64_t m_nodeCount{0};
+	uint64_t m_edgeCount{0};
+	int m_fd{-1};
+	std::size_t m_dataSize{0};
+	char const * m_data{nullptr};
+};
+
+BinaryGraph::BinaryGraph(std::string const & fileName) {
+	m_data = (char const*) FileHandler::mmapFile(fileName, m_fd, m_dataSize, false, false);
+	if (!m_data || m_dataSize < 2*sizeof(uint64_t)) {
+		throw std::runtime_error("Could not open graph file " + fileName);
+	}
+	m_nodeCount = getU64(0);
+	m_edgeCount = getU64(sizeof(uint64_t));
+	if (2*sizeof(uint64_t)+m_nodeCount*(2*sizeof(uint64_t))+m_edgeCount*(2*sizeof(uint64_t)) != m_dataSize) {
+		FileHandler::close(m_fd, const_cast<void*>(reinterpret_cast<void const *>(m_data)), m_dataSize);
+		throw std::runtime_error("Graph has invalid size");
+	}
+}
+
+BinaryGraph::~BinaryGraph() {
+	FileHandler::close(m_fd, const_cast<void*>(reinterpret_cast<void const *>(m_data)), m_dataSize);
+}
+
+inline uint64_t BinaryGraph::getU64(std::size_t off) const {
+	uint64_t tmp;
+	::memmove(&tmp, m_data+off, sizeof(uint64_t));
+	return tmp;
+}
+
+
+inline double BinaryGraph::getDouble(std::size_t off) const {
+	double tmp;
+	::memmove(&tmp, m_data+off, sizeof(uint64_t));
+	return tmp;
+}
+
+inline std::size_t BinaryGraph::nodeCount() const {
+	return m_nodeCount;
+}
+
+inline std::size_t BinaryGraph::edgeCount() const {
+	return m_edgeCount;
+}
+
+inline BinaryGraph::Node BinaryGraph::node(std::size_t p) const {
+	std::size_t off = 2*sizeof(uint64_t)+2*sizeof(uint64_t)*p;
+	return Node{
+		.lat = getDouble(off),
+		.lon = getDouble(off+sizeof(uint64_t))
+	};
+}
+
+inline BinaryGraph::Edge BinaryGraph::edge(std::size_t p) const {
+	std::size_t off = 2*sizeof(uint64_t)+2*sizeof(uint64_t)*nodeCount()+2*sizeof(uint64_t)*p;
+	return Edge{
+		.src = getU64(off),
+		.tgt = getU64(off+sizeof(uint64_t))
+	};
+}
+
 class BinaryIo {
 public:
 	BinaryIo() : m_io(0) {}
@@ -490,7 +634,7 @@ typedef enum {
 	TT_CONSTRAINED_EXACT, TT_CONSTRAINED_EXACT_SPHERICAL
 } TriangulationType;
 typedef enum {GOT_INVALID, GOT_NONE, GOT_WITHOUT_SPECIAL, GOT_WITHOUT_SPECIAL_HASH_MAP, GOT_SIMPLEST_GRAPH_RENDERING, GOT_SIMPLEST_GRAPH_RENDERING_ANDRE} GraphOutputType;
-typedef enum {GIT_INVALID, GIT_NODES_EDGES, GIT_EDGES, GIT_NODES_EDGES_BY_POINTS_BINARY} GraphInputType;
+typedef enum {GIT_INVALID, GIT_NODES_EDGES, GIT_BINARY_GRAPH, GIT_EDGES, GIT_NODES_EDGES_BY_POINTS_BINARY} GraphInputType;
 typedef enum {TIO_INVALID, TIO_NODES_EDGES, TIO_EDGES, TIO_NODES_EDGES_BY_POINTS_BINARY} TriangulationInputOrder;
 
 struct VertexInfo {
@@ -1377,6 +1521,7 @@ struct Data {
 	
 	void info(InputOutput& io);
 	
+	void readBinaryGraph(InputOutput& io, const Config& cfg);
 	void readNodesEdges(InputOutput& io, const Config& cfg);
 	void readEdges(InputOutput& io, const Config& cfg);
 	Point3 readPoint(std::istream& is, const Config& cfg);
@@ -1552,6 +1697,9 @@ bool Config::parse(const std::string & token,int & i, int argc, char ** argv) {
 		if (type == "ne" || type == "nodes-edges") {
 			git = GIT_NODES_EDGES;
 		}
+		else if (type == "topobinary") {
+			git = GIT_BINARY_GRAPH;
+		}
 		else if (type == "e" || type == "edges") {
 			git = GIT_EDGES;
 		}
@@ -1638,7 +1786,7 @@ void Config::help(std::ostream & out) const {
 		"cxe,constrained-intesection-exact,"
 		"cxs,constrained-intersection-exact-spherical\n"
 		"\t-go type\tgraph output type = [none, wx, witout_special, simplest, simplest_andre]\n"
-		"\t-gi type\tgraph input type = [ne, nodes-edges, e, edges, nei, nodes-edges-iterative]\n"
+		"\t-gi type\tgraph input type = [ne, nodes-edges, e, edges, nei, nodes-edges-iterative, topobinary]\n"
 		"\t-io type\tinput order type = [ne, nodes-edges, e, edges, nei, nodes-edges-iterative]\n"
 		"\t-is num\tsignificands used to calculate intersection points\n"
 		"\t--check\tCheck points and triangulation\n";
@@ -1725,6 +1873,9 @@ void Config::print(std::ostream & out) const {
 	switch (git) {
 	case GIT_NODES_EDGES:
 		out << "nodes and edges";
+		break;
+	case GIT_BINARY_GRAPH:
+		out << "topobinary";
 		break;
 	case GIT_EDGES:
 		out << "edges";
@@ -1853,6 +2004,9 @@ void Data::read(InputOutput & io, const Config & cfg) {
 	case GIT_NODES_EDGES:
 		readNodesEdges(io, cfg);
 		break;
+	case GIT_BINARY_GRAPH:
+		readBinaryGraph(io, cfg);
+		break;
 	case GIT_EDGES:
 		readEdges(io, cfg);
 	case GIT_NODES_EDGES_BY_POINTS_BINARY:
@@ -1932,6 +2086,56 @@ void Data::rewrite(InputOutput& io, const Config& cfg) {
 	io.output().flush();
 }
 
+void Data::readBinaryGraph(InputOutput & io, const Config & cfg) {
+	auto graph = BinaryGraph(cfg.inFileName);
+	std::size_t num_points = graph.nodeCount();
+	std::size_t num_edges = graph.edgeCount();
+	
+	io.info() << "Need to fetch " << num_points << " points and " << num_edges << " edges" << std::endl;
+
+	points.resize(num_points);
+	edges.resize(num_edges);
+	
+	if (cfg.progress) {
+		io.info() << std::endl;
+	}
+	ip.coords.resize(2);
+	std::atomic<std::size_t> counter{0};
+	#pragma omp parallel for schedule(dynamic, 1000)
+	for(std::size_t i = 0; i < num_points; ++i) {
+		auto node = graph.node(i);
+		mpfr::mpreal lat(node.lat, cfg.precision, MPFR_RNDZ);
+		mpfr::mpreal lon(node.lon, cfg.precision, MPFR_RNDZ);
+		mpq_class sx, sy, sz;
+		proj.projectFromGeo(lat, lon, sx, sy, sz, cfg.significands, cfg.snapType);
+		
+		using FT = Point3::FT;
+		FT x = ratss::Conversion<FT>::moveFrom( std::move(sx) );
+		FT y = ratss::Conversion<FT>::moveFrom( std::move(sy) );
+		FT z = ratss::Conversion<FT>::moveFrom( std::move(sz) );
+		
+		points[i].first = Point3(std::move(x), std::move(y), std::move(z));
+		points[i].second = VertexInfo(counter);
+		
+		counter.fetch_add(1, std::memory_order_relaxed);
+		
+		if (cfg.progress && counter % 10000 == 0) {
+			#pragma omp critical(log_progress)
+			{
+				io.info() << '\xd' << counter/1000 << "k" << std::flush;
+			}
+		}
+	}
+	if (cfg.progress) {
+		io.info() << std::endl;
+	}
+	#pragma omp parallel for schedule(dynamic, 100000)
+	for(std::size_t i = 0; i < num_edges; ++i) {
+		auto edge = graph.edge(i);
+		edges[i].first = edge.src;
+		edges[i].second = edge.tgt;
+	}
+}
 
 void Data::readNodesEdges(InputOutput & io, const Config & cfg) {
 	std::istream & is = io.input();
