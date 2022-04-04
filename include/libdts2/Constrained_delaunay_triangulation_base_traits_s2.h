@@ -543,7 +543,13 @@ public: //object functions
 	{
 		assert(m_significands > 2);
 	}
-	///@param epsilon set the value of the z-coordinate above which no points should exist
+	///@param _epsilon set the value of the z-coordinate above which no points should exist
+	Constrained_delaunay_triangulation_base_traits_s2(FT const & _epsilon, int _significands) :
+	m_apg(_epsilon),
+	m_significands(_significands)
+	{
+		assert(m_significands > 2);
+	}
 	Constrained_delaunay_triangulation_base_traits_s2(AuxiliaryPointsGenerator const & _apg, int _significands) :
 	m_apg(_apg),
 	m_significands(_significands)

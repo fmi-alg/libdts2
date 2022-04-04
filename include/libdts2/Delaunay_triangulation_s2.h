@@ -3,6 +3,7 @@
 #define LIB_DTS2_DELAUNAY_TRIANGULATION_S2_H
 
 #include <libdts2/constants.h>
+#include <libdts2/Kernel_sp/Kernel_sp.h>
 #include <libdts2/Triangulation_base_s2.h>
 
 //we have to include these first (due to some overloaded internal functions)
@@ -104,6 +105,18 @@ using Delaunay_triangulation_with_info_s2 =
 		Delaunay_triangulation_traits_s2<T_KERNEL>,
 		typename internal::TriangulationDataStructureSelector<
 			Delaunay_triangulation_traits_s2<T_KERNEL>,
+			T_VERTEX_INFO,
+			T_FACE_INFO
+		>::type
+	>;
+
+
+template<typename T_VERTEX_INFO, typename T_FACE_INFO>
+using Delaunay_triangulation_with_info_sp =
+	Delaunay_triangulation_s2<
+		Kernel_sp,
+		typename internal::TriangulationDataStructureSelector<
+			Kernel_sp,
 			T_VERTEX_INFO,
 			T_FACE_INFO
 		>::type

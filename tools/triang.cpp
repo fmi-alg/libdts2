@@ -59,9 +59,6 @@ template<typename T_VERTEX_INFO, typename T_FACE_INFO>
 using Delaunay_triangulation_with_info_s2_epeck = dts2::Delaunay_triangulation_with_info_s2<T_VERTEX_INFO, T_FACE_INFO, CGAL::Exact_predicates_exact_constructions_kernel>;
 
 template<typename T_VERTEX_INFO, typename T_FACE_INFO>
-using Delaunay_triangulation_with_info_s2_sp = dts2::Constrained_Delaunay_triangulation_with_inexact_intersections_with_info_s2_sp<T_VERTEX_INFO, T_FACE_INFO>;
-
-template<typename T_VERTEX_INFO, typename T_FACE_INFO>
 using Delaunay_triangulation_with_info_s2_homogenous = dts2::Delaunay_triangulation_with_info_s2<T_VERTEX_INFO, T_FACE_INFO, CGAL::Homogeneous<CGAL::Gmpz>>;
 
 template<typename T_VERTEX_INFO, typename T_FACE_INFO>
@@ -660,6 +657,14 @@ is_constrained(
 
 bool
 is_constrained(
+	const dts2::Delaunay_triangulation_with_info_sp<VertexInfo, void> & /*trs*/,
+	const dts2::Delaunay_triangulation_with_info_sp<VertexInfo, void>::Edge & /*e*/)
+{
+	return false;
+}
+
+bool
+is_constrained(
 	const Delaunay_triangulation_with_info_s2_spherical<VertexInfo, void> & /*trs*/,
 	const Delaunay_triangulation_with_info_s2_spherical<VertexInfo, void>::Edge & /*e*/)
 {
@@ -1176,7 +1181,7 @@ using TriangulationCreatorDelaunayEpeck =
 	TriangulationCreatorDelaunay<Delaunay_triangulation_with_info_s2_epeck>;
 	
 using TriangulationCreatorDelaunaySp =
-	TriangulationCreatorDelaunay<Delaunay_triangulation_with_info_s2_sp>;
+	TriangulationCreatorDelaunay<dts2::Delaunay_triangulation_with_info_sp>;
 	
 using TriangulationCreatorDelaunayHomogeneous =
 	TriangulationCreatorDelaunay<Delaunay_triangulation_with_info_s2_homogenous>;
@@ -1234,6 +1239,15 @@ using TriangulationCreatorDelaunayCGALSpherical_NoExact =
 using TriangulationCreatorDelaunayCGALSpherical_Project =
 	TriangulationCreatorDelaunay<Delaunay_triangulation_with_info_cgal_on_sphere_2_noexact_project>;
 
+template<>
+TriangulationCreatorDelaunaySp::TriangulationCreatorDelaunay(int significands) :
+m_tr(
+	TriangulationCreatorDelaunaySp::Tr::Geom_traits(
+		dts2::Kernel_sp::AuxiliaryPointsGenerator(),
+		significands
+	)
+)
+{}
 
 template< template<typename, typename> class T_TRS>
 class TriangulationCreatorConstrainedDelaunay: public TriangulationCreator {

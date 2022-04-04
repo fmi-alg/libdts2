@@ -108,12 +108,17 @@ public:
 			);
 		}
 	};
+	using AuxiliaryPointsGenerator = typename MyBaseTrait::AuxiliaryPointsGenerator;
 public:
 	///This does not correctly initialize this trait!
 	Constrained_delaunay_triangulation_traits_s2() {}
 	///@param epsilon set the value of the z-coordinate above which no points should exist
 	Constrained_delaunay_triangulation_traits_s2(const FT & _epsilon, int _significands) :
 	MyBaseTrait(_epsilon, _significands)
+	{}
+	
+	Constrained_delaunay_triangulation_traits_s2(AuxiliaryPointsGenerator const & _apg, int _significands) :
+	MyBaseTrait(_apg, _significands)
 	{}
 	
 	Constrained_delaunay_triangulation_traits_s2(const Constrained_delaunay_triangulation_traits_s2 & other) :
