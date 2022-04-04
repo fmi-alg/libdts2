@@ -59,6 +59,9 @@ template<typename T_VERTEX_INFO, typename T_FACE_INFO>
 using Delaunay_triangulation_with_info_s2_epeck = dts2::Delaunay_triangulation_with_info_s2<T_VERTEX_INFO, T_FACE_INFO, CGAL::Exact_predicates_exact_constructions_kernel>;
 
 template<typename T_VERTEX_INFO, typename T_FACE_INFO>
+using Delaunay_triangulation_with_info_s2_sp = dts2::Constrained_Delaunay_triangulation_with_inexact_intersections_with_info_s2_sp<T_VERTEX_INFO, T_FACE_INFO>;
+
+template<typename T_VERTEX_INFO, typename T_FACE_INFO>
 using Delaunay_triangulation_with_info_s2_homogenous = dts2::Delaunay_triangulation_with_info_s2<T_VERTEX_INFO, T_FACE_INFO, CGAL::Homogeneous<CGAL::Gmpz>>;
 
 template<typename T_VERTEX_INFO, typename T_FACE_INFO>
@@ -397,7 +400,6 @@ private:
 	
 };
 
-
 struct FileHandler {
 
 	static std::size_t fileSize(int fd) {
@@ -625,7 +627,7 @@ BinaryIo::write(const Point3 & v) {
 }
 
 typedef enum {
-	TT_DELAUNAY, TT_DELAUNAY_64,
+	TT_DELAUNAY, TT_DELAUNAY_64, TT_DELAUNAY_SP,
 	TT_DELAUNAY_SPHERICAL,
 	TT_DELAUNAY_HOMOGENEOUS,
 	TT_DELAUNAY_CGAL_SPHERE_EXACT, TT_DELAUNAY_CGAL_SPHERE_INEXACT, TT_DELAUNAY_CGAL_SPHERE_PROJECT,
@@ -1173,6 +1175,9 @@ private:
 using TriangulationCreatorDelaunayEpeck =
 	TriangulationCreatorDelaunay<Delaunay_triangulation_with_info_s2_epeck>;
 	
+using TriangulationCreatorDelaunaySp =
+	TriangulationCreatorDelaunay<Delaunay_triangulation_with_info_s2_sp>;
+	
 using TriangulationCreatorDelaunayHomogeneous =
 	TriangulationCreatorDelaunay<Delaunay_triangulation_with_info_s2_homogenous>;
 	
@@ -1620,6 +1625,9 @@ bool Config::parse(const std::string & token,int & i, int argc, char ** argv) {
 		else if (type == "d64" || type == "delaunay-64") {
 			triangType = TT_DELAUNAY_64;
 		}
+		else if (type == "dsp" || type == "delaunay-sp") {
+			triangType = TT_DELAUNAY_SP;
+		}
 		else if (type == "ds" || type == "delaunay-spherical") {
 			triangType = TT_DELAUNAY_SPHERICAL;
 		}
@@ -1816,6 +1824,9 @@ void Config::print(std::ostream & out) const {
 	case TT_DELAUNAY_64:
 		out << "delaunay using ExtendedInt64 kernel";
 		break;
+	case TT_DELAUNAY_SP:
+		out << "delaunay using sp kernel";
+		break;
 	case TT_DELAUNAY_SPHERICAL:
 		out << "delaunay using spherical kernel";
 		break;
@@ -1945,6 +1956,9 @@ void Data::init(const Config & cfg) {
 		break;
 	case TT_DELAUNAY_64:
 		tc = new TriangulationCreatorDelaunayFsceik(cfg.significands);
+		break;
+	case TT_DELAUNAY_SP:
+		tc = new TriangulationCreatorDelaunaySp(cfg.significands);
 		break;
 	case TT_DELAUNAY_SPHERICAL:
 		tc = new TriangulationCreatorDelaunaySpherical(cfg.significands);
