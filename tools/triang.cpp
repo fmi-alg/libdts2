@@ -11,7 +11,6 @@
   * 
   */
 
-#include <time.h>
 #include <sys/time.h>
 #include <fstream>
 #include <string>
@@ -64,7 +63,7 @@ using Delaunay_triangulation_with_info_s2_homogenous = dts2::Delaunay_triangulat
 template<typename T_VERTEX_INFO, typename T_FACE_INFO>
 using Delaunay_triangulation_with_info_s2_fsceik =
 	dts2::Delaunay_triangulation_with_info_s2<T_VERTEX_INFO, T_FACE_INFO, CGAL::Filtered_simple_cartesian_extended_integer_kernel>;
-	
+
 template<typename T_VERTEX_INFO, typename T_FACE_INFO>
 using Delaunay_triangulation_with_info_s2_spherical =
 	dts2::Delaunay_triangulation_s2<
@@ -1191,35 +1190,6 @@ using TriangulationCreatorDelaunayFsceik =
 	
 using TriangulationCreatorDelaunaySpherical =
 	TriangulationCreatorDelaunay<Delaunay_triangulation_with_info_s2_spherical>;
-
-/*
-template<typename T_VERTEX_INFO, typename T_FACE_INFO>
-struct Delaunay_triangulation_with_info_cgal_on_sphere_2_exact_project:
-	Delaunay_triangulation_with_info_cgal_on_sphere_2<T_VERTEX_INFO, T_FACE_INFO, true, true>
-{
-	Delaunay_triangulation_with_info_cgal_on_sphere_2_exact_project(int significands) :
-	Delaunay_triangulation_with_info_cgal_on_sphere_2<T_VERTEX_INFO, T_FACE_INFO, true, true>(significands)
-	{}
-};
-
-template<typename T_VERTEX_INFO, typename T_FACE_INFO>
-struct Delaunay_triangulation_with_info_cgal_on_sphere_2_noexact_project:
-	Delaunay_triangulation_with_info_cgal_on_sphere_2<T_VERTEX_INFO, T_FACE_INFO, false, true>
-{
-	Delaunay_triangulation_with_info_cgal_on_sphere_2_noexact_project(int significands) :
-	Delaunay_triangulation_with_info_cgal_on_sphere_2<T_VERTEX_INFO, T_FACE_INFO, false, true>(significands)
-	{}
-};
-
-template<typename T_VERTEX_INFO, typename T_FACE_INFO>
-struct Delaunay_triangulation_with_info_cgal_on_sphere_2_noexact_noproject:
-	Delaunay_triangulation_with_info_cgal_on_sphere_2<T_VERTEX_INFO, T_FACE_INFO, false, false>
-{
-	Delaunay_triangulation_with_info_cgal_on_sphere_2_noexact_noproject(int significands) :
-	Delaunay_triangulation_with_info_cgal_on_sphere_2<T_VERTEX_INFO, T_FACE_INFO, false, false>(significands)
-	{}
-};
-*/
 
 template<typename T_VERTEX_INFO, typename T_FACE_INFO>
 using Delaunay_triangulation_with_info_cgal_on_sphere_2_exact_project = Delaunay_triangulation_with_info_cgal_on_sphere_2<T_VERTEX_INFO, T_FACE_INFO, true, true>;
