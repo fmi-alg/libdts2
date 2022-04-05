@@ -94,8 +94,13 @@ public:
 	public:
 		using MyBaseClass::operator();
 		Point_3 operator()(const Point_3 & v) const {
-			FT len( CGAL::sqrt(v.x()*v.x() + v.y()*v.y() + v.z()*v.z()) );
-			return Point_3(v.x() / len, v.y() / len, v.z() / len);
+			if ( CGAL::compare_squared_distance(v, Point_3(0,0,0), FT(1)) != CGAL::Comparison_result::EQUAL) {
+				FT len( CGAL::sqrt(v.x()*v.x() + v.y()*v.y() + v.z()*v.z()) );
+				return Point_3(v.x() / len, v.y() / len, v.z() / len);
+			}
+			else {
+				return v;
+			}
 		}
 	};
 protected: //own implementations not support by the base traits
