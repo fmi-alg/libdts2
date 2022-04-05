@@ -16,6 +16,7 @@
 #include <string>
 #include <libdts2/Kernel_sp/Point_sp.h>
 #include <libdts2/Constrained_delaunay_triangulation_s2.h>
+#include <libdts2/Delaunay_triangulation_s2.h>
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Polyhedron_3.h>
 #include <CGAL/convex_hull_3.h>
@@ -56,6 +57,9 @@
 
 template<typename T_VERTEX_INFO, typename T_FACE_INFO>
 using Delaunay_triangulation_with_info_s2_epeck = dts2::Delaunay_triangulation_with_info_s2<T_VERTEX_INFO, T_FACE_INFO, CGAL::Exact_predicates_exact_constructions_kernel>;
+
+template<typename T_VERTEX_INFO, typename T_FACE_INFO>
+using Delaunay_triangulation_with_info_s2_epeck_with_sqrt = dts2::Delaunay_triangulation_with_info_s2<T_VERTEX_INFO, T_FACE_INFO, CGAL::Exact_predicates_exact_constructions_kernel_with_sqrt>;
 
 template<typename T_VERTEX_INFO, typename T_FACE_INFO>
 using Delaunay_triangulation_with_info_s2_homogenous = dts2::Delaunay_triangulation_with_info_s2<T_VERTEX_INFO, T_FACE_INFO, CGAL::Homogeneous<CGAL::Gmpz>>;
@@ -623,7 +627,8 @@ BinaryIo::write(const Point3 & v) {
 }
 
 typedef enum {
-	TT_DELAUNAY, TT_DELAUNAY_64, TT_DELAUNAY_SP,
+	TT_INVALID,
+	TT_DELAUNAY, TT_DELAUNAY_CORE1, TT_DELAUNAY_64, TT_DELAUNAY_SP,
 	TT_DELAUNAY_SPHERICAL,
 	TT_DELAUNAY_HOMOGENEOUS,
 	TT_DELAUNAY_CGAL_SPHERE_EXACT, TT_DELAUNAY_CGAL_SPHERE_INEXACT, TT_DELAUNAY_CGAL_SPHERE_PROJECT,
@@ -1178,6 +1183,9 @@ private:
 
 using TriangulationCreatorDelaunayEpeck =
 	TriangulationCreatorDelaunay<Delaunay_triangulation_with_info_s2_epeck>;
+
+using TriangulationCreatorDelaunayEpeckWithSqrt =
+	TriangulationCreatorDelaunay<Delaunay_triangulation_with_info_s2_epeck_with_sqrt>;
 	
 using TriangulationCreatorDelaunaySp =
 	TriangulationCreatorDelaunay<dts2::Delaunay_triangulation_with_info_sp>;
@@ -1470,7 +1478,7 @@ m_tr(
 
 class Config: public ratss::BasicCmdLineOptions {
 public:
-	TriangulationType triangType;
+	TriangulationType triangType{TT_INVALID};
 	GraphOutputType got = GOT_INVALID;
 	GraphInputType git = GIT_INVALID;
 	TriangulationInputOrder tio = TIO_NODES_EDGES;
@@ -1605,6 +1613,9 @@ bool Config::parse(const std::string & token,int & i, int argc, char ** argv) {
 		std::string type( argv[i+1] );
 		if (type == "d" || type == "delaunay") {
 			triangType = TT_DELAUNAY;
+		}
+		else if (type == "dcore" || type == "delaunay-core") {
+			triangType = TT_DELAUNAY_CORE1;
 		}
 		else if (type == "d64" || type == "delaunay-64") {
 			triangType = TT_DELAUNAY_64;
@@ -1805,6 +1816,9 @@ void Config::print(std::ostream & out) const {
 	case TT_DELAUNAY:
 		out << "delaunay";
 		break;
+	case TT_DELAUNAY_CORE1:
+		out << "delaunay using core 1";
+		break;
 	case TT_DELAUNAY_64:
 		out << "delaunay using ExtendedInt64 kernel";
 		break;
@@ -1937,6 +1951,9 @@ void Data::init(const Config & cfg) {
 	switch (cfg.triangType) {
 	case TT_DELAUNAY:
 		tc = new TriangulationCreatorDelaunayEpeck(cfg.significands);
+		break;
+	case TT_DELAUNAY_CORE1:
+		tc = new TriangulationCreatorDelaunayEpeckWithSqrt(cfg.significands);
 		break;
 	case TT_DELAUNAY_64:
 		tc = new TriangulationCreatorDelaunayFsceik(cfg.significands);
