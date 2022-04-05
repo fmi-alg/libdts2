@@ -1084,7 +1084,7 @@ public:
 	virtual ~ConvexHullTriangulationCreator() {}
 public:
 	///@param points need to be exactly on the sphere
-	virtual void create(Points & points, Edges & edges, InputOutput & io, bool clear) {
+	void create(Points & points, Edges & edges, InputOutput & io, bool clear) override {
 		auto tf = [](const Points::value_type & pi) {
 			return (Point_3) pi.first;
 		};
@@ -1100,13 +1100,13 @@ public:
 			points = Points();
 		}
 	}
-	virtual void add(const Point3 & /*p*/) {
+	void add(const Point3 & /*p*/) override {
 		throw std::runtime_error("Convex hull based triangulation does not allow a dynamic creation");
 	}
-	virtual void add(const Point3 & /*p1*/, const Point3 & /*p2*/) {
+	void add(const Point3 & /*p1*/, const Point3 & /*p2*/) override {
 		throw std::runtime_error("Convex hull based triangulation does not allow a dynamic creation");
 	}
-	virtual void write(InputOutput & /*io*/) {
+	void write(InputOutput & /*io*/) override {
 		if (got != GOT_NONE) {
 			throw std::runtime_error("Convex hull based triangulation does not support writing of triangulation");
 		}
