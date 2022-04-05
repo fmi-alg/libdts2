@@ -30,7 +30,7 @@ Point_sp_base::set_numerator0(Types::numerator v) {
 			if (sign) {
 				v = -v;
 			}
-			v <<= 0;
+			v <<= 1;
 			if (sign) {
 				v |= 1;
 			}
@@ -50,7 +50,7 @@ Point_sp_base::set_numerator1(Types::numerator v) {
 			if (sign) {
 				v = -v;
 			}
-			v <<= 0;
+			v <<= 1;
 			if (sign) {
 				v |= 1;
 			}
